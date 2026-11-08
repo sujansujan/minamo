@@ -19,6 +19,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // Sign release builds with the default debug certificate out of the box
+            // so app-release.apk installs directly on any device without NO_CERTIFICATES errors.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
