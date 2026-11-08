@@ -19,12 +19,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.roundToInt
 
-/**
- * Plain-Text ASCII Activity for `minamo`.
- * Implements the 3-tab terminal layout (`[1 pond]`, `[2 set]`, `[3 about]`),
- * live Lagoon light/dark system-following palettes, TalkBack semantics without reading
- * brackets/dots, and inline undo on reset.
- */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var repository: WallpaperSettingsRepository
@@ -60,6 +54,14 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var textFishBar: TextView
     private lateinit var textClarityBar: TextView
+
+    private lateinit var textPredatorsCheck: TextView
+    private lateinit var textBottomFeedersCheck: TextView
+    private lateinit var textPauseBgSwitch: TextView
+
+    private lateinit var btnPowerAuto: TextView
+    private lateinit var btnPowerEco: TextView
+    private lateinit var btnPowerOff: TextView
 
     private lateinit var btnGridCozy: TextView
     private lateinit var btnGridBalanced: TextView
@@ -148,6 +150,14 @@ class SettingsActivity : AppCompatActivity() {
         textFishBar = findViewById(R.id.textFishBar)
         textClarityBar = findViewById(R.id.textClarityBar)
 
+        textPredatorsCheck = findViewById(R.id.textPredatorsCheck)
+        textBottomFeedersCheck = findViewById(R.id.textBottomFeedersCheck)
+        textPauseBgSwitch = findViewById(R.id.textPauseBgSwitch)
+
+        btnPowerAuto = findViewById(R.id.btnPowerAuto)
+        btnPowerEco = findViewById(R.id.btnPowerEco)
+        btnPowerOff = findViewById(R.id.btnPowerOff)
+
         btnGridCozy = findViewById(R.id.btnGridCozy)
         btnGridBalanced = findViewById(R.id.btnGridBalanced)
         btnGridDense = findViewById(R.id.btnGridDense)
@@ -169,10 +179,22 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         findViewById<TextView>(R.id.btnShuffleFish).apply {
-            contentDescription = "Shuffle fish species"
+            contentDescription = "Shuffle fish and critters"
             setOnClickListener {
                 haptic(it)
                 asciiPondView.shuffleEcosystem()
+            }
+        }
+
+        findViewById<TextView>(R.id.btnSummonPredator).apply {
+            contentDescription = "Summon a random predator fish now"
+            setOnClickListener {
+                haptic(it)
+                if (!currentConfig.enablePredators) {
+                    updateConfig(currentConfig.copy(enablePredators = true))
+                }
+                val predName = asciiPondView.summonPredatorNow()
+                textBiomeStatus.text = "! alert .. $predName spotted (fish hiding)"
             }
         }
 
@@ -190,6 +212,25 @@ class SettingsActivity : AppCompatActivity() {
         btnCycleNoon.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.NOON)) }
         btnCycleDusk.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.DUSK)) }
         btnCycleNight.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.NIGHT)) }
+
+        // Predators & Bottom feeders checkboxes
+        findViewById<LinearLayout>(R.id.rowPredatorsCheck).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(enablePredators = !currentConfig.enablePredators))
+        }
+        findViewById<LinearLayout>(R.id.rowBottomFeedersCheck).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(enableBottomFeeders = !currentConfig.enableBottomFeeders))
+        }
+
+        // Power Saver & Pause on Background controls
+        findViewById<LinearLayout>(R.id.rowPauseBgSwitch).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(pauseOnBackgroundAndScreenOff = !currentConfig.pauseOnBackgroundAndScreenOff))
+        }
+        btnPowerAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.AUTO_SAVER)) }
+        btnPowerEco.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.MAX_ECO)) }
+        btnPowerOff.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.OFF)) }
 
         // Theme mode radios
         btnThemeSystem.setOnClickListener {
@@ -328,6 +369,25 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnCycleNoon, currentConfig.timeCycleMode == TimeCycleMode.NOON, "noon")
         styleRadio(btnCycleDusk, currentConfig.timeCycleMode == TimeCycleMode.DUSK, "dusk")
         styleRadio(btnCycleNight, currentConfig.timeCycleMode == TimeCycleMode.NIGHT, "night")
+
+        textPredatorsCheck.text = if (currentConfig.enablePredators) "[x]" else "[ ]"
+        textPredatorsCheck.setTextColor(if (currentConfig.enablePredators) cAccent else cDim)
+        findViewById<LinearLayout>(R.id.rowPredatorsCheck).contentDescription =
+            "Predator visits, ${if (currentConfig.enablePredators) "enabled" else "disabled"}"
+
+        textBottomFeedersCheck.text = if (currentConfig.enableBottomFeeders) "[x]" else "[ ]"
+        textBottomFeedersCheck.setTextColor(if (currentConfig.enableBottomFeeders) cAccent else cDim)
+        findViewById<LinearLayout>(R.id.rowBottomFeedersCheck).contentDescription =
+            "Bottom feeders, ${if (currentConfig.enableBottomFeeders) "enabled" else "disabled"}"
+
+        textPauseBgSwitch.text = if (currentConfig.pauseOnBackgroundAndScreenOff) "[ on]" else "[off]"
+        textPauseBgSwitch.setTextColor(if (currentConfig.pauseOnBackgroundAndScreenOff) cAccent else cDim)
+        findViewById<LinearLayout>(R.id.rowPauseBgSwitch).contentDescription =
+            "Pause when in background or screen is off, ${if (currentConfig.pauseOnBackgroundAndScreenOff) "on" else "off"}"
+
+        styleRadio(btnPowerAuto, currentConfig.powerSaveMode == PowerSaveMode.AUTO_SAVER, "auto")
+        styleRadio(btnPowerEco, currentConfig.powerSaveMode == PowerSaveMode.MAX_ECO, "eco")
+        styleRadio(btnPowerOff, currentConfig.powerSaveMode == PowerSaveMode.OFF, "off")
 
         styleRadio(btnThemeSystem, currentConfig.themeMode == ThemeMode.SYSTEM, "system")
         styleRadio(btnThemeLight, currentConfig.themeMode == ThemeMode.LIGHT, "light")

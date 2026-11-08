@@ -7,10 +7,6 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 
-/**
- * Interactive Plain-Text ASCII Split-View Aquarium View used in the [1 pond] screen.
- * Supports touch ripples, fish shuffling, and live time-of-day palette previews.
- */
 class AsciiPondView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
@@ -46,18 +42,20 @@ class AsciiPondView @JvmOverloads constructor(
         }
         lastFrameNs = nowNs
 
+        val ecoActive = config.powerSaveMode == PowerSaveMode.MAX_ECO
         simulation.updateAndRender(
             canvas = canvas,
             dt = dt,
             config = config,
             parallaxX = 0f,
             parallaxY = 0f,
-            isBatterySaver = false,
+            isBatterySaver = ecoActive,
             isWallpaperMode = false
         )
 
         if (isRunning) {
-            val delayMs = if (config.targetFps == 60) 16L else 33L
+            val fps = if (ecoActive) 15 else config.targetFps
+            val delayMs = (1000L / fps).coerceAtLeast(16L)
             postInvalidateDelayed(delayMs)
         }
     }
@@ -72,15 +70,19 @@ class AsciiPondView @JvmOverloads constructor(
         return super.onTouchEvent(event)
     }
 
-    override fun performClick(): Boolean {
-        return super.performClick()
-    }
+    override fun performClick(): Boolean = super.performClick()
 
     fun shuffleEcosystem() {
         simulation.randomizeEcosystemOnUnlock(System.nanoTime())
         val snap = TimeOfDayPalette.resolve(config.timeCycleMode)
         onSpeciesRandomized?.invoke(simulation.activeSpeciesSummary, snap.timeLabel)
         invalidate()
+    }
+
+    fun summonPredatorNow(): String {
+        simulation.triggerPredatorVisit(System.nanoTime())
+        invalidate()
+        return simulation.predator.species.displayName
     }
 
     fun startAnimation() {

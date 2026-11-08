@@ -39,7 +39,7 @@
         android:layout_height="1dp"
         android:background="@color/ascii_border" />
 
-    <!-- Inline undo / status banner (hidden unless triggered) -->
+    <!-- Inline undo / status banner -->
     <LinearLayout
         android:id="@+id/bannerUndo"
         android:layout_width="match_parent"
@@ -86,7 +86,6 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <!-- Titled AsciiBox framing the live ASCII split-view aquarium -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -120,7 +119,6 @@
                 android:textColor="@color/ascii_accent2" />
         </FrameLayout>
 
-        <!-- Key/Value status line for active fish biome -->
         <TextView
             android:id="@+id/textBiomeStatus"
             style="@style/AsciiText.Small"
@@ -135,7 +133,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="none"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="2dp">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -211,21 +209,32 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/btnShuffleFish"
-                style="@style/AsciiText.Body"
+                style="@style/AsciiText.Small"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:minHeight="48dp"
                 android:gravity="center"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
                 android:text="@string/action_shuffle_fish"
                 android:textColor="@color/ascii_fg" />
+
+            <TextView
+                android:id="@+id/btnSummonPredator"
+                style="@style/AsciiText.Small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:gravity="center"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="@string/action_summon_predator"
+                android:textColor="@color/ascii_accent3" />
 
             <View
                 android:layout_width="0dp"
@@ -239,8 +248,8 @@
                 android:layout_height="wrap_content"
                 android:minHeight="48dp"
                 android:gravity="center"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
                 android:text="@string/action_set_wallpaper"
                 android:textColor="@color/ascii_accent" />
         </LinearLayout>
@@ -263,11 +272,11 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Panel 1: App Theme & Time Cycle -->
+            <!-- Panel 1: Ecosystem & Critters -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="14dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -276,82 +285,9 @@
                     android:background="@drawable/bg_ascii_box"
                     android:orientation="vertical"
                     android:paddingStart="12dp"
-                    android:paddingTop="16dp"
+                    android:paddingTop="14dp"
                     android:paddingEnd="12dp"
-                    android:paddingBottom="12dp">
-
-                    <TextView
-                        style="@style/AsciiText.Small"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="ui theme (lagoon light + dark):"
-                        android:textColor="@color/ascii_dim" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/btnThemeSystem"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) system" />
-
-                        <TextView
-                            android:id="@+id/btnThemeLight"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) light" />
-
-                        <TextView
-                            android:id="@+id/btnThemeDark"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) dark" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@color/ascii_bg"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
-                    android:text=" appearance "
-                    android:textColor="@color/ascii_accent2" />
-            </FrameLayout>
-
-            <!-- Panel 2: Pond Parameters (ASCII progress bars & character steppers) -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:background="@drawable/bg_ascii_box"
-                    android:orientation="vertical"
-                    android:paddingStart="12dp"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="12dp">
+                    android:paddingBottom="10dp">
 
                     <!-- Fish count stepper -->
                     <LinearLayout
@@ -389,85 +325,56 @@
                             android:text="[ + ]" />
                     </LinearLayout>
 
-                    <!-- Water clarity stepper -->
+                    <!-- Predator checkbox -->
                     <LinearLayout
+                        android:id="@+id/rowPredatorsCheck"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:minHeight="48dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/textClarityBar"
+                            android:id="@+id/textPredatorsCheck"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[x]"
+                            android:textColor="@color/ascii_accent" />
+
+                        <TextView
                             style="@style/AsciiText.Body"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="rays: [########--] 85%" />
-
-                        <TextView
-                            android:id="@+id/btnClarityMinus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ - ]" />
-
-                        <TextView
-                            android:id="@+id/btnClarityPlus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ + ]" />
+                            android:layout_marginStart="10dp"
+                            android:text="predator visits (fish hide in kelp)" />
                     </LinearLayout>
 
-                    <!-- Grid density radio -->
-                    <TextView
-                        style="@style/AsciiText.Small"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="character grid density:"
-                        android:textColor="@color/ascii_dim" />
-
+                    <!-- Bottom feeders checkbox -->
                     <LinearLayout
+                        android:id="@+id/rowBottomFeedersCheck"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/btnGridCozy"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
+                            android:id="@+id/textBottomFeedersCheck"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) 38c" />
+                            android:text="[x]"
+                            android:textColor="@color/ascii_accent" />
 
                         <TextView
-                            android:id="@+id/btnGridBalanced"
                             style="@style/AsciiText.Body"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) 46c" />
-
-                        <TextView
-                            android:id="@+id/btnGridDense"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) 56c" />
+                            android:layout_marginStart="10dp"
+                            android:text="bottom feeders (crabs, shrimp, snails)" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -479,15 +386,15 @@
                     android:background="@color/ascii_bg"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:text=" aquarium grid "
+                    android:text=" critters &amp; ecosystem "
                     android:textColor="@color/ascii_accent2" />
             </FrameLayout>
 
-            <!-- Panel 3: Engine & Sensors -->
+            <!-- Panel 2: Power Saver & Battery -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="14dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -496,9 +403,77 @@
                     android:background="@drawable/bg_ascii_box"
                     android:orientation="vertical"
                     android:paddingStart="12dp"
-                    android:paddingTop="16dp"
+                    android:paddingTop="14dp"
                     android:paddingEnd="12dp"
-                    android:paddingBottom="12dp">
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:id="@+id/rowPauseBgSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="pause on bg / screen off" />
+
+                        <TextView
+                            android:id="@+id/textPauseBgSwitch"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[ on]"
+                            android:textColor="@color/ascii_accent" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="battery saver policy:"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnPowerAuto"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) auto" />
+
+                        <TextView
+                            android:id="@+id/btnPowerEco"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) eco" />
+
+                        <TextView
+                            android:id="@+id/btnPowerOff"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) off" />
+                    </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -569,11 +544,163 @@
                     android:background="@color/ascii_bg"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:text=" performance "
+                    android:text=" power &amp; sensors "
                     android:textColor="@color/ascii_accent2" />
             </FrameLayout>
 
-            <!-- Destructive action with inline undo -->
+            <!-- Panel 3: Grid & Appearance -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:background="@drawable/bg_ascii_box"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/textClarityBar"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="rays: [########--] 85%" />
+
+                        <TextView
+                            android:id="@+id/btnClarityMinus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:gravity="center"
+                            android:text="[ - ]" />
+
+                        <TextView
+                            android:id="@+id/btnClarityPlus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:gravity="center"
+                            android:text="[ + ]" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="character grid density:"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnGridCozy"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) 38c" />
+
+                        <TextView
+                            android:id="@+id/btnGridBalanced"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) 46c" />
+
+                        <TextView
+                            android:id="@+id/btnGridDense"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) 56c" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="ui theme (lagoon light + dark):"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnThemeSystem"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) system" />
+
+                        <TextView
+                            android:id="@+id/btnThemeLight"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) light" />
+
+                        <TextView
+                            android:id="@+id/btnThemeDark"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) dark" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@color/ascii_bg"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:text=" grid &amp; appearance "
+                    android:textColor="@color/ascii_accent2" />
+            </FrameLayout>
+
             <TextView
                 android:id="@+id/btnResetDefaults"
                 style="@style/AsciiText.Body"
@@ -587,7 +714,7 @@
     </ScrollView>
 
     <!-- =================================================================== -->
-    <!-- SCREEN 3: [3 about] Tagline, Species Catalog & Dynamic Time Table   -->
+    <!-- SCREEN 3: [3 about] Tagline, Species, Predators & Bottom Feeders    -->
     <!-- =================================================================== -->
     <ScrollView
         android:id="@+id/screenAbout"
@@ -606,7 +733,7 @@
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="14dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -615,15 +742,15 @@
                     android:background="@drawable/bg_ascii_box"
                     android:orientation="vertical"
                     android:paddingStart="12dp"
-                    android:paddingTop="16dp"
+                    android:paddingTop="14dp"
                     android:paddingEnd="12dp"
-                    android:paddingBottom="12dp">
+                    android:paddingBottom="10dp">
 
                     <TextView
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.0.0"
+                        android:text="minamo v2.1.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView
@@ -637,10 +764,10 @@
                         style="@style/AsciiText.Small"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="unlock behavior .... randomizes species
-time cycle ......... dawn / noon / dusk / night
-view mode .......... split over-water &amp; under"
+                        android:layout_marginTop="10dp"
+                        android:text="separation ......... strict 2d occupancy grid
+predator alert ..... ! fish hide in kelp beds
+battery saver ...... 0% cpu when screen off"
                         android:textColor="@color/ascii_dim" />
                 </LinearLayout>
 
@@ -658,7 +785,8 @@ view mode .......... split over-water &amp; under"
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -667,23 +795,18 @@ view mode .......... split over-water &amp; under"
                     android:background="@drawable/bg_ascii_box"
                     android:orientation="vertical"
                     android:paddingStart="12dp"
-                    android:paddingTop="16dp"
+                    android:paddingTop="14dp"
                     android:paddingEnd="12dp"
-                    android:paddingBottom="12dp">
+                    android:paddingBottom="10dp">
 
                     <TextView
                         style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="neon tetra ......... &gt;&lt;&gt;°
-silver minnow ...... &gt;-))°&gt;
-clownfish .......... &gt;))|°&gt;
-blue tang .......... &gt;==))°&gt;
-gold ogon .......... &gt;)))'&gt;
-mandarin ........... &gt;~#°&gt;
-kohaku koi ......... &gt;&lt;(((º&gt;
-moorish idol ....... &gt;||°&gt;
-veil betta ......... &gt;)))º&gt;" />
+                        android:text="barracuda pike .. &gt;&lt;(((====º&lt;
+reef shark ...... &gt;&lt;))))º&gt;===&lt;
+moray eel ....... ~^~^~===º&lt;
+kingfisher ...... \\(º)/ -&gt; \\V/" />
                 </LinearLayout>
 
                 <TextView
@@ -694,13 +817,53 @@ veil betta ......... &gt;)))º&gt;" />
                     android:background="@color/ascii_bg"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:text=" species catalog "
+                    android:text=" predators "
+                    android:textColor="@color/ascii_accent" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:background="@drawable/bg_ascii_box"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="10dp">
+
+                    <TextView
+                        style="@style/AsciiText.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="river crab ...... (\\/)(°_°)(\\/)
+cherry shrimp ... ,=/&gt;°
+cory catfish .... &gt;))º&gt;=
+golden snail .... @_/
+kohaku koi ...... &gt;&lt;(((º&gt;
+clownfish ....... &gt;))|°&gt;
+neon tetra ...... &gt;&lt;&gt;°" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@color/ascii_bg"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:text=" bottom feeders &amp; fish "
                     android:textColor="@color/ascii_accent2" />
             </FrameLayout>
         </LinearLayout>
     </ScrollView>
 
-    <!-- Bottom Navigation Bar: 3 character-built destinations -->
+    <!-- Bottom Navigation Bar -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"

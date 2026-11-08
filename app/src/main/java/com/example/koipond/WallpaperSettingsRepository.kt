@@ -14,14 +14,6 @@ enum class ThemeMode(val id: Int, val label: String) {
     }
 }
 
-/**
- * Controls how the ASCII aquarium colors change throughout the day:
- *   AUTO_REALTIME: Reads actual local clock hour (Dawn 05-08, Day 08-17, Dusk 17-20, Night 20-05)
- *   DAWN: Warm rose-amber sunrise sky, mist, and golden-mint water
- *   NOON: Crisp cyan-lagoon sky, bright aqua sunbeams, and emerald water
- *   DUSK: Crimson-tangerine sunset sky, violet-amber reflection, and deep teal water
- *   NIGHT: Starry indigo sky, crescent moon reflection, and bioluminescent midnight water
- */
 enum class TimeCycleMode(val id: Int, val label: String) {
     AUTO_REALTIME(0, "live clock"),
     DAWN(1, "dawn"),
@@ -44,6 +36,23 @@ enum class GridDensity(val id: Int, val label: String, val targetCols: Int) {
     }
 }
 
+/**
+ * Power saver policy:
+ *   AUTO_SAVER: Automatically drops FPS to 15 and reduces background particle count when system Battery Saver is on
+ *   MAX_ECO: Always runs at ultra-low 15 FPS & minimal particles for maximum battery life
+ *   OFF: Runs at full configured targetFps regardless of system Battery Saver
+ * Note: Rendering ALWAYS pauses 100% (0 CPU/GPU wakeups) when the screen is off or another app covers the home screen.
+ */
+enum class PowerSaveMode(val id: Int, val label: String) {
+    AUTO_SAVER(0, "auto"),
+    MAX_ECO(1, "eco"),
+    OFF(2, "off");
+
+    companion object {
+        fun fromId(id: Int): PowerSaveMode = entries.firstOrNull { it.id == id } ?: AUTO_SAVER
+    }
+}
+
 data class WallpaperConfig(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val timeCycleMode: TimeCycleMode = TimeCycleMode.AUTO_REALTIME,
@@ -51,7 +60,11 @@ data class WallpaperConfig(
     val waterClarity: Float = 0.85f,
     val targetFps: Int = 30,
     val gridDensity: GridDensity = GridDensity.BALANCED,
-    val enableGyro: Boolean = true
+    val enableGyro: Boolean = true,
+    val powerSaveMode: PowerSaveMode = PowerSaveMode.AUTO_SAVER,
+    val pauseOnBackgroundAndScreenOff: Boolean = true,
+    val enablePredators: Boolean = true,
+    val enableBottomFeeders: Boolean = true
 )
 
 class WallpaperSettingsRepository(context: Context) {
@@ -67,7 +80,11 @@ class WallpaperSettingsRepository(context: Context) {
             waterClarity = prefs.getFloat(KEY_WATER_CLARITY, 0.85f).coerceIn(0.35f, 1.0f),
             targetFps = if (prefs.getInt(KEY_TARGET_FPS, 30) == 60) 60 else 30,
             gridDensity = GridDensity.fromId(prefs.getInt(KEY_GRID_DENSITY, GridDensity.BALANCED.id)),
-            enableGyro = prefs.getBoolean(KEY_ENABLE_GYRO, true)
+            enableGyro = prefs.getBoolean(KEY_ENABLE_GYRO, true),
+            powerSaveMode = PowerSaveMode.fromId(prefs.getInt(KEY_POWER_SAVE_MODE, PowerSaveMode.AUTO_SAVER.id)),
+            pauseOnBackgroundAndScreenOff = prefs.getBoolean(KEY_PAUSE_BG, true),
+            enablePredators = prefs.getBoolean(KEY_ENABLE_PREDATORS, true),
+            enableBottomFeeders = prefs.getBoolean(KEY_ENABLE_BOTTOM_FEEDERS, true)
         )
     }
 
@@ -80,6 +97,10 @@ class WallpaperSettingsRepository(context: Context) {
             .putInt(KEY_TARGET_FPS, config.targetFps)
             .putInt(KEY_GRID_DENSITY, config.gridDensity.id)
             .putBoolean(KEY_ENABLE_GYRO, config.enableGyro)
+            .putInt(KEY_POWER_SAVE_MODE, config.powerSaveMode.id)
+            .putBoolean(KEY_PAUSE_BG, config.pauseOnBackgroundAndScreenOff)
+            .putBoolean(KEY_ENABLE_PREDATORS, config.enablePredators)
+            .putBoolean(KEY_ENABLE_BOTTOM_FEEDERS, config.enableBottomFeeders)
             .apply()
     }
 
@@ -109,5 +130,9 @@ class WallpaperSettingsRepository(context: Context) {
         const val KEY_TARGET_FPS = "target_fps"
         const val KEY_GRID_DENSITY = "grid_density"
         const val KEY_ENABLE_GYRO = "enable_gyro"
+        const val KEY_POWER_SAVE_MODE = "power_save_mode"
+        const val KEY_PAUSE_BG = "pause_on_bg"
+        const val KEY_ENABLE_PREDATORS = "enable_predators"
+        const val KEY_ENABLE_BOTTOM_FEEDERS = "enable_bottom_feeders"
     }
 }

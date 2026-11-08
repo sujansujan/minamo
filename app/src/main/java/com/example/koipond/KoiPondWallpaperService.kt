@@ -21,9 +21,11 @@ import androidx.core.content.ContextCompat
 
 /**
  * Plain-Text ASCII Split-View Live Wallpaper Service (`minamo`).
- * - Renders the colorful Half-Over / Half-Underwater character grid at 30 or 60 FPS.
- * - Shifts colors dynamically based on the real-time clock (Dawn / Noon / Dusk / Night).
- * - Randomizes the aquatic fish species mix every time the phone is unlocked (`ACTION_USER_PRESENT`).
+ * - Immediately pauses the render loop and unregisters sensors when the display is off
+ *   (`ACTION_SCREEN_OFF` / `!powerManager.isInteractive`) or when covered by another app
+ *   (`onVisibilityChanged(false)`), consuming 0% CPU/GPU in the background.
+ * - Supports PowerSaveMode (AUTO_SAVER / MAX_ECO / OFF).
+ * - Randomizes the aquatic ecosystem on every phone unlock (`ACTION_USER_PRESENT`).
  */
 class KoiPondWallpaperService : WallpaperService() {
 
@@ -39,7 +41,9 @@ class KoiPondWallpaperService : WallpaperService() {
 
         private var powerManager: PowerManager? = null
         @Volatile
-        private var isBatterySaverActive = false
+        private var isSystemBatterySaver = false
+        @Volatile
+        private var isDisplayInteractive = true
 
         private var sensorManager: SensorManager? = null
         private var gyroSensor: Sensor? = null
@@ -60,7 +64,7 @@ class KoiPondWallpaperService : WallpaperService() {
         private var surfaceHeight = 2400
 
         @Volatile
-        private var isVisibleNow = false
+        private var isWallpaperVisible = false
         private var surfaceReady = false
         private var lastFrameTimestampNs = 0L
 
@@ -68,11 +72,28 @@ class KoiPondWallpaperService : WallpaperService() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
                     PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
-                        updateBatterySaverState()
+                        updatePowerStates()
                     }
-                    Intent.ACTION_USER_PRESENT, Intent.ACTION_SCREEN_ON -> {
+                    Intent.ACTION_SCREEN_OFF -> {
+                        // Display turned off: immediately halt rendering & sensors
+                        isDisplayInteractive = false
+                        pauseRenderingImmediately()
+                    }
+                    Intent.ACTION_SCREEN_ON -> {
+                        isDisplayInteractive = true
+                        updatePowerStates()
                         renderHandler?.post {
                             simulation.randomizeEcosystemOnUnlock(System.nanoTime())
+                            lastFrameTimestampNs = SystemClock.elapsedRealtimeNanos()
+                            scheduleNextFrame()
+                        }
+                    }
+                    Intent.ACTION_USER_PRESENT -> {
+                        // User unlocked phone: shuffle fish species & resume if visible
+                        isDisplayInteractive = true
+                        renderHandler?.post {
+                            simulation.randomizeEcosystemOnUnlock(System.nanoTime())
+                            scheduleNextFrame()
                         }
                     }
                 }
@@ -82,7 +103,7 @@ class KoiPondWallpaperService : WallpaperService() {
 
         private val drawRunnable = object : Runnable {
             override fun run() {
-                if (!isVisibleNow || !surfaceReady) return
+                if (!shouldRenderNow()) return
 
                 val frameStartNs = SystemClock.elapsedRealtimeNanos()
                 val dt = if (lastFrameTimestampNs == 0L) {
@@ -93,10 +114,14 @@ class KoiPondWallpaperService : WallpaperService() {
                 lastFrameTimestampNs = frameStartNs
 
                 val cfg = currentConfig
-                val batterySaver = isBatterySaverActive
+                val effectivePowerSaver = when (cfg.powerSaveMode) {
+                    PowerSaveMode.MAX_ECO -> true
+                    PowerSaveMode.AUTO_SAVER -> isSystemBatterySaver
+                    PowerSaveMode.OFF -> false
+                }
                 val holder = surfaceHolder
 
-                var canvas = try {
+                val canvas = try {
                     holder.lockHardwareCanvas()
                 } catch (_: Throwable) {
                     try {
@@ -116,7 +141,7 @@ class KoiPondWallpaperService : WallpaperService() {
                             config = cfg,
                             parallaxX = px,
                             parallaxY = py,
-                            isBatterySaver = batterySaver,
+                            isBatterySaver = effectivePowerSaver,
                             isWallpaperMode = true
                         )
                     } finally {
@@ -126,13 +151,26 @@ class KoiPondWallpaperService : WallpaperService() {
                     }
                 }
 
-                val targetFps = if (batterySaver) 20 else cfg.targetFps
-                val targetIntervalMs = 1000L / targetFps
-                val workDurationMs = (SystemClock.elapsedRealtimeNanos() - frameStartNs) / 1_000_000L
-                val delayMs = (targetIntervalMs - workDurationMs).coerceAtLeast(4L)
-
-                renderHandler?.postDelayed(this, delayMs)
+                if (shouldRenderNow()) {
+                    val targetFps = if (effectivePowerSaver) 15 else cfg.targetFps
+                    val targetIntervalMs = 1000L / targetFps
+                    val workDurationMs = (SystemClock.elapsedRealtimeNanos() - frameStartNs) / 1_000_000L
+                    val delayMs = (targetIntervalMs - workDurationMs).coerceAtLeast(5L)
+                    renderHandler?.postDelayed(this, delayMs)
+                }
             }
+        }
+
+        private fun shouldRenderNow(): Boolean {
+            if (!surfaceReady) return false
+            if (!isWallpaperVisible) return false
+            if (currentConfig.pauseOnBackgroundAndScreenOff && !isDisplayInteractive) return false
+            return true
+        }
+
+        private fun pauseRenderingImmediately() {
+            unregisterGyro()
+            renderHandler?.removeCallbacks(drawRunnable)
         }
 
         override fun onCreate(surfaceHolder: SurfaceHolder) {
@@ -144,13 +182,14 @@ class KoiPondWallpaperService : WallpaperService() {
             settingsRepo.registerListener(this)
 
             powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
-            updateBatterySaverState()
+            updatePowerStates()
 
             try {
                 val filter = IntentFilter().apply {
                     addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
-                    addAction(Intent.ACTION_USER_PRESENT)
+                    addAction(Intent.ACTION_SCREEN_OFF)
                     addAction(Intent.ACTION_SCREEN_ON)
+                    addAction(Intent.ACTION_USER_PRESENT)
                 }
                 ContextCompat.registerReceiver(
                     this@KoiPondWallpaperService,
@@ -195,24 +234,23 @@ class KoiPondWallpaperService : WallpaperService() {
         }
 
         override fun onSurfaceDestroyed(holder: SurfaceHolder) {
-            renderHandler?.removeCallbacks(drawRunnable)
+            pauseRenderingImmediately()
             surfaceReady = false
             super.onSurfaceDestroyed(holder)
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
             super.onVisibilityChanged(visible)
-            isVisibleNow = visible
-            if (visible) {
-                updateBatterySaverState()
+            isWallpaperVisible = visible
+            updatePowerStates()
+            if (visible && isDisplayInteractive) {
                 updateGyroRegistration()
                 renderHandler?.post {
                     lastFrameTimestampNs = SystemClock.elapsedRealtimeNanos()
                     scheduleNextFrame()
                 }
             } else {
-                unregisterGyro()
-                renderHandler?.removeCallbacks(drawRunnable)
+                pauseRenderingImmediately()
             }
         }
 
@@ -260,7 +298,7 @@ class KoiPondWallpaperService : WallpaperService() {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
         override fun onDestroy() {
-            unregisterGyro()
+            pauseRenderingImmediately()
             if (isReceiverRegistered) {
                 try {
                     unregisterReceiver(systemEventReceiver)
@@ -277,17 +315,20 @@ class KoiPondWallpaperService : WallpaperService() {
 
         private fun scheduleNextFrame() {
             renderHandler?.removeCallbacks(drawRunnable)
-            if (isVisibleNow && surfaceReady) {
+            if (shouldRenderNow()) {
                 renderHandler?.post(drawRunnable)
             }
         }
 
-        private fun updateBatterySaverState() {
-            isBatterySaverActive = powerManager?.isPowerSaveMode == true
+        private fun updatePowerStates() {
+            isSystemBatterySaver = powerManager?.isPowerSaveMode == true
+            isDisplayInteractive = powerManager?.isInteractive != false
         }
 
         private fun updateGyroRegistration() {
-            val shouldUseGyro = isVisibleNow && currentConfig.enableGyro && !isBatterySaverActive
+            val effectiveEco = currentConfig.powerSaveMode == PowerSaveMode.MAX_ECO ||
+                (currentConfig.powerSaveMode == PowerSaveMode.AUTO_SAVER && isSystemBatterySaver)
+            val shouldUseGyro = shouldRenderNow() && currentConfig.enableGyro && !effectiveEco
             if (shouldUseGyro && !isGyroRegistered && gyroSensor != null) {
                 sensorManager?.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_GAME)
                 isGyroRegistered = true
