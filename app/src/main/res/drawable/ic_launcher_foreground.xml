@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Soft drop shadow under lily pad & koi -->
+    <path
+        android:fillColor="#38020E12"
+        android:pathData="M34,30 C44,24 54,31 50,41 C45,50 31,47 29,37 C28,34 31,32 34,30 Z" />
+    <path
+        android:fillColor="#40020E12"
+        android:pathData="M43,66 C49,51 64,43 75,47 C72,58 63,68 49,73 C44,75 39,79 34,82 C37,75 40,71 43,66 Z" />
+
+    <!-- Botanical notched lily pad in upper-left safe zone -->
+    <path
+        android:fillColor="#1E5E3A"
+        android:pathData="M32,27 L38,35 L30,33 C28,39 33,46 41,45 C49,44 53,36 49,29 C45,22 36,22 32,27 Z" />
+    <path
+        android:fillColor="#34824F"
+        android:pathData="M38,35 L46,28 M38,35 L48,35 M38,35 L44,42 M38,35 L35,43"
+        android:strokeColor="#388E56"
+        android:strokeCap="round"
+        android:strokeWidth="0.9" />
+
+    <!-- Translucent pectoral fins -->
+    <path
+        android:fillColor="#D9F5F2EB"
+        android:pathData="M58,49 C53,43 47,44 46,48 C48,51 53,52 58,49 Z" />
+    <path
+        android:fillColor="#D9F5F2EB"
+        android:pathData="M67,58 C73,62 74,68 70,70 C67,68 65,63 67,58 Z" />
+
+    <!-- Flowing bilobed caudal tail fin -->
+    <path
+        android:fillColor="#E6F7F4EE"
+        android:pathData="M44,68 C37,70 31,75 29,82 C35,80 39,76 42,73 C41,77 39,82 36,86 C43,83 47,77 48,71 Z" />
+
+    <!-- Main curved Kohaku Koi body (ivory-white base) -->
+    <path
+        android:fillColor="#FAF7F0"
+        android:pathData="M74,42 C66,39 54,45 47,57 C43,64 42,69 45,72 C48,74 54,71 61,66 C71,58 78,46 74,42 Z" />
+
+    <!-- Vermilion-orange Hi dorsal markings (Kohaku pattern) -->
+    <path
+        android:fillColor="#E84A1B"
+        android:pathData="M71,44 C65,42 58,46 54,52 C57,56 63,56 68,52 C72,49 73,45 71,44 Z" />
+    <path
+        android:fillColor="#E84A1B"
+        android:pathData="M51,59 C47,63 45,67 47,70 C50,71 55,68 58,64 C56,60 53,58 51,59 Z" />
+
+    <!-- Subtle dorsal ridge highlight -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M71,44 C63,48 54,56 46,69"
+        android:strokeColor="#66FFFFFF"
+        android:strokeCap="round"
+        android:strokeWidth="1.3" />
+</vector>
