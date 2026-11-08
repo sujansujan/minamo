@@ -348,7 +348,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="10dp"
-                            android:text="predator visits (fish scatter & evade)" />
+                            android:text="predator visits (fish scatter &amp; evade)" />
                     </LinearLayout>
 
                     <!-- Bottom feeders checkbox -->
@@ -766,7 +766,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="separation ......... strict 2d occupancy grid
-predator alert ..... ! 2d scatter & juke evasion
+predator alert ..... ! 2d scatter &amp; juke evasion
 battery saver ...... 0% cpu when screen off"
                         android:textColor="@color/ascii_dim" />
                 </LinearLayout>
