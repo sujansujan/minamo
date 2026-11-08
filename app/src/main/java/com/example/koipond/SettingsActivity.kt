@@ -48,6 +48,15 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnCycleDusk: TextView
     private lateinit var btnCycleNight: TextView
 
+    private lateinit var btnWeatherAuto: TextView
+    private lateinit var btnWeatherClear: TextView
+    private lateinit var btnWeatherRain: TextView
+    private lateinit var btnWeatherSnow: TextView
+
+    private lateinit var btnPalLagoon: TextView
+    private lateinit var btnPalEmber: TextView
+    private lateinit var btnPalMoss: TextView
+
     private lateinit var btnThemeSystem: TextView
     private lateinit var btnThemeLight: TextView
     private lateinit var btnThemeDark: TextView
@@ -143,6 +152,15 @@ class SettingsActivity : AppCompatActivity() {
         btnCycleDusk = findViewById(R.id.btnCycleDusk)
         btnCycleNight = findViewById(R.id.btnCycleNight)
 
+        btnWeatherAuto = findViewById(R.id.btnWeatherAuto)
+        btnWeatherClear = findViewById(R.id.btnWeatherClear)
+        btnWeatherRain = findViewById(R.id.btnWeatherRain)
+        btnWeatherSnow = findViewById(R.id.btnWeatherSnow)
+
+        btnPalLagoon = findViewById(R.id.btnPalLagoon)
+        btnPalEmber = findViewById(R.id.btnPalEmber)
+        btnPalMoss = findViewById(R.id.btnPalMoss)
+
         btnThemeSystem = findViewById(R.id.btnThemeSystem)
         btnThemeLight = findViewById(R.id.btnThemeLight)
         btnThemeDark = findViewById(R.id.btnThemeDark)
@@ -206,14 +224,21 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // Time-of-day cycle radios
         btnCycleAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.AUTO_REALTIME)) }
         btnCycleDawn.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.DAWN)) }
         btnCycleNoon.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.NOON)) }
         btnCycleDusk.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.DUSK)) }
         btnCycleNight.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.NIGHT)) }
 
-        // Predators & Bottom feeders checkboxes
+        btnWeatherAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.AUTO)) }
+        btnWeatherClear.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.CLEAR)) }
+        btnWeatherRain.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.RAIN)) }
+        btnWeatherSnow.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.SNOW)) }
+
+        btnPalLagoon.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.LAGOON)) }
+        btnPalEmber.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.EMBER)) }
+        btnPalMoss.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.MOSS)) }
+
         findViewById<LinearLayout>(R.id.rowPredatorsCheck).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(enablePredators = !currentConfig.enablePredators))
@@ -223,7 +248,6 @@ class SettingsActivity : AppCompatActivity() {
             updateConfig(currentConfig.copy(enableBottomFeeders = !currentConfig.enableBottomFeeders))
         }
 
-        // Power Saver & Pause on Background controls
         findViewById<LinearLayout>(R.id.rowPauseBgSwitch).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(pauseOnBackgroundAndScreenOff = !currentConfig.pauseOnBackgroundAndScreenOff))
@@ -232,7 +256,6 @@ class SettingsActivity : AppCompatActivity() {
         btnPowerEco.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.MAX_ECO)) }
         btnPowerOff.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.OFF)) }
 
-        // Theme mode radios
         btnThemeSystem.setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(themeMode = ThemeMode.SYSTEM))
@@ -249,7 +272,6 @@ class SettingsActivity : AppCompatActivity() {
             repository.applyAppNightMode(ThemeMode.DARK)
         }
 
-        // Fish count steppers
         findViewById<TextView>(R.id.btnFishMinus).apply {
             contentDescription = "Decrease fish count"
             setOnClickListener {
@@ -265,7 +287,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // Clarity steppers
         findViewById<TextView>(R.id.btnClarityMinus).apply {
             contentDescription = "Decrease water clarity"
             setOnClickListener {
@@ -281,22 +302,18 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // Grid density radios
         btnGridCozy.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.COZY)) }
         btnGridBalanced.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.BALANCED)) }
         btnGridDense.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.DENSE)) }
 
-        // FPS radios
         btnFps30.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(targetFps = 30)) }
         btnFps60.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(targetFps = 60)) }
 
-        // Gyro switch
         findViewById<LinearLayout>(R.id.rowGyroSwitch).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(enableGyro = !currentConfig.enableGyro))
         }
 
-        // Destructive Reset with Inline Undo
         findViewById<TextView>(R.id.btnResetDefaults).apply {
             contentDescription = "Reset settings to defaults"
             setOnClickListener {
@@ -350,7 +367,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun refreshAsciiUi() {
         asciiPondView.config = currentConfig
-        val snap = TimeOfDayPalette.resolve(currentConfig.timeCycleMode)
+        val snap = TimeOfDayPalette.resolve(currentConfig.timeCycleMode, currentConfig.paletteFamily)
         textHeaderClockTag.text = "[${snap.timeLabel}]"
         textBiomeStatus.text = "biome .. ${asciiPondView.simulation.activeSpeciesSummary}"
 
@@ -369,6 +386,15 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnCycleNoon, currentConfig.timeCycleMode == TimeCycleMode.NOON, "noon")
         styleRadio(btnCycleDusk, currentConfig.timeCycleMode == TimeCycleMode.DUSK, "dusk")
         styleRadio(btnCycleNight, currentConfig.timeCycleMode == TimeCycleMode.NIGHT, "night")
+
+        styleRadio(btnWeatherAuto, currentConfig.weatherMode == WeatherMode.AUTO, "auto")
+        styleRadio(btnWeatherClear, currentConfig.weatherMode == WeatherMode.CLEAR, "clear")
+        styleRadio(btnWeatherRain, currentConfig.weatherMode == WeatherMode.RAIN, "rain")
+        styleRadio(btnWeatherSnow, currentConfig.weatherMode == WeatherMode.SNOW, "snow")
+
+        styleRadio(btnPalLagoon, currentConfig.paletteFamily == PaletteFamily.LAGOON, "lagoon")
+        styleRadio(btnPalEmber, currentConfig.paletteFamily == PaletteFamily.EMBER, "ember")
+        styleRadio(btnPalMoss, currentConfig.paletteFamily == PaletteFamily.MOSS, "moss")
 
         textPredatorsCheck.text = if (currentConfig.enablePredators) "[x]" else "[ ]"
         textPredatorsCheck.setTextColor(if (currentConfig.enablePredators) cAccent else cDim)

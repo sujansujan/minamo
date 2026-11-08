@@ -12,7 +12,9 @@ class AsciiPondView @JvmOverloads constructor(
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    val simulation = PondSimulation()
+    val simulation = PondSimulation().apply {
+        loadBundledFont(context)
+    }
     var config: WallpaperConfig = WallpaperConfig()
         set(value) {
             field = value
@@ -38,7 +40,7 @@ class AsciiPondView @JvmOverloads constructor(
         val dt = if (lastFrameNs == 0L) {
             1f / 30f
         } else {
-            ((nowNs - lastFrameNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.08f)
+            ((nowNs - lastFrameNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.05f)
         }
         lastFrameNs = nowNs
 
@@ -61,7 +63,7 @@ class AsciiPondView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.actionMasked == MotionEvent.ACTION_DOWN || event.actionMasked == MotionEvent.ACTION_MOVE) {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             simulation.onTouch(event.x, event.y)
             performClick()
             invalidate()
@@ -74,7 +76,7 @@ class AsciiPondView @JvmOverloads constructor(
 
     fun shuffleEcosystem() {
         simulation.randomizeEcosystemOnUnlock(System.nanoTime())
-        val snap = TimeOfDayPalette.resolve(config.timeCycleMode)
+        val snap = TimeOfDayPalette.resolve(config.timeCycleMode, config.paletteFamily)
         onSpeciesRandomized?.invoke(simulation.activeSpeciesSummary, snap.timeLabel)
         invalidate()
     }

@@ -1,10 +1,11 @@
 package com.example.koipond
 
+import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
+import androidx.core.content.res.ResourcesCompat
 import kotlin.math.abs
-import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -12,48 +13,54 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Detailed Multi-Line & Schooling ASCII Fish Species designed for the High-Density Grid (68–96 cols).
- * Every hero species has a 3-line anatomical silhouette (dorsal fin, detailed body scales/gills, ventral fin).
+ * 9 Detailed Multi-Line & Schooling ASCII Fish Species with dedicated Head-On Turning Frames.
  */
 enum class AsciiFishSpecies(
     val id: Int,
     val displayName: String,
     val isHeroMultiLine: Boolean,
-    val colorRole: Int, // 0=Coral, 1=Aqua, 2=Gold, 3=Foam, 4=Rose
+    val primaryRole: Int,   // 0=Coral, 1=Aqua, 2=Gold, 3=Foam, 4=Rose
+    val finAccentRole: Int, // Secondary accent hue for dorsal/ventral fins & gill markings
     val baseSpeedColsPerSec: Float,
     val rightFrameA: Array<String>,
     val rightFrameB: Array<String>,
     val leftFrameA: Array<String>,
-    val leftFrameB: Array<String>
+    val leftFrameB: Array<String>,
+    val turnFrame: Array<String>
 ) {
     NEON_TETRA(
         id = 0,
         displayName = "neon tetra",
         isHeroMultiLine = false,
-        colorRole = 1,
-        baseSpeedColsPerSec = 7.5f,
+        primaryRole = 1,
+        finAccentRole = 0,
+        baseSpeedColsPerSec = 6.8f,
         rightFrameA = arrayOf(">-))°>"),
         rightFrameB = arrayOf("}-))°>"),
         leftFrameA  = arrayOf("<°((-<"),
-        leftFrameB  = arrayOf("<°((-{")
+        leftFrameB  = arrayOf("<°((-{ "),
+        turnFrame   = arrayOf(" <°> ")
     ),
     SILVER_MINNOW(
         id = 1,
         displayName = "silver rasbora",
         isHeroMultiLine = false,
-        colorRole = 3,
-        baseSpeedColsPerSec = 8.0f,
+        primaryRole = 3,
+        finAccentRole = 1,
+        baseSpeedColsPerSec = 7.2f,
         rightFrameA = arrayOf(">~))'>"),
         rightFrameB = arrayOf("}~))'>"),
         leftFrameA  = arrayOf("<'((~<"),
-        leftFrameB  = arrayOf("<'((~{")
+        leftFrameB  = arrayOf("<'((~{"),
+        turnFrame   = arrayOf(" <'> ")
     ),
     CLOWNFISH(
         id = 2,
         displayName = "clownfish",
         isHeroMultiLine = true,
-        colorRole = 0,
-        baseSpeedColsPerSec = 5.2f,
+        primaryRole = 0,
+        finAccentRole = 3,
+        baseSpeedColsPerSec = 4.6f,
         rightFrameA = arrayOf(
             "   _._   ",
             "><)|)|°> ",
@@ -73,14 +80,20 @@ enum class AsciiFishSpecies(
             "   _._   ",
             " <°|(|<{ ",
             "   '-'   "
+        ),
+        turnFrame = arrayOf(
+            "  _._  ",
+            " <|º|> ",
+            "  '-'  "
         )
     ),
     BLUE_TANG(
         id = 3,
         displayName = "regal tang",
         isHeroMultiLine = true,
-        colorRole = 1,
-        baseSpeedColsPerSec = 5.6f,
+        primaryRole = 1,
+        finAccentRole = 2,
+        baseSpeedColsPerSec = 5.0f,
         rightFrameA = arrayOf(
             "   .--.  ",
             ">==)))°> ",
@@ -100,14 +113,20 @@ enum class AsciiFishSpecies(
             "  .--.   ",
             " <°(((=={",
             "  '--'   "
+        ),
+        turnFrame = arrayOf(
+            "  .-.  ",
+            " (|º|) ",
+            "  '-'  "
         )
     ),
     GOLD_OGON(
         id = 4,
         displayName = "yamabuki ogon",
         isHeroMultiLine = true,
-        colorRole = 2,
-        baseSpeedColsPerSec = 4.8f,
+        primaryRole = 2,
+        finAccentRole = 3,
+        baseSpeedColsPerSec = 4.2f,
         rightFrameA = arrayOf(
             "   _.._   ",
             "><((((º>  ",
@@ -127,14 +146,20 @@ enum class AsciiFishSpecies(
             "   _.._   ",
             "  <º))))<{",
             "   '--'   "
+        ),
+        turnFrame = arrayOf(
+            "  _._  ",
+            " <(º)> ",
+            "  '-'  "
         )
     ),
     MANDARIN(
         id = 5,
         displayName = "mandarin dragonet",
         isHeroMultiLine = true,
-        colorRole = 4,
-        baseSpeedColsPerSec = 4.9f,
+        primaryRole = 4,
+        finAccentRole = 1,
+        baseSpeedColsPerSec = 4.4f,
         rightFrameA = arrayOf(
             "   /\\_   ",
             ">~{#))°> ",
@@ -154,14 +179,20 @@ enum class AsciiFishSpecies(
             "   _/\\   ",
             " <°((#~{ ",
             "    \\/   "
+        ),
+        turnFrame = arrayOf(
+            "  /\\  ",
+            " {º#} ",
+            "  \\/  "
         )
     ),
     KOHAKU_KOI(
         id = 6,
         displayName = "kohaku koi",
         isHeroMultiLine = true,
-        colorRole = 0,
-        baseSpeedColsPerSec = 4.5f,
+        primaryRole = 3,
+        finAccentRole = 0,
+        baseSpeedColsPerSec = 4.0f,
         rightFrameA = arrayOf(
             "   _.--._  ",
             "><((({(º>  ",
@@ -181,14 +212,20 @@ enum class AsciiFishSpecies(
             "  _.--._   ",
             "  <º)})))<{",
             "  '-..-'   "
+        ),
+        turnFrame = arrayOf(
+            "  _.--._  ",
+            " <((º))>  ",
+            "  '-..-'  "
         )
     ),
     MOORISH_IDOL(
         id = 7,
         displayName = "moorish idol",
         isHeroMultiLine = true,
-        colorRole = 2,
-        baseSpeedColsPerSec = 4.7f,
+        primaryRole = 2,
+        finAccentRole = 3,
+        baseSpeedColsPerSec = 4.3f,
         rightFrameA = arrayOf(
             "    /|   ",
             " >|#|°>  ",
@@ -208,14 +245,20 @@ enum class AsciiFishSpecies(
             "   (\\    ",
             "  <°|#|{ ",
             "   (/    "
+        ),
+        turnFrame = arrayOf(
+            "   ||   ",
+            "  |º#|  ",
+            "   ||   "
         )
     ),
     VEIL_BETTA(
         id = 8,
         displayName = "royal betta",
         isHeroMultiLine = true,
-        colorRole = 4,
-        baseSpeedColsPerSec = 4.2f,
+        primaryRole = 4,
+        finAccentRole = 2,
+        baseSpeedColsPerSec = 3.8f,
         rightFrameA = arrayOf(
             "  ~-\\_   ",
             ">))))º>  ",
@@ -235,6 +278,11 @@ enum class AsciiFishSpecies(
             "   _/~   ",
             "  <º(((({",
             "    \\~   "
+        ),
+        turnFrame = arrayOf(
+            "  ~\\/~  ",
+            "  (º)   ",
+            "  ~/\\~  "
         )
     );
 
@@ -244,10 +292,6 @@ enum class AsciiFishSpecies(
     }
 }
 
-/**
- * 4 Sleek Aquatic Predator Species (Barracuda, Reef Shark, Swordfish, Moray Eel)
- * that enter the water column and actively chase prey fish while the prey scatter and juke!
- */
 enum class PredatorSpecies(
     val id: Int,
     val displayName: String,
@@ -260,7 +304,7 @@ enum class PredatorSpecies(
     BARRACUDA_PIKE(
         id = 0,
         displayName = "barracuda",
-        speedColsPerSec = 11.2f,
+        speedColsPerSec = 10.5f,
         rightFrameA = arrayOf(
             "    _.._     ",
             "><(((===º<   ",
@@ -285,7 +329,7 @@ enum class PredatorSpecies(
     REEF_SHARK(
         id = 1,
         displayName = "reef shark",
-        speedColsPerSec = 10.6f,
+        speedColsPerSec = 10.0f,
         rightFrameA = arrayOf(
             "     /|___   ",
             "><)))º>==<   ",
@@ -310,7 +354,7 @@ enum class PredatorSpecies(
     SWORDFISH(
         id = 2,
         displayName = "marlin swordfish",
-        speedColsPerSec = 12.0f,
+        speedColsPerSec = 11.4f,
         rightFrameA = arrayOf(
             "    /|__      ",
             "><(((º>====-- ",
@@ -335,7 +379,7 @@ enum class PredatorSpecies(
     ELECTRIC_MORAY(
         id = 3,
         displayName = "moray eel",
-        speedColsPerSec = 9.5f,
+        speedColsPerSec = 9.0f,
         rightFrameA = arrayOf(
             " ~^~^~==º< "
         ),
@@ -351,9 +395,6 @@ enum class PredatorSpecies(
     )
 }
 
-/**
- * 4 Bottom-Feeder Critters patrolling the river cobbles along the floor.
- */
 enum class BottomFeederSpecies(
     val id: Int,
     val displayName: String,
@@ -367,7 +408,7 @@ enum class BottomFeederSpecies(
     RIVER_CRAB(
         id = 0,
         displayName = "river crab",
-        speedColsPerSec = 2.4f,
+        speedColsPerSec = 2.0f,
         colorRole = 0,
         rightFrameA = "(\\/)(°_°)(\\/)",
         rightFrameB = "(/)(°_°)(\\)",
@@ -377,7 +418,7 @@ enum class BottomFeederSpecies(
     CHERRY_SHRIMP(
         id = 1,
         displayName = "cherry shrimp",
-        speedColsPerSec = 3.2f,
+        speedColsPerSec = 2.8f,
         colorRole = 4,
         rightFrameA = ",=/>°",
         rightFrameB = ".=/>°",
@@ -387,7 +428,7 @@ enum class BottomFeederSpecies(
     CORY_CATFISH(
         id = 2,
         displayName = "cory catfish",
-        speedColsPerSec = 2.8f,
+        speedColsPerSec = 2.4f,
         colorRole = 2,
         rightFrameA = ">))º>=",
         rightFrameB = "}))º>~",
@@ -397,7 +438,7 @@ enum class BottomFeederSpecies(
     APPLE_SNAIL(
         id = 3,
         displayName = "golden snail",
-        speedColsPerSec = 0.9f,
+        speedColsPerSec = 0.8f,
         colorRole = 2,
         rightFrameA = "@_/",
         rightFrameB = "@_'",
@@ -406,20 +447,52 @@ enum class BottomFeederSpecies(
     )
 }
 
+/**
+ * Sunken riverbed landmark randomized on each phone unlock.
+ */
+enum class SunkenLandmark(
+    val displayName: String,
+    val lines: Array<String>
+) {
+    STONE_LANTERN(
+        "stone lantern",
+        arrayOf(
+            " .^. ",
+            " [o] ",
+            " /_\\ "
+        )
+    ),
+    MOSS_DRIFTWOOD(
+        "moss driftwood",
+        arrayOf(
+            "  _~..~_  ",
+            " ===~==~_ "
+        )
+    ),
+    GIANT_CLAM(
+        "pearl clam",
+        arrayOf(
+            " (\\o/) ",
+            "  '-'  "
+        )
+    )
+}
+
 class AsciiFishAgent(
     val id: Int,
+    var depthLayer: Int,     // 0 = Background (dimmed, 0.65x speed), 1 = Midground, 2 = Foreground
     var isSchooler: Boolean,
     var species: AsciiFishSpecies,
-    var colFrac: Float,      // Normalized [0.05..0.95] so resizing grid never bunches fish
-    var depthFrac: Float,    // Normalized underwater depth [0.06..0.92]
-    var colX: Float,
-    var rowY: Float,
+    var colFrac: Float,
     var preferredDepthFrac: Float,
-    var vxDir: Float,        // +1f = right, -1f = left
-    var vySpeed: Float,
+    var colX: Float,         // Continuous floating-point column coordinate
+    var rowY: Float,         // Continuous floating-point row coordinate
+    var vx: Float,           // Continuous horizontal velocity (cols/sec)
+    var vy: Float,           // Continuous vertical velocity (rows/sec)
+    var facingDir: Int,      // +1 = facing right, -1 = facing left
+    var turnTimer: Float,    // > 0f while displaying the head-on turning sprite `<(º)>`
     var speedScale: Float,
     var animPhase: Float,
-    var evadeBoost: Float = 0f,
     var isEvading: Boolean = false
 )
 
@@ -444,6 +517,26 @@ class BottomFeederAgent(
     var pauseTimer: Float = 0f
 )
 
+class NightJellyfish(
+    var colX: Float,
+    var rowY: Float,
+    var phase: Float
+)
+
+class SurfaceInsect(
+    var colX: Float = 20f,
+    var rowY: Float = 10f,
+    var vx: Float = 3.5f,
+    var phase: Float = 0f
+)
+
+class SkyWeatherDrop(
+    var colX: Float = 0f,
+    var rowY: Float = 0f,
+    var speedY: Float = 18f,
+    var speedX: Float = -3f
+)
+
 class AsciiBubble(
     var colX: Float = 0f,
     var rowY: Float = 0f,
@@ -452,15 +545,15 @@ class AsciiBubble(
     var phase: Float = 0f
 )
 
-/**
- * Subtle sinking food pellets spawned when tapping the water (replaces noisy touch ripple rings).
- */
 class FoodPellet(
     var colX: Float = 0f,
     var rowY: Float = 0f,
     var active: Boolean = false
 )
 
+/**
+ * Silky-Smooth Sub-Pixel Character Renderer + Full Split-View Ecosystem Simulation.
+ */
 class PondSimulation {
 
     val maxHeroFish = 9
@@ -468,18 +561,22 @@ class PondSimulation {
     val totalMaxFish = maxHeroFish + maxSchoolFish
 
     val fish = Array(totalMaxFish) { idx ->
-        val dFrac = (idx + 0.5f) / totalMaxFish.toFloat()
+        val dFrac = 0.08f + ((idx + 0.5f) / totalMaxFish.toFloat()) * 0.82f
+        val isSchool = idx >= maxHeroFish
+        val dir = if (idx % 2 == 0) 1 else -1
         AsciiFishAgent(
             id = idx,
-            isSchooler = idx >= maxHeroFish,
+            depthLayer = if (isSchool) 0 else if (idx % 2 == 0) 2 else 1,
+            isSchooler = isSchool,
             species = AsciiFishSpecies.entries[idx % AsciiFishSpecies.entries.size],
-            colFrac = ((idx * 37) % 100) / 100f,
-            depthFrac = dFrac,
-            colX = 10f,
-            rowY = 20f + idx * 4f,
+            colFrac = ((idx * 37 + 13) % 86 + 7) / 100f,
             preferredDepthFrac = dFrac,
-            vxDir = if (idx % 2 == 0) 1f else -1f,
-            vySpeed = 0.35f,
+            colX = 12f + idx * 4f,
+            rowY = 24f + idx * 5f,
+            vx = dir * 4.5f,
+            vy = 0f,
+            facingDir = dir,
+            turnTimer = 0f,
             speedScale = 1.0f,
             animPhase = idx * 1.3f
         )
@@ -495,6 +592,24 @@ class PondSimulation {
             colX = 6f + idx * 14f,
             vxDir = if (idx % 2 == 0) 1f else -1f,
             animPhase = idx * 1.7f
+        )
+    }
+
+    val nightJellies = arrayOf(
+        NightJellyfish(18f, 45f, 0.0f),
+        NightJellyfish(58f, 68f, 2.4f)
+    )
+
+    val surfaceInsect = SurfaceInsect()
+    var activeLandmark = SunkenLandmark.STONE_LANTERN
+    var landmarkColFrac = 0.48f
+
+    val weatherDrops = Array(28) { idx ->
+        SkyWeatherDrop(
+            colX = (idx * 13 % 80).toFloat(),
+            rowY = (idx * 7 % 40).toFloat(),
+            speedY = 22f + (idx % 4) * 3f,
+            speedX = -4.5f
         )
     }
 
@@ -522,18 +637,19 @@ class PondSimulation {
     var waterlineRow = 58
         private set
 
-    // Pre-allocated 2D character & color buffers supporting up to 112 cols x 240 rows (zero GC)
+    // Static background grid (for sky, waterline, sunbeams, pebbles)
     private val maxCols = 112
     private val maxRows = 240
     private val charGrid = CharArray(maxCols * maxRows) { ' ' }
     private val colorGrid = IntArray(maxCols * maxRows)
-    private val fishOccupiedGrid = BooleanArray(maxCols * maxRows)
     private val rowCharScratch = CharArray(maxCols)
+    private val singleCharBuf = CharArray(1)
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.MONOSPACE
         fontFeatureSettings = "liga 0, calt 0"
         textAlign = Paint.Align.LEFT
+        isSubpixelText = true
     }
     private val bgPaint = Paint()
 
@@ -546,6 +662,15 @@ class PondSimulation {
 
     init {
         randomizeEcosystemOnUnlock(System.nanoTime())
+    }
+
+    fun loadBundledFont(context: Context) {
+        try {
+            val tf = ResourcesCompat.getFont(context, R.font.jetbrains_mono_regular)
+            if (tf != null) {
+                textPaint.typeface = tf
+            }
+        } catch (_: Throwable) {}
     }
 
     fun configureGrid(widthPx: Int, heightPx: Int, density: GridDensity) {
@@ -565,21 +690,17 @@ class PondSimulation {
         gridRows = (heightPx / cellHeightPx).toInt().coerceIn(60, maxRows - 2)
         waterlineRow = (gridRows * 0.36f).roundToInt().coerceIn(18, gridRows - 30)
 
-        // Map normalized fish coordinates into the newly sized grid so they are immediately spread out
-        val minR = waterlineRow + 4
+        val minR = waterlineRow + 5
         val maxR = gridRows - 8
         val spanR = (maxR - minR).coerceAtLeast(16)
         for (i in 0 until totalMaxFish) {
             val f = fish[i]
-            f.colX = (f.colFrac * (gridCols - 14)).coerceIn(2f, (gridCols - 12).toFloat())
+            val sw = f.species.rightFrameA[0].length
+            f.colX = (f.colFrac * (gridCols - sw - 4) + 2f).coerceIn(2f, (gridCols - sw - 2).toFloat())
             f.rowY = minR + f.preferredDepthFrac * spanR
         }
     }
 
-    /**
-     * Randomizes the fish species mix, bottom feeders, and stratified vertical lanes
-     * every time the user unlocks their phone.
-     */
     fun randomizeEcosystemOnUnlock(seed: Long = System.nanoTime()) {
         unlockSeedCounter++
         val rand = Random(seed xor (unlockSeedCounter * 0x9E3779B97F4A7C15UL.toLong()))
@@ -593,15 +714,19 @@ class PondSimulation {
         val schoolSp = AsciiFishSpecies.schoolPool[rand.nextInt(AsciiFishSpecies.schoolPool.size)]
 
         activeSpeciesSummary = "${h1.displayName}, ${h2.displayName}, ${schoolSp.displayName}"
+        activeLandmark = SunkenLandmark.entries[rand.nextInt(SunkenLandmark.entries.size)]
+        landmarkColFrac = 0.28f + rand.nextFloat() * 0.44f
 
-        val minR = waterlineRow + 4
+        val minR = waterlineRow + 5
         val maxR = (gridRows - 8).coerceAtLeast(minR + 20)
         val spanR = (maxR - minR).toFloat()
 
+        // Create a shuffled order of vertical lanes so hero & school fish interleave cleanly
         for (i in 0 until totalMaxFish) {
             val f = fish[i]
             val isSchool = i >= maxHeroFish
             f.isSchooler = isSchool
+            f.depthLayer = if (isSchool) (if (i % 2 == 0) 0 else 1) else (if (i % 3 == 0) 1 else 2)
             f.species = if (isSchool) {
                 schoolSp
             } else {
@@ -611,26 +736,28 @@ class PondSimulation {
                     else -> h3
                 }
             }
-            // Evenly distribute preferred depth lanes from shallow water (0.06) to deep water (0.92)
-            val laneFrac = 0.06f + ((i.toFloat() + rand.nextFloat() * 0.45f) / totalMaxFish.toFloat()) * 0.86f
+            // Dedicated non-overlapping vertical lane per fish
+            val laneFrac = 0.06f + ((i.toFloat() + 0.5f) / totalMaxFish.toFloat()) * 0.86f
             f.preferredDepthFrac = laneFrac.coerceIn(0.06f, 0.92f)
-            f.depthFrac = f.preferredDepthFrac
-            f.colFrac = 0.08f + rand.nextFloat() * 0.82f
+            f.colFrac = 0.10f + ((i * 29 + rand.nextInt(17)) % 78) / 100f
 
-            f.colX = f.colFrac * (gridCols - 12).coerceAtLeast(20)
+            val sw = f.species.rightFrameA[0].length
+            f.colX = (f.colFrac * (gridCols - sw - 4) + 2f).coerceIn(2f, (gridCols - sw - 2).toFloat())
             f.rowY = minR + f.preferredDepthFrac * spanR
-            f.vxDir = if (i % 2 == 0) 1f else -1f
-            f.vySpeed = (rand.nextFloat() - 0.5f) * 0.8f
-            f.speedScale = 0.85f + rand.nextFloat() * 0.30f
+            val dir = if (i % 2 == 0) 1 else -1
+            f.facingDir = dir
+            f.speedScale = (if (f.depthLayer == 0) 0.68f else 0.92f) + rand.nextFloat() * 0.22f
+            f.vx = dir * f.species.baseSpeedColsPerSec * f.speedScale
+            f.vy = 0f
+            f.turnTimer = 0f
             f.animPhase = rand.nextFloat() * 6.28f
-            f.evadeBoost = 0f
             f.isEvading = false
         }
 
         for (b in 0 until maxBottomFeeders) {
             val bf = bottomFeeders[b]
             bf.species = BottomFeederSpecies.entries[rand.nextInt(BottomFeederSpecies.entries.size)]
-            bf.colX = 4f + b * ((gridCols - 12).coerceAtLeast(25) / maxBottomFeeders.toFloat())
+            bf.colX = 4f + b * ((gridCols - 14).coerceAtLeast(25) / maxBottomFeeders.toFloat())
             bf.vxDir = if (rand.nextBoolean()) 1f else -1f
             bf.pauseTimer = 0f
         }
@@ -656,10 +783,6 @@ class PondSimulation {
         predator.vySpeed = 0f
     }
 
-    /**
-     * Tapping drops tiny sinking food pellets (`.`) if tapped near/below the water,
-     * with no expanding ripple rings.
-     */
     fun onTouch(screenX: Float, screenY: Float) {
         val c = (screenX / cellWidthPx).coerceIn(2f, (gridCols - 3).toFloat())
         val r = (screenY / cellHeightPx).coerceIn(2f, (gridRows - 4).toFloat())
@@ -680,16 +803,16 @@ class PondSimulation {
         isBatterySaver: Boolean,
         isWallpaperMode: Boolean
     ) {
-        val clampedDt = dt.coerceIn(0.001f, 0.08f)
+        val clampedDt = dt.coerceIn(0.001f, 0.05f)
         simTime += clampedDt
 
-        val snapshot = TimeOfDayPalette.resolve(config.timeCycleMode)
+        val snapshot = TimeOfDayPalette.resolve(config.timeCycleMode, config.paletteFamily)
         val pal = snapshot.colors
 
         val cols = gridCols
         val rows = gridRows
-        val pShiftCols = (parallaxX * 8f).roundToInt()
-        val pShiftRows = (parallaxY * 3f).roundToInt()
+        val pShiftCols = (parallaxX * 6f)
+        val pShiftRows = (parallaxY * 2f).roundToInt()
         val splitRow = (waterlineRow + pShiftRows).coerceIn(14, rows - 24)
 
         val topCalmRow = if (isWallpaperMode) (rows * 0.12f).toInt() else 0
@@ -717,7 +840,6 @@ class PondSimulation {
         for (i in 0 until totalCells) {
             charGrid[i] = ' '
             colorGrid[i] = pal.cloudReedFg
-            fishOccupiedGrid[i] = false
         }
 
         fun setCell(c: Int, r: Int, ch: Char, color: Int) {
@@ -728,7 +850,7 @@ class PondSimulation {
             }
         }
 
-        fun drawStringAt(c: Int, r: Int, text: String, color: Int) {
+        fun drawStringAtGrid(c: Int, r: Int, text: String, color: Int) {
             if (r !in 0 until rows) return
             for (i in text.indices) {
                 val ch = text[i]
@@ -739,46 +861,99 @@ class PondSimulation {
         }
 
         // =========================================================================
-        // 2. OVER-WATER SKY (Rows 0 .. splitRow - 1): Sun/Moon, Stars, Clouds, Reeds
+        // 2. OVER-WATER SKY: Sun / Real Lunar Phase Moon, Stars, Clouds, Weather
         // =========================================================================
-        val celestialCol = ((snapshot.sunArcX * (cols - 12)).roundToInt() + 6 + pShiftCols).coerceIn(5, cols - 7)
+        val pShiftInt = pShiftCols.roundToInt()
+        val celestialCol = ((snapshot.sunArcX * (cols - 12)).roundToInt() + 6 + pShiftInt).coerceIn(5, cols - 7)
         val skyHeight = (splitRow - 5).coerceAtLeast(6)
         val celestialRow = ((1f - snapshot.sunArcY) * (skyHeight - 4) + 3).roundToInt().coerceIn(3, splitRow - 5)
 
         if (snapshot.isNight) {
             for (s in 0 until 20) {
-                val sc = ((s * 17 + 7 + pShiftCols) % (cols - 2)).coerceAtLeast(1)
+                val sc = ((s * 17 + 7 + pShiftInt) % (cols - 2)).coerceAtLeast(1)
                 val sr = ((s * 9 + 3) % (splitRow - 4)).coerceAtLeast(1)
                 val twinkle = sin(simTime * 2.2f + s * 1.7f)
                 val starChar = if (twinkle > 0.35f) '*' else '.'
                 setCell(sc, sr, starChar, pal.celestialGlyph)
             }
-            drawStringAt(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
-            drawStringAt(celestialCol - 2, celestialRow,     "( (   ", pal.celestialGlyph)
-            drawStringAt(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
+            // Astronomical Lunar Phase rendering
+            when (snapshot.lunarPhaseIndex) {
+                0 -> { // Waxing Crescent
+                    drawStringAtGrid(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
+                    drawStringAtGrid(celestialCol - 2, celestialRow,     "   ) )", pal.celestialGlyph)
+                    drawStringAtGrid(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
+                }
+                1 -> { // First Quarter Half Moon
+                    drawStringAtGrid(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
+                    drawStringAtGrid(celestialCol - 2, celestialRow,     "  | ) ", pal.celestialGlyph)
+                    drawStringAtGrid(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
+                }
+                2 -> { // Full Moon
+                    drawStringAtGrid(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
+                    drawStringAtGrid(celestialCol - 2, celestialRow,     " (  ) ", pal.celestialGlyph)
+                    drawStringAtGrid(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
+                }
+                else -> { // Waning Crescent
+                    drawStringAtGrid(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
+                    drawStringAtGrid(celestialCol - 2, celestialRow,     "( (   ", pal.celestialGlyph)
+                    drawStringAtGrid(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
+                }
+            }
         } else {
             val rayPulse = ((simTime * 1.5f).toInt() % 2 == 0)
             if (rayPulse) {
-                drawStringAt(celestialCol - 3, celestialRow - 1, " \\ | / ", pal.celestialGlyph)
-                drawStringAt(celestialCol - 3, celestialRow,     "--(O)--", pal.celestialGlyph)
-                drawStringAt(celestialCol - 3, celestialRow + 1, " / | \\ ", pal.celestialGlyph)
+                drawStringAtGrid(celestialCol - 3, celestialRow - 1, " \\ | / ", pal.celestialGlyph)
+                drawStringAtGrid(celestialCol - 3, celestialRow,     "--(O)--", pal.celestialGlyph)
+                drawStringAtGrid(celestialCol - 3, celestialRow + 1, " / | \\ ", pal.celestialGlyph)
             } else {
-                drawStringAt(celestialCol - 3, celestialRow - 1, "  \\|/  ", pal.celestialGlyph)
-                drawStringAt(celestialCol - 3, celestialRow,     " -(o)- ", pal.celestialGlyph)
-                drawStringAt(celestialCol - 3, celestialRow + 1, "  /|\\  ", pal.celestialGlyph)
+                drawStringAtGrid(celestialCol - 3, celestialRow - 1, "  \\|/  ", pal.celestialGlyph)
+                drawStringAtGrid(celestialCol - 3, celestialRow,     " -(o)- ", pal.celestialGlyph)
+                drawStringAtGrid(celestialCol - 3, celestialRow + 1, "  /|\\  ", pal.celestialGlyph)
             }
         }
 
-        val cloud1Col = ((simTime * 0.9f + 8f + pShiftCols).toInt() % (cols + 14)) - 10
+        val cloud1Col = ((simTime * 0.9f + 8f + pShiftInt).toInt() % (cols + 14)) - 10
         val cloud1Row = (splitRow * 0.32f).toInt().coerceIn(2, splitRow - 4)
-        drawStringAt(cloud1Col, cloud1Row,     "  .--.   ", pal.cloudReedFg)
-        drawStringAt(cloud1Col, cloud1Row + 1, "-(    )-.", pal.cloudReedFg)
+        drawStringAtGrid(cloud1Col, cloud1Row,     "  .--.   ", pal.cloudReedFg)
+        drawStringAtGrid(cloud1Col, cloud1Row + 1, "-(    )-.", pal.cloudReedFg)
 
-        val cloud2Col = (((simTime * 0.55f + cols * 0.58f + pShiftCols).toInt()) % (cols + 14)) - 10
+        val cloud2Col = (((simTime * 0.55f + cols * 0.58f + pShiftInt).toInt()) % (cols + 14)) - 10
         val cloud2Row = (splitRow * 0.54f).toInt().coerceIn(3, splitRow - 3)
-        drawStringAt(cloud2Col, cloud2Row, " .-(   )-.", pal.cloudReedFg)
+        drawStringAtGrid(cloud2Col, cloud2Row, " .-(   )-.", pal.cloudReedFg)
 
-        // Minimal, clean shoreline reeds at far left & right edges above the waterline
+        // Weather in the sky half (Clear / Rain / Snow / Auto)
+        val effectiveWeather = when (config.weatherMode) {
+            WeatherMode.AUTO -> {
+                // Occasional gentle rain shower for 45 seconds every ~6 minutes
+                if (((simTime / 45f).toInt() % 8) == 3) WeatherMode.RAIN else WeatherMode.CLEAR
+            }
+            else -> config.weatherMode
+        }
+
+        if (effectiveWeather == WeatherMode.RAIN || effectiveWeather == WeatherMode.SNOW) {
+            val isSnow = effectiveWeather == WeatherMode.SNOW
+            val dropCount = if (isBatterySaver) 12 else weatherDrops.size
+            for (dIdx in 0 until dropCount) {
+                val drop = weatherDrops[dIdx]
+                val spdY = if (isSnow) 5.5f else drop.speedY
+                val spdX = if (isSnow) sin(simTime * 1.4f + dIdx) * 1.8f else drop.speedX
+                drop.rowY += spdY * clampedDt
+                drop.colX = (drop.colX + spdX * clampedDt + cols) % cols
+
+                if (drop.rowY >= splitRow) {
+                    // Tiny surface splash `^` where rain hits the meniscus!
+                    if (!isSnow) {
+                        setCell(drop.colX.roundToInt(), splitRow - 1, '^', pal.meniscusWaveFg)
+                    }
+                    drop.rowY = 1f
+                    drop.colX = ((dIdx * 19 + (simTime * 13f).toInt()) % cols).toFloat()
+                } else {
+                    val ch = if (isSnow) (if (dIdx % 2 == 0) '*' else '.') else (if (dIdx % 2 == 0) '/' else ''')
+                    setCell(drop.colX.roundToInt(), drop.rowY.roundToInt(), ch, pal.bubbleFg)
+                }
+            }
+        }
+
         val swayLeft = sin(simTime * 1.4f) > 0f
         for (c in 0 until cols) {
             if (c in 2..6 || c in (cols - 7)..(cols - 3)) {
@@ -789,7 +964,7 @@ class PondSimulation {
         }
 
         // =========================================================================
-        // 3. WATERLINE MENISCUS & LILY PADS / LOTUS (Row = splitRow)
+        // 3. WATERLINE MENISCUS, LILY PADS, LOTUS & SINKING LANDMARK
         // =========================================================================
         val wavePhase = (simTime * 3.0f).toInt()
         val wavePattern = "~^~._."
@@ -798,16 +973,14 @@ class PondSimulation {
             setCell(c, splitRow, ch, pal.meniscusWaveFg)
         }
 
-        val pad1Col = (cols * 0.24f + sin(simTime * 0.6f) * 1.5f + pShiftCols).roundToInt()
-        drawStringAt(pad1Col, splitRow, "[_v_]", pal.lilyPadFg)
-        drawStringAt(pad1Col + 1, splitRow - 1, "(*)", pal.lotusFlowerFg)
+        val pad1Col = (cols * 0.24f + sin(simTime * 0.6f) * 1.5f + pShiftInt).roundToInt()
+        drawStringAtGrid(pad1Col, splitRow, "[_v_]", pal.lilyPadFg)
+        drawStringAtGrid(pad1Col + 1, splitRow - 1, "(*)", pal.lotusFlowerFg)
 
-        val pad2Col = (cols * 0.72f + cos(simTime * 0.5f) * 1.5f + pShiftCols).roundToInt()
-        drawStringAt(pad2Col, splitRow, "[_v_]", pal.lilyPadFg)
+        val pad2Col = (cols * 0.72f + cos(simTime * 0.5f) * 1.5f + pShiftInt).roundToInt()
+        drawStringAtGrid(pad2Col, splitRow, "[_v_]", pal.lilyPadFg)
 
-        // =========================================================================
-        // 4. SUBTLE UNDERWATER SUNBEAMS & CLEAN RIVERBED PEBBLES (Zero Noisy Kelp!)
-        // =========================================================================
+        // Subtle underwater diagonal sunbeams
         if (!snapshot.isNight && config.waterClarity > 0.5f) {
             val rayCount = if (config.waterClarity > 0.78f) 3 else 2
             for (rayIdx in 0 until rayCount) {
@@ -823,374 +996,32 @@ class PondSimulation {
             }
         }
 
+        // Riverbed pebbles + Sunken Landmark (Stone Lantern, Moss Driftwood, or Giant Clam)
         val pebblePattern = "..ooO.._.oOo._..ooO.._."
         for (c in 0 until cols) {
-            val pCh = pebblePattern[(c - pShiftCols).mod(pebblePattern.length)]
+            val pCh = pebblePattern[(c - pShiftInt).mod(pebblePattern.length)]
             setCell(c, floorRow, pCh, pal.pebbleFg)
             setCell(c, subFloorRow, '~', pal.cloudReedFg)
         }
 
-        // =========================================================================
-        // 5. BOTTOM-FEEDER CRITTERS (Crab, Cherry Shrimp, Cory Catfish, Golden Snail)
-        // =========================================================================
-        if (config.enableBottomFeeders) {
-            val activeFeeders = if (isBatterySaver) 2 else maxBottomFeeders
-            val critterRow = floorRow - 1
-            for (b in 0 until activeFeeders) {
-                val bf = bottomFeeders[b]
-                if (bf.pauseTimer > 0f) {
-                    bf.pauseTimer -= clampedDt
-                } else {
-                    bf.colX += bf.vxDir * bf.species.speedColsPerSec * clampedDt
-                    bf.animPhase += clampedDt * 5.0f
-                    if (sin(simTime * 2.1f + bf.id * 3.7f) > 0.96f) {
-                        bf.pauseTimer = 0.8f
-                    }
-                }
-
-                val spriteLen = bf.species.rightFrameA.length
-                if (bf.vxDir > 0f && bf.colX > cols - spriteLen - 2) {
-                    bf.vxDir = -1f
-                } else if (bf.vxDir < 0f && bf.colX < 2f) {
-                    bf.vxDir = 1f
-                }
-
-                for (otherIdx in 0 until b) {
-                    val other = bottomFeeders[otherIdx]
-                    val dx = bf.colX - other.colX
-                    val minSep = (spriteLen + other.species.rightFrameA.length) * 0.65f + 3f
-                    if (abs(dx) < minSep) {
-                        val push = if (dx >= 0f) 1f else -1f
-                        bf.colX = (other.colX + push * minSep).coerceIn(1f, (cols - spriteLen - 1).toFloat())
-                        bf.vxDir = push
-                    }
-                }
-
-                val frameB = sin(bf.animPhase) > 0f
-                val sprite = if (bf.vxDir >= 0f) {
-                    if (frameB) bf.species.rightFrameB else bf.species.rightFrameA
-                } else {
-                    if (frameB) bf.species.leftFrameB else bf.species.leftFrameA
-                }
-
-                val bfColor = when (bf.species.colorRole) {
-                    0 -> pal.fishCoral
-                    1 -> pal.fishAqua
-                    2 -> pal.fishGold
-                    3 -> pal.fishFoam
-                    else -> pal.fishRose
-                }
-                drawStringAt((bf.colX + pShiftCols * 0.3f).roundToInt(), critterRow, sprite, bfColor)
+        val lmCol = (landmarkColFrac * (cols - 12) + 4 + pShiftInt * 0.3f).roundToInt()
+        val lmLines = activeLandmark.lines
+        for (idx in lmLines.indices) {
+            val lr = floorRow - lmLines.size + idx
+            val lmColor = if (activeLandmark == SunkenLandmark.STONE_LANTERN && idx == 1 && snapshot.isNight) {
+                pal.fishGold // Glowing stone lantern at night!
+            } else {
+                pal.pebbleFg
             }
+            drawStringAtGrid(lmCol, lr, lmLines[idx], lmColor)
         }
 
         // =========================================================================
-        // 6. RANDOM PREDATOR VISITS (Barracuda, Reef Shark, Swordfish, Moray Eel)
+        // 4. RISING BUBBLES & SINKING FOOD PELLETS
         // =========================================================================
-        val minFishRow = (splitRow + 4).coerceAtMost(rows - 14)
-        val maxFishRow = (floorRow - 5).coerceAtLeast(minFishRow + 10)
-        val underwaterSpan = (maxFishRow - minFishRow).toFloat().coerceAtLeast(10f)
-
         val activeHero = if (isBatterySaver) (config.heroFishCount - 2).coerceAtLeast(2) else config.heroFishCount
         val activeSchool = if (isBatterySaver) 2 else maxSchoolFish
 
-        if (config.enablePredators) {
-            if (!predator.active) {
-                predator.cooldownTimer -= clampedDt
-                if (predator.cooldownTimer <= 0f) {
-                    triggerPredatorVisit((simTime * 1000f).toLong())
-                }
-            } else {
-                predator.activeDuration += clampedDt
-                predator.animPhase += clampedDt * 7.0f
-
-                // Actively lock onto the nearest fish in front of the predator and pursue it in 2D!
-                var targetY = predator.rowY
-                var minDist = 999f
-                for (i in 0 until totalMaxFish) {
-                    val f = fish[i]
-                    if (!f.isSchooler && i >= activeHero) continue
-                    if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
-
-                    val ahead = (f.colX - predator.colX) * predator.vxDir
-                    if (ahead > -6f) {
-                        val d = hypot(f.colX - predator.colX, (f.rowY - predator.rowY) * 1.4f)
-                        if (d < minDist) {
-                            minDist = d
-                            targetY = f.rowY
-                        }
-                    }
-                }
-                val dy = (targetY - predator.rowY).coerceIn(-4.5f, 4.5f)
-                predator.colX += predator.vxDir * predator.species.speedColsPerSec * clampedDt
-                predator.rowY = (predator.rowY + dy * 1.8f * clampedDt)
-                    .coerceIn(minFishRow.toFloat(), maxFishRow.toFloat())
-
-                if ((predator.vxDir > 0f && predator.colX > cols + 8) ||
-                    (predator.vxDir < 0f && predator.colX < -20f) ||
-                    predator.activeDuration > 12f
-                ) {
-                    predator.active = false
-                    predator.cooldownTimer = 14f + (cos(simTime) * 0.5f + 0.5f) * 14f
-                }
-            }
-        } else {
-            predator.active = false
-        }
-
-        // =========================================================================
-        // 7. UPDATE PEACEFUL FISH (2D Predator Evasion Scatter + Stratified Lanes)
-        // =========================================================================
-        for (i in 0 until totalMaxFish) {
-            val f = fish[i]
-            if (!f.isSchooler && i >= activeHero) continue
-            if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
-
-            f.evadeBoost *= (1f - clampedDt * 2.5f).coerceAtLeast(0f)
-            f.isEvading = false
-
-            val targetLaneRow = minFishRow + f.preferredDepthFrac * underwaterSpan
-
-            if (predator.active) {
-                val pCenterX = predator.colX + 6f
-                val dx = f.colX - pCenterX
-                val dy = f.rowY - predator.rowY
-                val dist = hypot(dx, dy * 1.5f)
-                val threatRadius = 28f
-
-                if (dist < threatRadius) {
-                    // Dynamic 2D Evasion: Fish darts away radially + jukes vertically up or down!
-                    f.isEvading = true
-                    val urgency = (1f - dist / threatRadius).coerceIn(0.15f, 1f)
-                    f.evadeBoost = 8.5f * urgency
-                    f.vxDir = if (dx >= 0f) 1f else -1f
-
-                    // Vertical juke away from the predator's row (if exactly level, odd/even fish split up/down)
-                    val jukeSign = when {
-                        abs(dy) > 1.2f -> if (dy > 0f) 1f else -1f
-                        f.id % 2 == 0 -> -1f
-                        else -> 1f
-                    }
-                    f.vySpeed = jukeSign * (6.5f * urgency)
-                }
-            }
-
-            if (!f.isEvading) {
-                // Check if a sinking food pellet is nearby
-                var chasingPellet = false
-                for (pIdx in pellets.indices) {
-                    val pel = pellets[pIdx]
-                    if (pel.active) {
-                        val pdx = pel.colX - f.colX
-                        val pdy = pel.rowY - f.rowY
-                        val pDist = hypot(pdx, pdy)
-                        if (pDist < 18f) {
-                            chasingPellet = true
-                            f.vxDir = if (pdx >= 0f) 1f else -1f
-                            f.vySpeed = (pdy / pDist.coerceAtLeast(1f)) * 3.5f
-                            if (pDist < 2.2f) {
-                                pel.active = false // Nibbled the food pellet!
-                            }
-                            break
-                        }
-                    }
-                }
-
-                if (!chasingPellet) {
-                    // Gently cruise along assigned depth lane with natural vertical sine bobbing
-                    val lanePull = (targetLaneRow - f.rowY) * 1.1f
-                    val gentleBob = sin(simTime * 1.1f + f.id * 2.1f) * 0.9f
-                    f.vySpeed = lanePull + gentleBob
-                }
-            }
-
-            val spd = (f.species.baseSpeedColsPerSec * f.speedScale) + f.evadeBoost
-            f.colX += f.vxDir * spd * clampedDt
-            f.rowY += f.vySpeed * clampedDt
-            f.animPhase += clampedDt * (3.8f + f.evadeBoost * 0.9f)
-
-            val spriteWidth = f.species.rightFrameA[0].length
-            if (f.vxDir > 0f && f.colX > cols - spriteWidth - 1) {
-                f.vxDir = -1f
-            } else if (f.vxDir < 0f && f.colX < 1f) {
-                f.vxDir = 1f
-            }
-
-            f.rowY = f.rowY.coerceIn(minFishRow.toFloat(), maxFishRow.toFloat())
-            f.colFrac = (f.colX / cols.toFloat()).coerceIn(0.02f, 0.95f)
-        }
-
-        // =========================================================================
-        // 8. PAIRWISE BOUNDING-BOX SEPARATION SOLVER (Guarantees Zero Overlap)
-        // =========================================================================
-        for (pass in 0 until 4) {
-            for (i in 0 until totalMaxFish) {
-                val fi = fish[i]
-                if (!fi.isSchooler && i >= activeHero) continue
-                if (fi.isSchooler && (i - maxHeroFish) >= activeSchool) continue
-
-                val wi = fi.species.rightFrameA[0].length
-                val hi = fi.species.rightFrameA.size
-
-                for (j in i + 1 until totalMaxFish) {
-                    val fj = fish[j]
-                    if (!fj.isSchooler && j >= activeHero) continue
-                    if (fj.isSchooler && (j - maxHeroFish) >= activeSchool) continue
-
-                    val wj = fj.species.rightFrameA[0].length
-                    val hj = fj.species.rightFrameA.size
-
-                    val minSepX = (wi + wj) * 0.5f + 2.5f
-                    val minSepY = (hi + hj) * 0.5f + 1.4f
-
-                    val centerXi = fi.colX + wi * 0.5f
-                    val centerXj = fj.colX + wj * 0.5f
-                    val dx = centerXi - centerXj
-                    val dy = fi.rowY - fj.rowY
-
-                    if (abs(dx) < minSepX && abs(dy) < minSepY) {
-                        val overlapX = minSepX - abs(dx)
-                        val overlapY = minSepY - abs(dy)
-
-                        // Prefer vertical lane separation so fish swim smoothly above/below each other
-                        val pushY = (overlapY * 0.65f).coerceAtLeast(0.8f)
-                        if (dy >= 0f) {
-                            fi.rowY = (fi.rowY + pushY).coerceIn(minFishRow.toFloat(), maxFishRow.toFloat())
-                            fj.rowY = (fj.rowY - pushY).coerceIn(minFishRow.toFloat(), maxFishRow.toFloat())
-                        } else {
-                            fi.rowY = (fi.rowY - pushY).coerceIn(minFishRow.toFloat(), maxFishRow.toFloat())
-                            fj.rowY = (fj.rowY + pushY).coerceIn(minFishRow.toFloat(), maxFishRow.toFloat())
-                        }
-
-                        if (overlapX > 2.0f) {
-                            val pushX = (overlapX * 0.45f).coerceAtLeast(0.6f)
-                            if (dx >= 0f) {
-                                fi.colX = (fi.colX + pushX).coerceIn(1f, (cols - wi - 1).toFloat())
-                                fj.colX = (fj.colX - pushX).coerceIn(1f, (cols - wj - 1).toFloat())
-                            } else {
-                                fi.colX = (fi.colX - pushX).coerceIn(1f, (cols - wi - 1).toFloat())
-                                fj.colX = (fj.colX + pushX).coerceIn(1f, (cols - wj - 1).toFloat())
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // =========================================================================
-        // 9. STAMP FISH & PREDATOR INTO HIGH-DENSITY CHARACTER GRID
-        // =========================================================================
-        for (i in 0 until totalMaxFish) {
-            val f = fish[i]
-            if (!f.isSchooler && i >= activeHero) continue
-            if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
-
-            val useFrameB = (sin(f.animPhase) > 0f)
-            val lines = if (f.vxDir >= 0f) {
-                if (useFrameB) f.species.rightFrameB else f.species.rightFrameA
-            } else {
-                if (useFrameB) f.species.leftFrameB else f.species.leftFrameA
-            }
-
-            val fishColor = when (f.species.colorRole) {
-                0 -> pal.fishCoral
-                1 -> pal.fishAqua
-                2 -> pal.fishGold
-                3 -> pal.fishFoam
-                else -> pal.fishRose
-            }
-
-            val drawC = (f.colX + pShiftCols * 0.5f).roundToInt()
-            var drawR = f.rowY.roundToInt()
-            val spriteW = lines[0].length
-            val spriteH = lines.size
-            val startRowOffset = -(spriteH / 2)
-
-            fun isBoxFree(testR: Int): Boolean {
-                for (rOff in -1..spriteH) {
-                    val rr = (testR + startRowOffset + rOff).coerceIn(0, rows - 1)
-                    for (cOff in -1..spriteW) {
-                        val cc = (drawC + cOff).coerceIn(0, cols - 1)
-                        if (fishOccupiedGrid[rr * cols + cc]) return false
-                    }
-                }
-                return true
-            }
-
-            if (!isBoxFree(drawR)) {
-                for (delta in intArrayOf(-2, 2, -4, 4, -6, 6, -8, 8)) {
-                    val candR = (drawR + delta).coerceIn(minFishRow, maxFishRow)
-                    if (isBoxFree(candR)) {
-                        drawR = candR
-                        f.rowY = candR.toFloat()
-                        break
-                    }
-                }
-            }
-
-            for (lineIdx in lines.indices) {
-                val r = drawR + startRowOffset + lineIdx
-                if (r in (splitRow + 1) until (floorRow - 1)) {
-                    val rowStr = lines[lineIdx]
-                    for (chIdx in rowStr.indices) {
-                        val c = drawC + chIdx
-                        if (c in 0 until cols) {
-                            fishOccupiedGrid[r * cols + c] = true
-                            val ch = rowStr[chIdx]
-                            if (ch != ' ') {
-                                val charCol = when {
-                                    ch == '°' || ch == 'º' -> pal.fishFoam
-                                    f.species == AsciiFishSpecies.KOHAKU_KOI && ch == '{' -> pal.fishCoral
-                                    f.species == AsciiFishSpecies.KOHAKU_KOI && ch == '}' -> pal.fishCoral
-                                    f.species == AsciiFishSpecies.KOHAKU_KOI && lineIdx == 1 -> pal.fishFoam
-                                    f.species == AsciiFishSpecies.CLOWNFISH && ch == '|' -> pal.fishFoam
-                                    f.species == AsciiFishSpecies.MOORISH_IDOL && ch == '#' -> pal.fishFoam
-                                    else -> fishColor
-                                }
-                                setCell(c, r, ch, charCol)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // When evading a predator at high speed, draw a subtle water-jet wake (`~` / `:`) behind the tail
-            if (f.isEvading && f.evadeBoost > 2.0f) {
-                val wakeC = if (f.vxDir >= 0f) drawC - 2 else drawC + spriteW + 1
-                setCell(wakeC, drawR, '~', pal.bubbleFg)
-                setCell(drawC + spriteW / 2, (drawR + startRowOffset - 1).coerceAtLeast(splitRow + 2), '!', pal.fishGold)
-            }
-        }
-
-        // Render Active Predator
-        if (predator.active) {
-            val useFrameB = sin(predator.animPhase) > 0f
-            val pLines = if (predator.vxDir >= 0f) {
-                if (useFrameB) predator.species.rightFrameB else predator.species.rightFrameA
-            } else {
-                if (useFrameB) predator.species.leftFrameB else predator.species.leftFrameA
-            }
-            val pc = (predator.colX + pShiftCols * 0.5f).roundToInt()
-            val pr = predator.rowY.roundToInt()
-            val pStartOff = -(pLines.size / 2)
-            for (lIdx in pLines.indices) {
-                val rr = pr + pStartOff + lIdx
-                if (rr in (splitRow + 2) until (floorRow - 1)) {
-                    val s = pLines[lIdx]
-                    for (cIdx in s.indices) {
-                        val ch = s[cIdx]
-                        if (ch != ' ') {
-                            val col = if (ch == 'º' || ch == '=' || ch == '-') pal.fishGold else pal.fishCoral
-                            setCell(pc + cIdx, rr, ch, col)
-                        }
-                    }
-                }
-            }
-        }
-
-        // =========================================================================
-        // 10. RISING BUBBLES & SINKING FOOD PELLETS
-        // =========================================================================
         val activeBubbles = if (isBatterySaver) 8 else bubbles.size
         for (i in 0 until activeBubbles) {
             val b = bubbles[i]
@@ -1206,14 +1037,14 @@ class PondSimulation {
             val bc = b.colX.roundToInt()
             val br = b.rowY.roundToInt()
             if (br in (splitRow + 2) until (floorRow - 1) && bc in 0 until cols) {
-                if (!fishOccupiedGrid[br * cols + bc]) {
-                    val bChar = if (b.isBubble) {
-                        if ((br + i) % 2 == 0) 'o' else '°'
-                    } else {
-                        '.'
-                    }
-                    setCell(bc, br, bChar, pal.bubbleFg)
+                val bChar = if (b.isBubble) {
+                    if ((br + i) % 2 == 0) 'o' else '°'
+                } else {
+                    // Bioluminescent night plankton sparkles `*` when a fish swims nearby
+                    if (snapshot.isNight && (i + wavePhase) % 3 == 0) '·' else '.'
                 }
+                val bCol = if (snapshot.isNight && !b.isBubble) pal.fishRose else pal.bubbleFg
+                setCell(bc, br, bChar, bCol)
             }
         }
 
@@ -1228,9 +1059,7 @@ class PondSimulation {
             }
         }
 
-        // =========================================================================
-        // 11. FLUSH CHARACTER GRID TO CANVAS
-        // =========================================================================
+        // Flush static background grid to Canvas before drawing smooth sub-pixel creatures
         for (r in 0 until rows) {
             if (r < topCalmRow && isWallpaperMode && r % 2 == 1) continue
             val yPx = r * cellHeightPx + baselineOffsetPx
@@ -1262,6 +1091,424 @@ class PondSimulation {
                 textPaint.color = runColor
                 canvas.drawText(rowCharScratch, 0, runLen, runStart * cellWidthPx, yPx, textPaint)
             }
+        }
+
+        // Helper for silky-smooth sub-pixel creature rendering (no integer grid snapping!)
+        fun drawSubPixelSprite(
+            colFloat: Float,
+            rowFloat: Float,
+            lines: Array<String>,
+            bodyColor: Int,
+            finColor: Int,
+            eyeColor: Int,
+            isDimmedLayer: Boolean
+        ) {
+            val baseX = colFloat * cellWidthPx
+            val startRowFloat = rowFloat - (lines.size - 1) * 0.5f
+
+            for (lineIdx in lines.indices) {
+                val lineY = (startRowFloat + lineIdx) * cellHeightPx + baselineOffsetPx
+                if (lineY < (splitRow + 1) * cellHeightPx || lineY > (floorRow - 0.3f) * cellHeightPx) continue
+
+                val str = lines[lineIdx]
+                for (chIdx in str.indices) {
+                    val ch = str[chIdx]
+                    if (ch == ' ') continue
+
+                    textPaint.color = if (isDimmedLayer) {
+                        pal.fishDimBg
+                    } else {
+                        when {
+                            ch == '°' || ch == 'º' -> eyeColor
+                            lines.size >= 3 && (lineIdx == 0 || lineIdx == lines.size - 1) -> finColor
+                            ch == '|' || ch == '{' || ch == '}' || ch == '#' -> finColor
+                            else -> bodyColor
+                        }
+                    }
+                    singleCharBuf[0] = ch
+                    canvas.drawText(singleCharBuf, 0, 1, baseX + chIdx * cellWidthPx, lineY, textPaint)
+                }
+            }
+        }
+
+        // =========================================================================
+        // 5. SURFACE-SKIMMING DRAGONFLY (Day) / HOVERING FIREFLIES (Night)
+        // =========================================================================
+        surfaceInsect.phase += clampedDt * 5.5f
+        surfaceInsect.colX += surfaceInsect.vx * clampedDt
+        if (surfaceInsect.colX > cols - 8) surfaceInsect.vx = -3.6f
+        if (surfaceInsect.colX < 4f) surfaceInsect.vx = 3.6f
+        surfaceInsect.rowY = (splitRow - 2.6f) + sin(surfaceInsect.phase * 0.7f) * 0.8f
+
+        val insX = (surfaceInsect.colX + pShiftCols * 0.6f) * cellWidthPx
+        val insY = surfaceInsect.rowY * cellHeightPx + baselineOffsetPx
+        val insectStr = if (snapshot.isNight) {
+            if (sin(surfaceInsect.phase * 2f) > 0f) " * " else " · "
+        } else {
+            if (sin(surfaceInsect.phase * 3f) > 0f) "~o~" else "-o-"
+        }
+        textPaint.color = if (snapshot.isNight) pal.fishRose else pal.fishAqua
+        canvas.drawText(insectStr, insX, insY, textPaint)
+
+        // =========================================================================
+        // 6. NIGHTTIME BIOLUMINESCENT MOON JELLYFISH
+        // =========================================================================
+        if (snapshot.isNight) {
+            for (j in nightJellies.indices) {
+                val jel = nightJellies[j]
+                jel.phase += clampedDt * 2.2f
+                jel.rowY -= (0.9f + 0.5f * sin(jel.phase)) * clampedDt
+                jel.colX += cos(jel.phase * 0.6f + j) * 0.5f * clampedDt
+
+                if (jel.rowY < splitRow + 6) {
+                    jel.rowY = (floorRow - 6).toFloat()
+                }
+                val jLines = if (sin(jel.phase) > 0f) {
+                    arrayOf(" .--. ", "( °° )", " /||\\ ")
+                } else {
+                    arrayOf("  ..  ", " (oo) ", "  ||  ")
+                }
+                drawSubPixelSprite(
+                    colFloat = jel.colX + pShiftCols * 0.3f,
+                    rowFloat = jel.rowY,
+                    lines = jLines,
+                    bodyColor = pal.fishAqua,
+                    finColor = pal.fishRose,
+                    eyeColor = pal.fishFoam,
+                    isDimmedLayer = false
+                )
+            }
+        }
+
+        // =========================================================================
+        // 7. BOTTOM-FEEDER CRITTERS (Sub-Pixel Smooth Gliding Along Riverbed)
+        // =========================================================================
+        if (config.enableBottomFeeders) {
+            val activeFeeders = if (isBatterySaver) 2 else maxBottomFeeders
+            val critterRowFloat = (floorRow - 1).toFloat()
+            for (b in 0 until activeFeeders) {
+                val bf = bottomFeeders[b]
+                if (bf.pauseTimer > 0f) {
+                    bf.pauseTimer -= clampedDt
+                } else {
+                    bf.colX += bf.vxDir * bf.species.speedColsPerSec * clampedDt
+                    bf.animPhase += clampedDt * 5.0f
+                    if (sin(simTime * 2.1f + bf.id * 3.7f) > 0.96f) {
+                        bf.pauseTimer = 0.8f
+                    }
+                }
+
+                val spriteLen = bf.species.rightFrameA.length
+                val minC = 2f
+                val maxC = (cols - spriteLen - 2).toFloat().coerceAtLeast(minC + 2f)
+                if (bf.colX >= maxC) {
+                    bf.colX = maxC
+                    bf.vxDir = -1f
+                } else if (bf.colX <= minC) {
+                    bf.colX = minC
+                    bf.vxDir = 1f
+                }
+
+                // Smooth velocity-based spacing between bottom feeders
+                for (otherIdx in 0 until b) {
+                    val other = bottomFeeders[otherIdx]
+                    val dx = bf.colX - other.colX
+                    val minSep = (spriteLen + other.species.rightFrameA.length) * 0.6f + 3f
+                    if (abs(dx) < minSep) {
+                        bf.vxDir = if (dx >= 0f) 1f else -1f
+                        bf.colX = (bf.colX + bf.vxDir * clampedDt * 3f).coerceIn(minC, maxC)
+                    }
+                }
+
+                val frameB = sin(bf.animPhase) > 0f
+                val sprite = if (bf.vxDir >= 0f) {
+                    if (frameB) bf.species.rightFrameB else bf.species.rightFrameA
+                } else {
+                    if (frameB) bf.species.leftFrameB else bf.species.leftFrameA
+                }
+                val bfColor = when (bf.species.colorRole) {
+                    0 -> pal.fishCoral
+                    1 -> pal.fishAqua
+                    2 -> pal.fishGold
+                    3 -> pal.fishFoam
+                    else -> pal.fishRose
+                }
+                textPaint.color = bfColor
+                val bxPx = ((bf.colX + pShiftCols * 0.3f).coerceIn(1f, (cols - spriteLen - 1).toFloat())) * cellWidthPx
+                val byPx = critterRowFloat * cellHeightPx + baselineOffsetPx
+                canvas.drawText(sprite, bxPx, byPx, textPaint)
+            }
+        }
+
+        // =========================================================================
+        // 8. PREDATOR UPDATE & SMOOTH SUB-PIXEL FISH STEERING (Zero Stutter, Zero Off-Screen)
+        // =========================================================================
+        val minFishRow = (splitRow + 4).toFloat()
+        val maxFishRow = (floorRow - 4).toFloat().coerceAtLeast(minFishRow + 12f)
+        val underwaterSpan = (maxFishRow - minFishRow).coerceAtLeast(12f)
+
+        if (config.enablePredators) {
+            if (!predator.active) {
+                predator.cooldownTimer -= clampedDt
+                if (predator.cooldownTimer <= 0f) {
+                    triggerPredatorVisit((simTime * 1000f).toLong())
+                }
+            } else {
+                predator.activeDuration += clampedDt
+                predator.animPhase += clampedDt * 7.0f
+
+                var targetY = predator.rowY
+                var minDist = 999f
+                for (i in 0 until totalMaxFish) {
+                    val f = fish[i]
+                    if (!f.isSchooler && i >= activeHero) continue
+                    if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
+
+                    val ahead = (f.colX - predator.colX) * predator.vxDir
+                    if (ahead > -4f) {
+                        val d = hypot(f.colX - predator.colX, (f.rowY - predator.rowY) * 1.4f)
+                        if (d < minDist) {
+                            minDist = d
+                            targetY = f.rowY
+                        }
+                    }
+                }
+                val dy = (targetY - predator.rowY).coerceIn(-4.0f, 4.0f)
+                predator.colX += predator.vxDir * predator.species.speedColsPerSec * clampedDt
+                predator.rowY = (predator.rowY + dy * 1.6f * clampedDt).coerceIn(minFishRow, maxFishRow)
+
+                if ((predator.vxDir > 0f && predator.colX > cols + 6) ||
+                    (predator.vxDir < 0f && predator.colX < -18f) ||
+                    predator.activeDuration > 11f
+                ) {
+                    predator.active = false
+                    predator.cooldownTimer = 14f + (cos(simTime) * 0.5f + 0.5f) * 14f
+                }
+            }
+        } else {
+            predator.active = false
+        }
+
+        // Update all active fish using smooth continuous velocity integration (no position snapping!)
+        for (i in 0 until totalMaxFish) {
+            val f = fish[i]
+            if (!f.isSchooler && i >= activeHero) continue
+            if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
+
+            if (f.turnTimer > 0f) {
+                f.turnTimer = (f.turnTimer - clampedDt).coerceAtLeast(0f)
+            }
+
+            val spriteW = f.species.rightFrameA[0].length
+            val minColBound = 2.0f
+            val maxColBound = (cols - spriteW - 2.0f).coerceAtLeast(minColBound + 4f)
+
+            val cruiseSpd = f.species.baseSpeedColsPerSec * f.speedScale
+            var desiredVx = f.facingDir * cruiseSpd
+            val targetLaneRow = minFishRow + f.preferredDepthFrac * underwaterSpan
+            var desiredVy = (targetLaneRow - f.rowY) * 1.4f + sin(simTime * 1.3f + f.id * 1.9f) * 0.75f
+
+            // Boids schooling cohesion for small Neon Tetras & Silver Rasboras
+            if (f.isSchooler && !predator.active) {
+                val leader = fish[maxHeroFish]
+                if (f !== leader) {
+                    val schoolTargetX = leader.colX - leader.facingDir * ((f.id - maxHeroFish) * 3.5f)
+                    val schoolTargetY = leader.rowY + ((f.id % 3) - 1) * 2.2f
+                    desiredVx += (schoolTargetX - f.colX).coerceIn(-3f, 3f) * 0.6f
+                    desiredVy = (schoolTargetY - f.rowY) * 1.6f
+                }
+            }
+
+            // Food pellet attraction
+            for (pIdx in pellets.indices) {
+                val pel = pellets[pIdx]
+                if (pel.active) {
+                    val pdx = pel.colX - f.colX
+                    val pdy = pel.rowY - f.rowY
+                    val pDist = hypot(pdx, pdy)
+                    if (pDist < 18f) {
+                        val wantDir = if (pdx >= 0f) 1 else -1
+                        if (wantDir != f.facingDir && f.turnTimer <= 0f) {
+                            f.facingDir = wantDir
+                            f.turnTimer = 0.16f
+                        }
+                        desiredVx = f.facingDir * cruiseSpd * 1.25f
+                        desiredVy = (pdy / pDist.coerceAtLeast(1f)) * 4.0f
+                        if (pDist < 2.2f) pel.active = false
+                        break
+                    }
+                }
+            }
+
+            // Smooth 2D Predator Evasion (with inward wall-turn so fish NEVER flee off-screen!)
+            f.isEvading = false
+            if (predator.active) {
+                val pCenterX = predator.colX + 6f
+                val dx = (f.colX + spriteW * 0.5f) - pCenterX
+                val dy = f.rowY - predator.rowY
+                val dist = hypot(dx, dy * 1.4f)
+                val threatRadius = 26f
+
+                if (dist < threatRadius) {
+                    f.isEvading = true
+                    val urgency = (1f - dist / threatRadius).coerceIn(0.2f, 1f)
+
+                    // If fleeing outward would trap the fish against the screen edge, juke vertically and cut back inward!
+                    val nearLeftWall = f.colX < minColBound + 8f
+                    val nearRightWall = f.colX > maxColBound - 8f
+                    val fleeDir = when {
+                        nearLeftWall -> 1
+                        nearRightWall -> -1
+                        dx >= 0f -> 1
+                        else -> -1
+                    }
+                    if (fleeDir != f.facingDir && f.turnTimer <= 0f) {
+                        f.facingDir = fleeDir
+                        f.turnTimer = 0.14f
+                    }
+                    desiredVx = f.facingDir * (cruiseSpd + 7.5f * urgency)
+
+                    val jukeSign = when {
+                        f.rowY < minFishRow + 5f -> 1f
+                        f.rowY > maxFishRow - 5f -> -1f
+                        abs(dy) > 1.0f -> if (dy > 0f) 1f else -1f
+                        f.id % 2 == 0 -> -1f
+                        else -> 1f
+                    }
+                    desiredVy = jukeSign * (6.0f * urgency)
+                }
+            }
+
+            // Soft Pairwise Steering Avoidance (modifies desiredVx/desiredVy smoothly — ZERO position snapping!)
+            for (j in 0 until totalMaxFish) {
+                if (i == j) continue
+                val other = fish[j]
+                if (!other.isSchooler && j >= activeHero) continue
+                if (other.isSchooler && (j - maxHeroFish) >= activeSchool) continue
+
+                val otherW = other.species.rightFrameA[0].length
+                val dx = (f.colX + spriteW * 0.5f) - (other.colX + otherW * 0.5f)
+                val dy = f.rowY - other.rowY
+
+                val safeX = (spriteW + otherW) * 0.55f + 2.5f
+                val safeY = (f.species.rightFrameA.size + other.species.rightFrameA.size) * 0.55f + 1.6f
+
+                if (abs(dx) < safeX && abs(dy) < safeY) {
+                    val normY = (safeY - abs(dy)) / safeY
+                    val pushSignY = if (dy > 0.05f) 1f else if (dy < -0.05f) -1f else if (f.id > other.id) 1f else -1f
+                    desiredVy += pushSignY * normY * 5.2f
+
+                    val normX = (safeX - abs(dx)) / safeX
+                    val pushSignX = if (dx >= 0f) 1f else -1f
+                    desiredVx += pushSignX * normX * 2.4f
+                }
+            }
+
+            // Smooth Turn-Around before screen edges so fish never get stuck on boundaries
+            if (f.facingDir > 0 && f.colX >= maxColBound - 1.2f) {
+                f.facingDir = -1
+                f.turnTimer = 0.18f
+                desiredVx = -cruiseSpd
+            } else if (f.facingDir < 0 && f.colX <= minColBound + 1.2f) {
+                f.facingDir = 1
+                f.turnTimer = 0.18f
+                desiredVx = cruiseSpd
+            }
+
+            // Exponentially smooth velocity (low-pass filter prevents any sudden jitter)
+            val accelRate = (clampedDt * 6.5f).coerceIn(0.05f, 1.0f)
+            f.vx += (desiredVx - f.vx) * accelRate
+            f.vy += (desiredVy - f.vy) * accelRate
+
+            f.colX += f.vx * clampedDt
+            f.rowY += f.vy * clampedDt
+
+            // Hard safety clamp strictly inside visible screen bounds (even during predator evasion)
+            if (f.colX < minColBound) {
+                f.colX = minColBound
+                f.facingDir = 1
+                if (f.vx < 0f) f.vx = cruiseSpd * 0.6f
+            } else if (f.colX > maxColBound) {
+                f.colX = maxColBound
+                f.facingDir = -1
+                if (f.vx > 0f) f.vx = -cruiseSpd * 0.6f
+            }
+            f.rowY = f.rowY.coerceIn(minFishRow, maxFishRow)
+            f.colFrac = (f.colX / cols.toFloat()).coerceIn(0.02f, 0.94f)
+
+            val actualSpd = hypot(f.vx, f.vy)
+            f.animPhase += clampedDt * (2.6f + actualSpd * 0.45f)
+        }
+
+        // =========================================================================
+        // 9. DRAW FISH IN 3 DEPTH LAYERS (Background -> Midground -> Foreground)
+        // =========================================================================
+        fun resolveRoleColor(role: Int): Int = when (role) {
+            0 -> pal.fishCoral
+            1 -> pal.fishAqua
+            2 -> pal.fishGold
+            3 -> pal.fishFoam
+            else -> pal.fishRose
+        }
+
+        for (layer in 0..2) {
+            val parallaxMult = when (layer) {
+                0 -> 0.25f
+                1 -> 0.45f
+                else -> 0.70f
+            }
+            for (i in 0 until totalMaxFish) {
+                val f = fish[i]
+                if (f.depthLayer != layer) continue
+                if (!f.isSchooler && i >= activeHero) continue
+                if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
+
+                val useFrameB = sin(f.animPhase) > 0f
+                val lines = when {
+                    f.turnTimer > 0f -> f.species.turnFrame
+                    f.facingDir >= 0 -> if (useFrameB) f.species.rightFrameB else f.species.rightFrameA
+                    else -> if (useFrameB) f.species.leftFrameB else f.species.leftFrameA
+                }
+
+                val sw = lines[0].length
+                val clampedDrawCol = (f.colX + pShiftCols * parallaxMult)
+                    .coerceIn(0.5f, (cols - sw - 0.5f).coerceAtLeast(1f))
+
+                drawSubPixelSprite(
+                    colFloat = clampedDrawCol,
+                    rowFloat = f.rowY,
+                    lines = lines,
+                    bodyColor = resolveRoleColor(f.species.primaryRole),
+                    finColor = resolveRoleColor(f.species.finAccentRole),
+                    eyeColor = pal.fishFoam,
+                    isDimmedLayer = (layer == 0)
+                )
+
+                if (f.isEvading) {
+                    val wakeCol = if (f.facingDir >= 0) clampedDrawCol - 1.5f else clampedDrawCol + sw + 0.5f
+                    textPaint.color = pal.bubbleFg
+                    canvas.drawText("~", wakeCol * cellWidthPx, f.rowY * cellHeightPx + baselineOffsetPx, textPaint)
+                }
+            }
+        }
+
+        // Render Active Predator smoothly at sub-pixel coordinates
+        if (predator.active) {
+            val useFrameB = sin(predator.animPhase) > 0f
+            val pLines = if (predator.vxDir >= 0f) {
+                if (useFrameB) predator.species.rightFrameB else predator.species.rightFrameA
+            } else {
+                if (useFrameB) predator.species.leftFrameB else predator.species.leftFrameA
+            }
+            drawSubPixelSprite(
+                colFloat = predator.colX + pShiftCols * 0.55f,
+                rowFloat = predator.rowY,
+                lines = pLines,
+                bodyColor = pal.fishCoral,
+                finColor = pal.fishGold,
+                eyeColor = pal.fishFoam,
+                isDimmedLayer = false
+            )
         }
     }
 }

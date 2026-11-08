@@ -177,6 +177,7 @@ class KoiPondWallpaperService : WallpaperService() {
             super.onCreate(surfaceHolder)
             setTouchEventsEnabled(true)
 
+            simulation.loadBundledFont(this@KoiPondWallpaperService)
             settingsRepo = WallpaperSettingsRepository(this@KoiPondWallpaperService)
             currentConfig = settingsRepo.loadConfig()
             settingsRepo.registerListener(this)

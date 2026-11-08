@@ -10,19 +10,18 @@
         <item name="colorSecondary">@color/ascii_accent2</item>
         <item name="colorTertiary">@color/ascii_accent3</item>
         <item name="colorError">@color/ascii_error</item>
-        <item name="android:fontFamily">monospace</item>
-        <item name="fontFamily">monospace</item>
+        <item name="android:fontFamily">@font/ascii_mono</item>
+        <item name="fontFamily">@font/ascii_mono</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="colorControlHighlight">@android:color/transparent</item>
     </style>
 
-    <!-- 3 Text Styles Only: Title (Bold 15sp), Body (15sp), Small (Meta 12sp) with liga 0, calt 0 -->
     <style name="AsciiText.Body" parent="TextAppearance.AppCompat">
-        <item name="android:fontFamily">monospace</item>
-        <item name="fontFamily">monospace</item>
-        <item name="android:textSize">15sp</item>
-        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:fontFamily">@font/ascii_mono</item>
+        <item name="fontFamily">@font/ascii_mono</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineSpacingExtra">3sp</item>
         <item name="android:textColor">@color/ascii_fg</item>
         <item name="android:fontFeatureSettings">liga 0, calt 0</item>
     </style>
@@ -33,6 +32,6 @@
 
     <style name="AsciiText.Small" parent="AsciiText.Body">
         <item name="android:textSize">12sp</item>
-        <item name="android:lineSpacingExtra">3sp</item>
+        <item name="android:lineSpacingExtra">2sp</item>
     </style>
 </resources>

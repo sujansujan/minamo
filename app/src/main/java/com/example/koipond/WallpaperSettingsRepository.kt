@@ -14,6 +14,16 @@ enum class ThemeMode(val id: Int, val label: String) {
     }
 }
 
+enum class PaletteFamily(val id: Int, val label: String) {
+    LAGOON(0, "lagoon"),
+    EMBER(1, "ember"),
+    MOSS(2, "moss");
+
+    companion object {
+        fun fromId(id: Int): PaletteFamily = entries.firstOrNull { it.id == id } ?: LAGOON
+    }
+}
+
 enum class TimeCycleMode(val id: Int, val label: String) {
     AUTO_REALTIME(0, "live clock"),
     DAWN(1, "dawn"),
@@ -26,12 +36,17 @@ enum class TimeCycleMode(val id: Int, val label: String) {
     }
 }
 
-/**
- * High-resolution character grid presets so multi-line ASCII fish look detailed and appropriately small:
- *   COZY: 68 columns (~140 rows on modern phones)
- *   BALANCED: 82 columns (~170 rows on modern phones — default)
- *   DENSE: 96 columns (~200 rows on modern phones)
- */
+enum class WeatherMode(val id: Int, val label: String) {
+    CLEAR(0, "clear"),
+    RAIN(1, "rain"),
+    SNOW(2, "snow"),
+    AUTO(3, "auto");
+
+    companion object {
+        fun fromId(id: Int): WeatherMode = entries.firstOrNull { it.id == id } ?: AUTO
+    }
+}
+
 enum class GridDensity(val id: Int, val label: String, val targetCols: Int) {
     COZY(0, "68c", 68),
     BALANCED(1, "82c", 82),
@@ -54,7 +69,9 @@ enum class PowerSaveMode(val id: Int, val label: String) {
 
 data class WallpaperConfig(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val paletteFamily: PaletteFamily = PaletteFamily.LAGOON,
     val timeCycleMode: TimeCycleMode = TimeCycleMode.AUTO_REALTIME,
+    val weatherMode: WeatherMode = WeatherMode.AUTO,
     val heroFishCount: Int = 6,
     val waterClarity: Float = 0.85f,
     val targetFps: Int = 30,
@@ -74,7 +91,9 @@ class WallpaperSettingsRepository(context: Context) {
     fun loadConfig(): WallpaperConfig {
         return WallpaperConfig(
             themeMode = ThemeMode.fromId(prefs.getInt(KEY_THEME_MODE, ThemeMode.SYSTEM.id)),
+            paletteFamily = PaletteFamily.fromId(prefs.getInt(KEY_PALETTE_FAMILY, PaletteFamily.LAGOON.id)),
             timeCycleMode = TimeCycleMode.fromId(prefs.getInt(KEY_TIME_CYCLE, TimeCycleMode.AUTO_REALTIME.id)),
+            weatherMode = WeatherMode.fromId(prefs.getInt(KEY_WEATHER_MODE, WeatherMode.AUTO.id)),
             heroFishCount = prefs.getInt(KEY_FISH_COUNT, 6).coerceIn(2, 9),
             waterClarity = prefs.getFloat(KEY_WATER_CLARITY, 0.85f).coerceIn(0.35f, 1.0f),
             targetFps = if (prefs.getInt(KEY_TARGET_FPS, 30) == 60) 60 else 30,
@@ -90,7 +109,9 @@ class WallpaperSettingsRepository(context: Context) {
     fun saveConfig(config: WallpaperConfig) {
         prefs.edit()
             .putInt(KEY_THEME_MODE, config.themeMode.id)
+            .putInt(KEY_PALETTE_FAMILY, config.paletteFamily.id)
             .putInt(KEY_TIME_CYCLE, config.timeCycleMode.id)
+            .putInt(KEY_WEATHER_MODE, config.weatherMode.id)
             .putInt(KEY_FISH_COUNT, config.heroFishCount.coerceIn(2, 9))
             .putFloat(KEY_WATER_CLARITY, config.waterClarity.coerceIn(0.35f, 1.0f))
             .putInt(KEY_TARGET_FPS, config.targetFps)
@@ -123,7 +144,9 @@ class WallpaperSettingsRepository(context: Context) {
     companion object {
         const val PREFS_NAME = "minamo_ascii_prefs"
         const val KEY_THEME_MODE = "theme_mode"
+        const val KEY_PALETTE_FAMILY = "palette_family"
         const val KEY_TIME_CYCLE = "time_cycle"
+        const val KEY_WEATHER_MODE = "weather_mode"
         const val KEY_FISH_COUNT = "koi_count"
         const val KEY_WATER_CLARITY = "water_clarity"
         const val KEY_TARGET_FPS = "target_fps"

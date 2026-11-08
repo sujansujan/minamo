@@ -2,37 +2,33 @@ package com.example.koipond
 
 import android.graphics.Color
 import java.util.Calendar
-import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.sin
 
-/**
- * Holds the colorful terminal color scheme for the split-view ASCII aquarium at a given moment.
- * Never uses pure black (#000000), pure white (#FFFFFF), or neutral gray.
- */
 data class AsciiStageColors(
-    val phaseName: String,     // "dawn", "noon", "dusk", "night"
-    val skyBg: Int,            // Upper sky background tint
-    val waterBgTop: Int,       // Shallow underwater background tint
-    val waterBgDeep: Int,      // Deep riverbed background tint
-    val celestialGlyph: Int,   // Sun / Moon / Stars character color
-    val cloudReedFg: Int,      // Clouds, distant hills, and shore reeds
-    val meniscusWaveFg: Int,   // `~^~._.~^~` air-water surface line
-    val lilyPadFg: Int,        // `[_v_]` floating lily pad
-    val lotusFlowerFg: Int,    // `(*)` blooming lotus on pad
-    val sunRayFg: Int,         // `/` and `:` diagonal underwater light shafts
-    val kelpFg: Int,           // `( )` swaying vallisneria / kelp blades
-    val pebbleFg: Int,         // `.ooO. .oOo.` riverbed cobbles & moss
-    val bubbleFg: Int,         // `o` / `°` / `.` rising bubbles & plankton
-    val fishCoral: Int,        // Role 1: Coral / vermilion / amber fish
-    val fishAqua: Int,         // Role 2: Electric aqua / turquoise fish
-    val fishGold: Int,         // Role 3: Sun-gold / yellow fish
-    val fishFoam: Int,         // Role 4: Pale foam-ivory fish
-    val fishRose: Int          // Role 5: Rose-magenta / bioluminescent violet fish
+    val phaseName: String,
+    val skyBg: Int,
+    val waterBgTop: Int,
+    val waterBgDeep: Int,
+    val celestialGlyph: Int,
+    val cloudReedFg: Int,
+    val meniscusWaveFg: Int,
+    val lilyPadFg: Int,
+    val lotusFlowerFg: Int,
+    val sunRayFg: Int,
+    val kelpFg: Int,
+    val pebbleFg: Int,
+    val bubbleFg: Int,
+    val fishCoral: Int,
+    val fishAqua: Int,
+    val fishGold: Int,
+    val fishFoam: Int,
+    val fishRose: Int,
+    val fishDimBg: Int
 )
 
 object TimeOfDayPalette {
 
-    // 1. DAWN (05:00 - 08:30): Warm espresso-rose sky, peach sun, misty jade-teal pond
     val DAWN = AsciiStageColors(
         phaseName = "dawn",
         skyBg = 0xFF1F161D.toInt(),
@@ -51,10 +47,10 @@ object TimeOfDayPalette {
         fishAqua = 0xFF5EEAD4.toInt(),
         fishGold = 0xFFFFD166.toInt(),
         fishFoam = 0xFFF8EBDD.toInt(),
-        fishRose = 0xFFFF6F91.toInt()
+        fishRose = 0xFFFF6F91.toInt(),
+        fishDimBg = 0xFF55828B.toInt()
     )
 
-    // 2. NOON (08:30 - 16:30): Vibrant sunlit Lagoon teal sky, radiant gold sun, turquoise water
     val NOON = AsciiStageColors(
         phaseName = "noon",
         skyBg = 0xFF102C38.toInt(),
@@ -73,10 +69,10 @@ object TimeOfDayPalette {
         fishAqua = 0xFF5EEAD4.toInt(),
         fishGold = 0xFFFFD166.toInt(),
         fishFoam = 0xFFE6F4F1.toInt(),
-        fishRose = 0xFFFF6F91.toInt()
+        fishRose = 0xFFFF6F91.toInt(),
+        fishDimBg = 0xFF527E88.toInt()
     )
 
-    // 3. DUSK (16:30 - 20:00): Ember-crimson sunset sky, tangerine sun, deep bronze-teal water
     val DUSK = AsciiStageColors(
         phaseName = "dusk",
         skyBg = 0xFF241514.toInt(),
@@ -95,10 +91,10 @@ object TimeOfDayPalette {
         fishAqua = 0xFF5EEAD4.toInt(),
         fishGold = 0xFFFFC857.toInt(),
         fishFoam = 0xFFF8EBDD.toInt(),
-        fishRose = 0xFFFF6F91.toInt()
+        fishRose = 0xFFFF6F91.toInt(),
+        fishDimBg = 0xFF6E6259.toInt()
     )
 
-    // 4. NIGHT (20:00 - 05:00): Deep midnight-Abyssal indigo, crescent moon & stars, bioluminescent cyan pond
     val NIGHT = AsciiStageColors(
         phaseName = "night",
         skyBg = 0xFF081520.toInt(),
@@ -117,66 +113,104 @@ object TimeOfDayPalette {
         fishAqua = 0xFF7FD3FF.toInt(),
         fishGold = 0xFFFFD166.toInt(),
         fishFoam = 0xFFE6F4F1.toInt(),
-        fishRose = 0xFFC6F36B.toInt()
+        fishRose = 0xFFC6F36B.toInt(),
+        fishDimBg = 0xFF3E6475.toInt()
     )
 
     data class TimeSnapshot(
         val colors: AsciiStageColors,
-        val sunArcX: Float,    // 0.15 (left) .. 0.85 (right) across sky
-        val sunArcY: Float,    // 0.0 (horizon) .. 1.0 (zenith)
+        val sunArcX: Float,
+        val sunArcY: Float,
         val isNight: Boolean,
+        val lunarPhaseIndex: Int, // 0=Waxing Crescent, 1=Half Moon, 2=Full Moon, 3=Waning Crescent
         val timeLabel: String
     )
 
-    fun resolve(mode: TimeCycleMode): TimeSnapshot {
+    fun resolve(mode: TimeCycleMode, family: PaletteFamily = PaletteFamily.LAGOON): TimeSnapshot {
         val cal = Calendar.getInstance()
         val hour = cal.get(Calendar.HOUR_OF_DAY)
         val minute = cal.get(Calendar.MINUTE)
         val fractionalHour = hour + minute / 60.0f
         val clockStr = "%02d:%02d".format(hour, minute)
 
-        return when (mode) {
-            TimeCycleMode.DAWN -> TimeSnapshot(DAWN, 0.22f, 0.35f, false, "dawn (fixed)")
-            TimeCycleMode.NOON -> TimeSnapshot(NOON, 0.48f, 0.85f, false, "noon (fixed)")
-            TimeCycleMode.DUSK -> TimeSnapshot(DUSK, 0.78f, 0.32f, false, "dusk (fixed)")
-            TimeCycleMode.NIGHT -> TimeSnapshot(NIGHT, 0.62f, 0.72f, true, "night (fixed)")
-            TimeCycleMode.AUTO_REALTIME -> evaluateRealtime(fractionalHour, clockStr)
+        // Compute real astronomical lunar phase index (29.53-day synodic cycle)
+        val year = cal.get(Calendar.YEAR)
+        val dayOfYear = cal.get(Calendar.DAY_OF_YEAR)
+        val approxDaysSince2000 = (year - 2000) * 365.25 + dayOfYear
+        val moonAge = ((approxDaysSince2000 - 6.0) % 29.530588 + 29.530588) % 29.530588
+        val lunarIdx = when {
+            moonAge < 7.4 -> 0  // Waxing Crescent `) )`
+            moonAge < 13.5 -> 1 // First Quarter Half `| )`
+            moonAge < 17.5 -> 2 // Full Moon `(O)`
+            else -> 3           // Waning Crescent `( (`
+        }
+
+        val baseSnap = when (mode) {
+            TimeCycleMode.DAWN -> TimeSnapshot(DAWN, 0.22f, 0.35f, false, lunarIdx, "dawn")
+            TimeCycleMode.NOON -> TimeSnapshot(NOON, 0.48f, 0.85f, false, lunarIdx, "noon")
+            TimeCycleMode.DUSK -> TimeSnapshot(DUSK, 0.78f, 0.32f, false, lunarIdx, "dusk")
+            TimeCycleMode.NIGHT -> TimeSnapshot(NIGHT, 0.62f, 0.72f, true, lunarIdx, "night")
+            TimeCycleMode.AUTO_REALTIME -> evaluateRealtime(fractionalHour, clockStr, lunarIdx)
+        }
+
+        return if (family == PaletteFamily.LAGOON) {
+            baseSnap
+        } else {
+            baseSnap.copy(colors = tintForFamily(baseSnap.colors, family))
         }
     }
 
-    private fun evaluateRealtime(h: Float, clockStr: String): TimeSnapshot {
+    private fun tintForFamily(c: AsciiStageColors, family: PaletteFamily): AsciiStageColors {
+        return when (family) {
+            PaletteFamily.LAGOON -> c
+            PaletteFamily.EMBER -> c.copy(
+                skyBg = lerpColor(c.skyBg, 0xFF1B1411.toInt(), 0.55f),
+                waterBgTop = lerpColor(c.waterBgTop, 0xFF2A1F1A.toInt(), 0.42f),
+                waterBgDeep = lerpColor(c.waterBgDeep, 0xFF1B1411.toInt(), 0.50f),
+                meniscusWaveFg = 0xFFFF8A3D.toInt(),
+                fishCoral = 0xFFFF8A3D.toInt(),
+                fishAqua = 0xFFB8E986.toInt(),
+                fishGold = 0xFFFFC857.toInt(),
+                fishRose = 0xFFFF6F91.toInt(),
+                fishDimBg = 0xFF7D6B5D.toInt()
+            )
+            PaletteFamily.MOSS -> c.copy(
+                skyBg = lerpColor(c.skyBg, 0xFF0E1912.toInt(), 0.55f),
+                waterBgTop = lerpColor(c.waterBgTop, 0xFF16271C.toInt(), 0.45f),
+                waterBgDeep = lerpColor(c.waterBgDeep, 0xFF0E1912.toInt(), 0.55f),
+                meniscusWaveFg = 0xFFC6F36B.toInt(),
+                fishCoral = 0xFFFFB38A.toInt(),
+                fishAqua = 0xFF7FD3FF.toInt(),
+                fishGold = 0xFFC6F36B.toInt(),
+                fishRose = 0xFF6EE7A0.toInt(),
+                fishDimBg = 0xFF5A7561.toInt()
+            )
+        }
+    }
+
+    private fun evaluateRealtime(h: Float, clockStr: String, lunarIdx: Int): TimeSnapshot {
         return when {
-            // Dawn transition: 05:00 -> 08:30
             h in 5.0f..8.5f -> {
                 val t = (h - 5.0f) / 3.5f
                 val pal = if (t < 0.5f) lerpPalette(NIGHT, DAWN, t * 2f, "dawn")
                           else lerpPalette(DAWN, NOON, (t - 0.5f) * 2f, "dawn")
-                val arcX = 0.16f + t * 0.22f
-                val arcY = 0.20f + t * 0.55f
-                TimeSnapshot(pal, arcX, arcY, false, "$clockStr dawn")
+                TimeSnapshot(pal, 0.16f + t * 0.22f, 0.20f + t * 0.55f, false, lunarIdx, "$clockStr dawn")
             }
-            // Broad Daylight: 08:30 -> 16:30
             h in 8.5f..16.5f -> {
                 val t = (h - 8.5f) / 8.0f
-                val arcX = 0.38f + t * 0.34f
                 val arcY = 0.75f + sin(t * Math.PI.toFloat()) * 0.20f
-                TimeSnapshot(NOON, arcX, arcY, false, "$clockStr day")
+                TimeSnapshot(NOON, 0.38f + t * 0.34f, arcY, false, lunarIdx, "$clockStr day")
             }
-            // Sunset / Dusk transition: 16:30 -> 20:00
             h in 16.5f..20.0f -> {
                 val t = (h - 16.5f) / 3.5f
                 val pal = if (t < 0.5f) lerpPalette(NOON, DUSK, t * 2f, "dusk")
                           else lerpPalette(DUSK, NIGHT, (t - 0.5f) * 2f, "dusk")
-                val arcX = 0.72f + t * 0.16f
-                val arcY = 0.75f - t * 0.58f
-                TimeSnapshot(pal, arcX, arcY, t > 0.8f, "$clockStr dusk")
+                TimeSnapshot(pal, 0.72f + t * 0.16f, 0.75f - t * 0.58f, t > 0.8f, lunarIdx, "$clockStr dusk")
             }
-            // Nighttime: 20:00 -> 05:00
             else -> {
                 val nightT = if (h >= 20.0f) (h - 20.0f) / 9.0f else (h + 4.0f) / 9.0f
-                val arcX = 0.22f + nightT * 0.56f
                 val arcY = 0.45f + sin(nightT * Math.PI.toFloat()) * 0.38f
-                TimeSnapshot(NIGHT, arcX, arcY, true, "$clockStr night")
+                TimeSnapshot(NIGHT, 0.22f + nightT * 0.56f, arcY, true, lunarIdx, "$clockStr night")
             }
         }
     }
@@ -201,7 +235,8 @@ object TimeOfDayPalette {
             fishAqua = lerpColor(a.fishAqua, b.fishAqua, f),
             fishGold = lerpColor(a.fishGold, b.fishGold, f),
             fishFoam = lerpColor(a.fishFoam, b.fishFoam, f),
-            fishRose = lerpColor(a.fishRose, b.fishRose, f)
+            fishRose = lerpColor(a.fishRose, b.fishRose, f),
+            fishDimBg = lerpColor(a.fishDimBg, b.fishDimBg, f)
         )
     }
 
