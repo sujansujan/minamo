@@ -948,7 +948,7 @@ class PondSimulation {
                     drop.rowY = 1f
                     drop.colX = ((dIdx * 19 + (simTime * 13f).toInt()) % cols).toFloat()
                 } else {
-                    val ch = if (isSnow) (if (dIdx % 2 == 0) '*' else '.') else (if (dIdx % 2 == 0) '/' else ''')
+                    val ch = if (isSnow) (if (dIdx % 2 == 0) '*' else '.') else (if (dIdx % 2 == 0) '/' else '`')
                     setCell(drop.colX.roundToInt(), drop.rowY.roundToInt(), ch, pal.bubbleFg)
                 }
             }
