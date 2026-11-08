@@ -41,6 +41,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var asciiPondView: AsciiPondView
     private lateinit var textBiomeStatus: TextView
+    private lateinit var textHuntStatus: TextView
+    private lateinit var textAboutTelemetry: TextView
 
     private lateinit var btnCycleAuto: TextView
     private lateinit var btnCycleDawn: TextView
@@ -65,6 +67,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var textClarityBar: TextView
 
     private lateinit var textPredatorsCheck: TextView
+    private lateinit var btnHuntNatural: TextView
+    private lateinit var btnHuntFierce: TextView
+    private lateinit var btnHuntHarmless: TextView
     private lateinit var textBottomFeedersCheck: TextView
     private lateinit var textPauseBgSwitch: TextView
 
@@ -145,6 +150,8 @@ class SettingsActivity : AppCompatActivity() {
 
         asciiPondView = findViewById(R.id.asciiPondView)
         textBiomeStatus = findViewById(R.id.textBiomeStatus)
+        textHuntStatus = findViewById(R.id.textHuntStatus)
+        textAboutTelemetry = findViewById(R.id.textAboutTelemetry)
 
         btnCycleAuto = findViewById(R.id.btnCycleAuto)
         btnCycleDawn = findViewById(R.id.btnCycleDawn)
@@ -169,6 +176,10 @@ class SettingsActivity : AppCompatActivity() {
         textClarityBar = findViewById(R.id.textClarityBar)
 
         textPredatorsCheck = findViewById(R.id.textPredatorsCheck)
+        btnHuntNatural = findViewById(R.id.btnHuntNatural)
+        btnHuntFierce = findViewById(R.id.btnHuntFierce)
+        btnHuntHarmless = findViewById(R.id.btnHuntHarmless)
+
         textBottomFeedersCheck = findViewById(R.id.textBottomFeedersCheck)
         textPauseBgSwitch = findViewById(R.id.textPauseBgSwitch)
 
@@ -191,9 +202,24 @@ class SettingsActivity : AppCompatActivity() {
         navAbout.setOnClickListener { haptic(it); switchTab(3) }
 
         asciiPondView.onSpeciesRandomized = { speciesStr, timeLabel ->
-            textBiomeStatus.text = "biome .. $speciesStr"
+            textBiomeStatus.text = "biome ... $speciesStr"
             textBiomeStatus.contentDescription = "Active fish biome: $speciesStr"
             textHeaderClockTag.text = "[$timeLabel]"
+        }
+
+        asciiPondView.simulation.onHuntOutcomeListener = { caught, predName, preyName ->
+            if (caught) {
+                repository.recordCatchEvent(predName, preyName)
+                val cErr = ContextCompat.getColor(this, R.color.ascii_error)
+                textHuntStatus.setTextColor(cErr)
+                textHuntStatus.text = "event ... ! $predName caught $preyName"
+            } else {
+                repository.recordEscapeEvent(predName)
+                val cGood = ContextCompat.getColor(this, R.color.ascii_good)
+                textHuntStatus.setTextColor(cGood)
+                textHuntStatus.text = "event ... ok: school evaded $predName"
+            }
+            updateTelemetryBox()
         }
 
         findViewById<TextView>(R.id.btnShuffleFish).apply {
@@ -201,6 +227,8 @@ class SettingsActivity : AppCompatActivity() {
             setOnClickListener {
                 haptic(it)
                 asciiPondView.shuffleEcosystem()
+                textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_fg))
+                textHuntStatus.text = "event ... ok: new biome spawned"
             }
         }
 
@@ -212,7 +240,8 @@ class SettingsActivity : AppCompatActivity() {
                     updateConfig(currentConfig.copy(enablePredators = true))
                 }
                 val predName = asciiPondView.summonPredatorNow()
-                textBiomeStatus.text = "! alert .. $predName spotted (fish evading)"
+                textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_warn))
+                textHuntStatus.text = "event ... ! $predName hunting"
             }
         }
 
@@ -243,6 +272,10 @@ class SettingsActivity : AppCompatActivity() {
             haptic(it)
             updateConfig(currentConfig.copy(enablePredators = !currentConfig.enablePredators))
         }
+        btnHuntNatural.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.NATURAL)) }
+        btnHuntFierce.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.FIERCE)) }
+        btnHuntHarmless.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.HARMLESS)) }
+
         findViewById<LinearLayout>(R.id.rowBottomFeedersCheck).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(enableBottomFeeders = !currentConfig.enableBottomFeeders))
@@ -349,6 +382,10 @@ class SettingsActivity : AppCompatActivity() {
             else -> "~/minamo/about"
         }
 
+        if (tab == 3) {
+            updateTelemetryBox()
+        }
+
         val cAccent = ContextCompat.getColor(this, R.color.ascii_accent)
         val cBg = ContextCompat.getColor(this, R.color.ascii_bg)
         val cFg = ContextCompat.getColor(this, R.color.ascii_fg)
@@ -365,11 +402,28 @@ class SettingsActivity : AppCompatActivity() {
         styleNav(navAbout, tab == 3, "About tab")
     }
 
+    private fun updateTelemetryBox() {
+        val catches = repository.getTotalCatches()
+        val escapes = repository.getTotalEscapes()
+        val lastEv = repository.getLastEvent()
+        textAboutTelemetry.text =
+            "predator catches ... $catches
+" +
+            "school escapes ..... $escapes
+" +
+            "last hunt event .... $lastEv
+" +
+            "blood plume ........ @#% -> *:~ -> ·
+" +
+            "font engine ........ bundled monospace ttf"
+    }
+
     private fun refreshAsciiUi() {
         asciiPondView.config = currentConfig
         val snap = TimeOfDayPalette.resolve(currentConfig.timeCycleMode, currentConfig.paletteFamily)
         textHeaderClockTag.text = "[${snap.timeLabel}]"
-        textBiomeStatus.text = "biome .. ${asciiPondView.simulation.activeSpeciesSummary}"
+        textBiomeStatus.text = "biome ... ${asciiPondView.simulation.activeSpeciesSummary}"
+        updateTelemetryBox()
 
         val cAccent = ContextCompat.getColor(this, R.color.ascii_accent)
         val cFg = ContextCompat.getColor(this, R.color.ascii_fg)
@@ -379,6 +433,12 @@ class SettingsActivity : AppCompatActivity() {
             tv.text = if (checked) "(*) $label" else "( ) $label"
             tv.setTextColor(if (checked) cAccent else cFg)
             tv.contentDescription = "$label, ${if (checked) "selected" else "not selected"}"
+        }
+
+        fun styleSwitch(tv: TextView, row: View, enabled: Boolean, spokenName: String) {
+            tv.text = if (enabled) "[ on]" else "[off]"
+            tv.setTextColor(if (enabled) cAccent else cDim)
+            row.contentDescription = "$spokenName, ${if (enabled) "on" else "off"}"
         }
 
         styleRadio(btnCycleAuto, currentConfig.timeCycleMode == TimeCycleMode.AUTO_REALTIME, "clock")
@@ -396,28 +456,42 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnPalEmber, currentConfig.paletteFamily == PaletteFamily.EMBER, "ember")
         styleRadio(btnPalMoss, currentConfig.paletteFamily == PaletteFamily.MOSS, "moss")
 
-        textPredatorsCheck.text = if (currentConfig.enablePredators) "[x]" else "[ ]"
-        textPredatorsCheck.setTextColor(if (currentConfig.enablePredators) cAccent else cDim)
-        findViewById<LinearLayout>(R.id.rowPredatorsCheck).contentDescription =
-            "Predator visits, ${if (currentConfig.enablePredators) "enabled" else "disabled"}"
+        styleRadio(btnThemeSystem, currentConfig.themeMode == ThemeMode.SYSTEM, "system")
+        styleRadio(btnThemeLight, currentConfig.themeMode == ThemeMode.LIGHT, "light")
+        styleRadio(btnThemeDark, currentConfig.themeMode == ThemeMode.DARK, "dark")
 
-        textBottomFeedersCheck.text = if (currentConfig.enableBottomFeeders) "[x]" else "[ ]"
-        textBottomFeedersCheck.setTextColor(if (currentConfig.enableBottomFeeders) cAccent else cDim)
-        findViewById<LinearLayout>(R.id.rowBottomFeedersCheck).contentDescription =
-            "Bottom feeders, ${if (currentConfig.enableBottomFeeders) "enabled" else "disabled"}"
+        styleSwitch(
+            textPredatorsCheck,
+            findViewById(R.id.rowPredatorsCheck),
+            currentConfig.enablePredators,
+            "Predator ambushes"
+        )
+        styleRadio(btnHuntNatural, currentConfig.huntMode == HuntMode.NATURAL, "natural")
+        styleRadio(btnHuntFierce, currentConfig.huntMode == HuntMode.FIERCE, "fierce")
+        styleRadio(btnHuntHarmless, currentConfig.huntMode == HuntMode.HARMLESS, "harmless")
 
-        textPauseBgSwitch.text = if (currentConfig.pauseOnBackgroundAndScreenOff) "[ on]" else "[off]"
-        textPauseBgSwitch.setTextColor(if (currentConfig.pauseOnBackgroundAndScreenOff) cAccent else cDim)
-        findViewById<LinearLayout>(R.id.rowPauseBgSwitch).contentDescription =
-            "Pause when in background or screen is off, ${if (currentConfig.pauseOnBackgroundAndScreenOff) "on" else "off"}"
+        styleSwitch(
+            textBottomFeedersCheck,
+            findViewById(R.id.rowBottomFeedersCheck),
+            currentConfig.enableBottomFeeders,
+            "Bottom-feeder critters"
+        )
+        styleSwitch(
+            textPauseBgSwitch,
+            findViewById(R.id.rowPauseBgSwitch),
+            currentConfig.pauseOnBackgroundAndScreenOff,
+            "Pause when in background or screen is off"
+        )
+        styleSwitch(
+            textGyroSwitch,
+            findViewById(R.id.rowGyroSwitch),
+            currentConfig.enableGyro,
+            "Gyroscope tilt parallax"
+        )
 
         styleRadio(btnPowerAuto, currentConfig.powerSaveMode == PowerSaveMode.AUTO_SAVER, "auto")
         styleRadio(btnPowerEco, currentConfig.powerSaveMode == PowerSaveMode.MAX_ECO, "eco")
         styleRadio(btnPowerOff, currentConfig.powerSaveMode == PowerSaveMode.OFF, "off")
-
-        styleRadio(btnThemeSystem, currentConfig.themeMode == ThemeMode.SYSTEM, "system")
-        styleRadio(btnThemeLight, currentConfig.themeMode == ThemeMode.LIGHT, "light")
-        styleRadio(btnThemeDark, currentConfig.themeMode == ThemeMode.DARK, "dark")
 
         val fishCells = currentConfig.heroFishCount.coerceIn(2, 9)
         val fishBarStr = "[" + "#".repeat(fishCells) + "-".repeat(9 - fishCells) + "] $fishCells"
@@ -436,11 +510,6 @@ class SettingsActivity : AppCompatActivity() {
 
         styleRadio(btnFps30, currentConfig.targetFps == 30, "30fps")
         styleRadio(btnFps60, currentConfig.targetFps == 60, "60fps")
-
-        textGyroSwitch.text = if (currentConfig.enableGyro) "[ on]" else "[off]"
-        textGyroSwitch.setTextColor(if (currentConfig.enableGyro) cAccent else cDim)
-        findViewById<LinearLayout>(R.id.rowGyroSwitch).contentDescription =
-            "Gyroscope tilt parallax, ${if (currentConfig.enableGyro) "on" else "off"}"
     }
 
     private fun updateConfig(newConfig: WallpaperConfig) {

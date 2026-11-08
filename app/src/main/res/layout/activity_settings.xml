@@ -6,13 +6,14 @@
     android:background="@color/ascii_bg"
     android:orientation="vertical">
 
-    <!-- Path-style screen header (~/minamo) with hairline below -->
+    <!-- Path-style screen header (~/minamo/...) with hairline below -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="16dp"
-        android:paddingTop="14dp"
+        android:paddingTop="12dp"
         android:paddingEnd="16dp"
         android:paddingBottom="10dp">
 
@@ -30,7 +31,7 @@
             style="@style/AsciiText.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="[live clock]"
+            android:text="[clock]"
             android:textColor="@color/ascii_accent3" />
     </LinearLayout>
 
@@ -59,7 +60,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="ok: settings reset to defaults."
+            android:text="ok: reset to defaults."
             android:textColor="@color/ascii_good" />
 
         <TextView
@@ -103,7 +104,7 @@
                     android:id="@+id/asciiPondView"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:contentDescription="Interactive split-view ASCII aquarium. Tap water to spawn ripples." />
+                    android:contentDescription="Interactive split-view ASCII aquarium. Tap water to drop food pellets." />
             </LinearLayout>
 
             <TextView
@@ -119,96 +120,34 @@
                 android:textColor="@color/ascii_accent2" />
         </FrameLayout>
 
+        <!-- Standardized status ticker -->
         <TextView
             android:id="@+id/textBiomeStatus"
             style="@style/AsciiText.Small"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="biome .. clownfish, kohaku koi, neon tetra"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="biome ... clownfish, kohaku koi, neon tetra"
             android:textColor="@color/ascii_dim" />
 
-        <!-- Time-of-day quick cycle selector row -->
-        <HorizontalScrollView
+        <TextView
+            android:id="@+id/textHuntStatus"
+            style="@style/AsciiText.Small"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:layout_marginTop="2dp">
+            android:layout_marginTop="2dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="event ... ok: calm waters (tap water to feed)"
+            android:textColor="@color/ascii_fg" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="sky: "
-                    android:textColor="@color/ascii_dim" />
-
-                <TextView
-                    android:id="@+id/btnCycleAuto"
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:gravity="center"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp"
-                    android:text="(*) clock" />
-
-                <TextView
-                    android:id="@+id/btnCycleDawn"
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:gravity="center"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp"
-                    android:text="( ) dawn" />
-
-                <TextView
-                    android:id="@+id/btnCycleNoon"
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:gravity="center"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp"
-                    android:text="( ) noon" />
-
-                <TextView
-                    android:id="@+id/btnCycleDusk"
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:gravity="center"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp"
-                    android:text="( ) dusk" />
-
-                <TextView
-                    android:id="@+id/btnCycleNight"
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:gravity="center"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp"
-                    android:text="( ) night" />
-            </LinearLayout>
-        </HorizontalScrollView>
-
-        <!-- Bottom thumb-reachable primary & secondary action row -->
+        <!-- Bottom thumb-reachable action bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -220,7 +159,7 @@
                 android:minHeight="48dp"
                 android:gravity="center"
                 android:paddingStart="4dp"
-                android:paddingEnd="4dp"
+                android:paddingEnd="6dp"
                 android:text="@string/action_shuffle_fish"
                 android:textColor="@color/ascii_fg" />
 
@@ -231,7 +170,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="48dp"
                 android:gravity="center"
-                android:paddingStart="4dp"
+                android:paddingStart="6dp"
                 android:paddingEnd="4dp"
                 android:text="@string/action_summon_predator"
                 android:textColor="@color/ascii_accent3" />
@@ -249,14 +188,14 @@
                 android:minHeight="48dp"
                 android:gravity="center"
                 android:paddingStart="6dp"
-                android:paddingEnd="6dp"
+                android:paddingEnd="4dp"
                 android:text="@string/action_set_wallpaper"
                 android:textColor="@color/ascii_accent" />
         </LinearLayout>
     </LinearLayout>
 
     <!-- =================================================================== -->
-    <!-- SCREEN 2: [2 set] Character-Built Configuration Controls            -->
+    <!-- SCREEN 2: [2 set] Standardized Character-Built Settings             -->
     <!-- =================================================================== -->
     <ScrollView
         android:id="@+id/screenSettings"
@@ -272,7 +211,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Panel 1: Ecosystem & Critters -->
+            <!-- BOX 1: SKY & PALETTE -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -288,155 +227,12 @@
                     android:paddingTop="14dp"
                     android:paddingEnd="12dp"
                     android:paddingBottom="10dp">
-
-                    <!-- Fish count stepper -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/textFishBar"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="fish: [#####----] 5" />
-
-                        <TextView
-                            android:id="@+id/btnFishMinus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ - ]" />
-
-                        <TextView
-                            android:id="@+id/btnFishPlus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ + ]" />
-                    </LinearLayout>
-
-                    <!-- Predator checkbox -->
-                    <LinearLayout
-                        android:id="@+id/rowPredatorsCheck"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/textPredatorsCheck"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="[x]"
-                            android:textColor="@color/ascii_accent" />
-
-                        <TextView
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="10dp"
-                            android:text="predator visits (fish scatter &amp; evade)" />
-                    </LinearLayout>
-
-                    <!-- Bottom feeders checkbox -->
-                    <LinearLayout
-                        android:id="@+id/rowBottomFeedersCheck"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/textBottomFeedersCheck"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="[x]"
-                            android:textColor="@color/ascii_accent" />
-
-                        <TextView
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="10dp"
-                            android:text="bottom feeders (crabs, shrimp, snails)" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@color/ascii_bg"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
-                    android:text=" critters &amp; ecosystem "
-                    android:textColor="@color/ascii_accent2" />
-            </FrameLayout>
-
-            <!-- Panel 2: Power Saver & Battery -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:background="@drawable/bg_ascii_box"
-                    android:orientation="vertical"
-                    android:paddingStart="12dp"
-                    android:paddingTop="14dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="10dp">
-
-                    <LinearLayout
-                        android:id="@+id/rowPauseBgSwitch"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="pause on bg / screen off" />
-
-                        <TextView
-                            android:id="@+id/textPauseBgSwitch"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="[ on]"
-                            android:textColor="@color/ascii_accent" />
-                    </LinearLayout>
 
                     <TextView
                         style="@style/AsciiText.Small"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="battery saver policy:"
+                        android:text="time cycle:"
                         android:textColor="@color/ascii_dim" />
 
                     <LinearLayout
@@ -445,159 +241,54 @@
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/btnPowerAuto"
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnCycleAuto"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.15"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) clock" />
+
+                        <TextView
+                            android:id="@+id/btnCycleDawn"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="(*) auto" />
+                            android:text="( ) dawn" />
 
                         <TextView
-                            android:id="@+id/btnPowerEco"
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnCycleNoon"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="( ) eco" />
+                            android:text="( ) noon" />
 
                         <TextView
-                            android:id="@+id/btnPowerOff"
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnCycleDusk"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="( ) off" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                            android:text="( ) dusk" />
 
                         <TextView
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnCycleNight"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="frame rate cap" />
-
-                        <TextView
-                            android:id="@+id/btnFps30"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_weight="1.05"
                             android:minHeight="48dp"
-                            android:gravity="center"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="8dp"
-                            android:text="(*) 30fps" />
-
-                        <TextView
-                            android:id="@+id/btnFps60"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="8dp"
-                            android:text="( ) 60fps" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/rowGyroSwitch"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="gyroscope tilt parallax" />
-
-                        <TextView
-                            android:id="@+id/textGyroSwitch"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="[ on]"
-                            android:textColor="@color/ascii_accent" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@color/ascii_bg"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
-                    android:text=" power &amp; sensors "
-                    android:textColor="@color/ascii_accent2" />
-            </FrameLayout>
-
-            <!-- Panel 3: Grid & Appearance -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:background="@drawable/bg_ascii_box"
-                    android:orientation="vertical"
-                    android:paddingStart="12dp"
-                    android:paddingTop="14dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="10dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/textClarityBar"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="rays: [########--] 85%" />
-
-                        <TextView
-                            android:id="@+id/btnClarityMinus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ - ]" />
-
-                        <TextView
-                            android:id="@+id/btnClarityPlus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ + ]" />
+                            android:gravity="center_vertical"
+                            android:text="( ) night" />
                     </LinearLayout>
 
                     <TextView
@@ -659,7 +350,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="pond palette family:"
+                        android:text="palette family:"
                         android:textColor="@color/ascii_dim" />
 
                     <LinearLayout
@@ -703,51 +394,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="character grid density:"
-                        android:textColor="@color/ascii_dim" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/btnGridCozy"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) 68c" />
-
-                        <TextView
-                            android:id="@+id/btnGridBalanced"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) 82c" />
-
-                        <TextView
-                            android:id="@+id/btnGridDense"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) 96c" />
-                    </LinearLayout>
-
-                    <TextView
-                        style="@style/AsciiText.Small"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="ui theme (lagoon light + dark):"
+                        android:text="app ui mode:"
                         android:textColor="@color/ascii_dim" />
 
                     <LinearLayout
@@ -795,7 +442,429 @@
                     android:background="@color/ascii_bg"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:text=" grid &amp; appearance "
+                    android:text=" 1. sky &amp; palette "
+                    android:textColor="@color/ascii_accent2" />
+            </FrameLayout>
+
+            <!-- BOX 2: ECOSYSTEM & HUNT -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:background="@drawable/bg_ascii_box"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/textFishBar"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="fish: [######---] 6" />
+
+                        <TextView
+                            android:id="@+id/btnFishMinus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:gravity="center"
+                            android:text="[ - ]" />
+
+                        <TextView
+                            android:id="@+id/btnFishPlus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:gravity="center"
+                            android:text="[ + ]" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowPredatorsCheck"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="predator ambushes" />
+
+                        <TextView
+                            android:id="@+id/textPredatorsCheck"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[ on]"
+                            android:textColor="@color/ascii_accent" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="predator catch rate (blood plume):"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnHuntNatural"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) natural" />
+
+                        <TextView
+                            android:id="@+id/btnHuntFierce"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) fierce" />
+
+                        <TextView
+                            android:id="@+id/btnHuntHarmless"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) harmless" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowBottomFeedersCheck"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="bottom-feeder critters" />
+
+                        <TextView
+                            android:id="@+id/textBottomFeedersCheck"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[ on]"
+                            android:textColor="@color/ascii_accent" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@color/ascii_bg"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:text=" 2. ecosystem &amp; hunt "
+                    android:textColor="@color/ascii_accent2" />
+            </FrameLayout>
+
+            <!-- BOX 3: GRID & OPTICS -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:background="@drawable/bg_ascii_box"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/textClarityBar"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="rays: [########--] 85%" />
+
+                        <TextView
+                            android:id="@+id/btnClarityMinus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:gravity="center"
+                            android:text="[ - ]" />
+
+                        <TextView
+                            android:id="@+id/btnClarityPlus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:gravity="center"
+                            android:text="[ + ]" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="character grid resolution:"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnGridCozy"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) 68c" />
+
+                        <TextView
+                            android:id="@+id/btnGridBalanced"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) 82c" />
+
+                        <TextView
+                            android:id="@+id/btnGridDense"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) 96c" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@color/ascii_bg"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:text=" 3. grid &amp; optics "
+                    android:textColor="@color/ascii_accent2" />
+            </FrameLayout>
+
+            <!-- BOX 4: POWER & ENGINE -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:background="@drawable/bg_ascii_box"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:id="@+id/rowPauseBgSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="pause on bg / screen off" />
+
+                        <TextView
+                            android:id="@+id/textPauseBgSwitch"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[ on]"
+                            android:textColor="@color/ascii_accent" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowGyroSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="gyroscope tilt parallax" />
+
+                        <TextView
+                            android:id="@+id/textGyroSwitch"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[ on]"
+                            android:textColor="@color/ascii_accent" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="battery saver policy:"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnPowerAuto"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) auto" />
+
+                        <TextView
+                            android:id="@+id/btnPowerEco"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) eco" />
+
+                        <TextView
+                            android:id="@+id/btnPowerOff"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) off" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="target frame rate:"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnFps30"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) 30fps" />
+
+                        <TextView
+                            android:id="@+id/btnFps60"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) 60fps" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@color/ascii_bg"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:text=" 4. power &amp; engine "
                     android:textColor="@color/ascii_accent2" />
             </FrameLayout>
 
@@ -812,7 +881,7 @@
     </ScrollView>
 
     <!-- =================================================================== -->
-    <!-- SCREEN 3: [3 about] Tagline, Species, Predators & Bottom Feeders    -->
+    <!-- SCREEN 3: [3 about] Live Hunt Telemetry & Species Catalog           -->
     <!-- =================================================================== -->
     <ScrollView
         android:id="@+id/screenAbout"
@@ -828,6 +897,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Telemetry Box -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -848,7 +918,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.1.0"
+                        android:text="minamo v2.3.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView
@@ -859,13 +929,15 @@
                         android:text="@string/tagline" />
 
                     <TextView
+                        android:id="@+id/textAboutTelemetry"
                         style="@style/AsciiText.Small"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="separation ......... strict 2d occupancy grid
-predator alert ..... ! 2d scatter &amp; juke evasion
-battery saver ...... 0% cpu when screen off"
+                        android:text="predator catches ... 0
+school escapes ..... 0
+blood plume ........ @#% -&gt; *:~ -&gt; ·
+font engine ........ bundled monospace ttf"
                         android:textColor="@color/ascii_dim" />
                 </LinearLayout>
 
@@ -877,10 +949,11 @@ battery saver ...... 0% cpu when screen off"
                     android:background="@color/ascii_bg"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:text=" about "
+                    android:text=" telemetry &amp; info "
                     android:textColor="@color/ascii_accent2" />
             </FrameLayout>
 
+            <!-- Predators Box -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -901,10 +974,11 @@ battery saver ...... 0% cpu when screen off"
                         style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="barracuda pike .. &gt;&lt;(((====º&lt;
-reef shark ...... &gt;&lt;))))º&gt;===&lt;
-moray eel ....... ~^~^~===º&lt;
-swordfish ....... &gt;&lt;(((º&gt;====--" />
+                        android:text="barracuda ....... &gt;&lt;(((===º&lt;
+reef shark ...... &gt;&lt;)))º&gt;==&lt;
+swordfish ....... &gt;&lt;(((º&gt;====--
+moray eel ....... ~^~^~==º&lt;
+jaw snap ........ &gt;&lt;(((===º={{" />
                 </LinearLayout>
 
                 <TextView
@@ -919,6 +993,7 @@ swordfish ....... &gt;&lt;(((º&gt;====--" />
                     android:textColor="@color/ascii_accent" />
             </FrameLayout>
 
+            <!-- Peaceful Fish & Critters Box -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -938,13 +1013,14 @@ swordfish ....... &gt;&lt;(((º&gt;====--" />
                         style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="river crab ...... (\\/)(°_°)(\\/)
+                        android:text="kohaku koi ...... &gt;&lt;((({(º&gt;
+clownfish ....... &gt;&lt;)|)|°&gt;
+regal tang ...... &gt;==)))°&gt;
+moorish idol .... &gt;|#|°&gt;
+royal betta ..... &gt;))))º&gt;
+river crab ...... (\\/)(°_°)(\\/)
 cherry shrimp ... ,=/&gt;°
-cory catfish .... &gt;))º&gt;=
-golden snail .... @_/
-kohaku koi ...... &gt;&lt;(((º&gt;
-clownfish ....... &gt;))|°&gt;
-neon tetra ...... &gt;&lt;&gt;°" />
+moon jellyfish .. ( °° ) /||\\" />
                 </LinearLayout>
 
                 <TextView
@@ -955,7 +1031,7 @@ neon tetra ...... &gt;&lt;&gt;°" />
                     android:background="@color/ascii_bg"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:text=" bottom feeders &amp; fish "
+                    android:text=" fish &amp; critters "
                     android:textColor="@color/ascii_accent2" />
             </FrameLayout>
         </LinearLayout>

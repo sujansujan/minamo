@@ -180,6 +180,10 @@ class KoiPondWallpaperService : WallpaperService() {
             simulation.loadBundledFont(this@KoiPondWallpaperService)
             settingsRepo = WallpaperSettingsRepository(this@KoiPondWallpaperService)
             currentConfig = settingsRepo.loadConfig()
+            simulation.onHuntOutcomeListener = { caught, predName, preyName ->
+                if (caught) settingsRepo.recordCatchEvent(predName, preyName)
+                else settingsRepo.recordEscapeEvent(predName)
+            }
             settingsRepo.registerListener(this)
 
             powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager

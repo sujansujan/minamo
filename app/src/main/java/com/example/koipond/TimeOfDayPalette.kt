@@ -24,7 +24,9 @@ data class AsciiStageColors(
     val fishGold: Int,
     val fishFoam: Int,
     val fishRose: Int,
-    val fishDimBg: Int
+    val fishDimBg: Int,
+    val bloodCore: Int = 0xFFFF5263.toInt(),
+    val bloodMist: Int = 0xFFC82838.toInt()
 )
 
 object TimeOfDayPalette {
