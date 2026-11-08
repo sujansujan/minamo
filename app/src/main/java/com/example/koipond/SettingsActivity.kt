@@ -20,11 +20,6 @@ import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.roundToInt
 
-/**
- * Interactive launcher activity featuring a live real-time OpenGL ES 3.0 Koi Pond preview banner
- * at the top (responds to touch ripples and slider changes immediately) plus settings controls
- * and a multi-fallback launcher button for the system Live Wallpaper picker.
- */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var repository: WallpaperSettingsRepository
@@ -39,7 +34,6 @@ class SettingsActivity : AppCompatActivity() {
         repository = WallpaperSettingsRepository(this)
         currentConfig = repository.loadConfig()
 
-        // Set up live interactive OpenGL ES 3.0 Koi Pond preview banner
         val previewSurface = findViewById<GLSurfaceView>(R.id.glPreviewSurface)
         previewSurface.setEGLContextClientVersion(3)
         val previewSimulation = PondSimulation()
@@ -98,19 +92,19 @@ class SettingsActivity : AppCompatActivity() {
 
         val switchGyro = findViewById<SwitchMaterial>(R.id.switchGyro)
         val buttonApplyWallpaper = findViewById<Button>(R.id.buttonApplyWallpaper)
+        val buttonShuffleFish = findViewById<Button>(R.id.buttonShuffleFish)
 
-        // Initialize UI states from saved configuration
-        seekFishCount.max = 6 // 3 .. 9 koi
+        seekFishCount.max = 6 // 3 .. 9 main fish
         seekFishCount.progress = (currentConfig.koiCount - 3).coerceIn(0, 6)
         textFishCount.text = getString(R.string.label_fish_count, currentConfig.koiCount)
 
         val clarityPercent = (currentConfig.waterClarity * 100f).roundToInt().coerceIn(35, 100)
-        seekWaterClarity.max = 65 // 35% .. 100%
+        seekWaterClarity.max = 65
         seekWaterClarity.progress = clarityPercent - 35
         textWaterClarity.text = getString(R.string.label_water_clarity, clarityPercent)
 
         val sunDeg = currentConfig.sunAngleDeg.roundToInt().coerceIn(25, 75)
-        seekSunAngle.max = 50 // 25° .. 75°
+        seekSunAngle.max = 50
         seekSunAngle.progress = sunDeg - 25
         textSunAngle.text = getString(R.string.label_sun_angle, sunDeg)
 
@@ -128,7 +122,6 @@ class SettingsActivity : AppCompatActivity() {
 
         switchGyro.isChecked = currentConfig.enableGyro
 
-        // Listeners
         seekFishCount.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val count = progress + 3
@@ -175,6 +168,12 @@ class SettingsActivity : AppCompatActivity() {
 
         switchGyro.setOnCheckedChangeListener { _, isChecked ->
             updateConfig(currentConfig.copy(enableGyro = isChecked))
+        }
+
+        buttonShuffleFish.setOnClickListener {
+            previewSurface.queueEvent {
+                previewRenderer.randomizeFishOnUnlock()
+            }
         }
 
         buttonApplyWallpaper.setOnClickListener {

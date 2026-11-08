@@ -25,9 +25,9 @@ import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
 
 /**
- * Android Live Wallpaper service managing a dedicated EGL14 / OpenGL ES 3.0 render thread,
- * frame-rate pacing (30/60 FPS), visibility lifecycle, Battery Saver integration,
- * home-screen scroll offsets, gyroscope parallax, and water touch ripples.
+ * Android Live Wallpaper service for the Half-Over / Half-Underwater Split-View Aquarium.
+ * Listens for phone unlock (ACTION_USER_PRESENT / ACTION_SCREEN_ON) to randomize the fish species
+ * ecosystem on every unlock.
  */
 class KoiPondWallpaperService : WallpaperService() {
 
@@ -72,9 +72,19 @@ class KoiPondWallpaperService : WallpaperService() {
         private var surfaceReady = false
         private var lastFrameTimestampNs = 0L
 
-        private val powerSaverReceiver = object : BroadcastReceiver() {
+        private val systemEventReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                updateBatterySaverState()
+                when (intent?.action) {
+                    PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
+                        updateBatterySaverState()
+                    }
+                    Intent.ACTION_USER_PRESENT, Intent.ACTION_SCREEN_ON -> {
+                        // Randomize fish species & sizes on every phone unlock / wake!
+                        renderHandler?.post {
+                            renderer?.randomizeFishOnUnlock()
+                        }
+                    }
+                }
             }
         }
         private var isReceiverRegistered = false
@@ -124,16 +134,20 @@ class KoiPondWallpaperService : WallpaperService() {
             updateBatterySaverState()
 
             try {
-                val filter = IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+                val filter = IntentFilter().apply {
+                    addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+                    addAction(Intent.ACTION_USER_PRESENT)
+                    addAction(Intent.ACTION_SCREEN_ON)
+                }
                 ContextCompat.registerReceiver(
                     this@KoiPondWallpaperService,
-                    powerSaverReceiver,
+                    systemEventReceiver,
                     filter,
-                    ContextCompat.RECEIVER_NOT_EXPORTED
+                    ContextCompat.RECEIVER_EXPORTED
                 )
                 isReceiverRegistered = true
             } catch (e: Exception) {
-                Log.w("KoiPondEngine", "Could not register power receiver", e)
+                Log.w("KoiPondEngine", "Could not register system event receiver", e)
             }
 
             sensorManager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager
@@ -242,7 +256,7 @@ class KoiPondWallpaperService : WallpaperService() {
             unregisterGyro()
             if (isReceiverRegistered) {
                 try {
-                    unregisterReceiver(powerSaverReceiver)
+                    unregisterReceiver(systemEventReceiver)
                 } catch (_: Exception) {}
                 isReceiverRegistered = false
             }

@@ -7,27 +7,12 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-/**
- * Custom OpenGL ES 3.0 Renderer implementing a 2-stage pipeline:
- *   Pass 1 (Offscreen FBO at dynamic scale 0.6x..1.0x):
- *     - Pond floor (river cobbles, pebbles, sand, moss, dappled canopy shadows, caustics)
- *     - Projected soft shadows of swaying vallisneria and koi
- *     - Swaying vallisneria grass blades
- *     - Articulated 3D koi and silver minnows sorted back-to-front by depth
- *   Pass 2 (Native screen resolution up to 2160x3840):
- *     - Snell's law water refraction sampling the Pass 1 texture
- *     - Interactive touch & raindrop ripples
- *     - Drifting sediment motes & rising air bubbles
- *     - Floating lily pads & blooming pink/cream lotus flowers
- *     - Fresnel sky reflection, sun surface glints, and volumetric god rays
- */
 class KoiPondRenderer(private val simulation: PondSimulation) {
 
     private var surfaceWidth = 1080
-    private var surfaceHeight = 1920
-    private var aspect = 1920f / 1080f
+    private var surfaceHeight = 2400
+    private var aspect = 2400f / 1080f
 
-    // Dynamic resolution scaling (0.60x .. 1.00x)
     var currentScale = 0.85f
         private set
     private var fboWidth = 0
@@ -35,13 +20,11 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
     private var fboId = 0
     private var fboColorTex = 0
 
-    // Shader programs
     private var bedProgram = 0
     private var vallisneriaProgram = 0
     private var koiProgram = 0
     private var waterCompositeProgram = 0
 
-    // Cached uniform locations (zero string lookups per frame)
     private var bedTimeLoc = -1
     private var bedAspectLoc = -1
     private var bedParallaxLoc = -1
@@ -80,31 +63,23 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
     private var waterSunDirLoc = -1
     private var waterClarityLoc = -1
     private var waterRipplesLoc = -1
-    private var waterLilyPadsALoc = -1
-    private var waterLilyPadsBLoc = -1
     private var waterParticleCountLoc = -1
     private var waterParticlesLoc = -1
 
-    // Meshes & procedural texture
     private var quadMesh: GlMesh? = null
     private var vallisneriaMesh: GlMesh? = null
     private var fishMesh: GlMesh? = null
     private var noiseTexId = 0
 
-    // Pre-allocated uniform upload arrays (zero per-frame heap allocations)
     private val rippleUniformArray = FloatArray(10 * 4)
-    private val lilyPadsAArray = FloatArray(7 * 4)
-    private val lilyPadsBArray = FloatArray(7 * 4)
     private val particleUniformArray = FloatArray(48 * 4)
     private val fishOrder = IntArray(simulation.totalMaxFish) { it }
 
-    // Smoothed parallax offset from home-screen scroll + gyroscope
     private var targetParallaxX = 0f
     private var targetParallaxY = 0f
     private var smoothParallaxX = 0f
     private var smoothParallaxY = 0f
 
-    // Adaptive resolution governor state
     private var smoothedFrameTimeMs = 16.0f
     private var scaleCooldownFrames = 0
 
@@ -116,8 +91,8 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
         noiseTexId = ProceduralTextures.createNoiseAndCausticsTexture(256)
 
         quadMesh = Meshes.createFullscreenQuad()
-        vallisneriaMesh = Meshes.createVallisneriaRibbon(20)
-        fishMesh = Meshes.createFishMesh(32, 14)
+        vallisneriaMesh = Meshes.createVallisneriaRibbon(22)
+        fishMesh = Meshes.createFishMesh(28, 12)
 
         bedProgram = Shaders.buildProgram(Shaders.POND_BED_VERT, Shaders.POND_BED_FRAG)
         bedTimeLoc = GLES30.glGetUniformLocation(bedProgram, "uTime")
@@ -164,32 +139,14 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
         waterSunDirLoc = GLES30.glGetUniformLocation(waterCompositeProgram, "uSunDir")
         waterClarityLoc = GLES30.glGetUniformLocation(waterCompositeProgram, "uWaterClarity")
         waterRipplesLoc = GLES30.glGetUniformLocation(waterCompositeProgram, "uRipples")
-        waterLilyPadsALoc = GLES30.glGetUniformLocation(waterCompositeProgram, "uLilyPadsA")
-        waterLilyPadsBLoc = GLES30.glGetUniformLocation(waterCompositeProgram, "uLilyPadsB")
         waterParticleCountLoc = GLES30.glGetUniformLocation(waterCompositeProgram, "uParticleCount")
         waterParticlesLoc = GLES30.glGetUniformLocation(waterCompositeProgram, "uParticles")
-
-        // Populate static lily pad uniform arrays once
-        for (i in simulation.lilyPads.indices) {
-            val p = simulation.lilyPads[i]
-            val idx = i * 4
-            lilyPadsAArray[idx] = p.x
-            lilyPadsAArray[idx + 1] = p.y
-            lilyPadsAArray[idx + 2] = p.radius
-            lilyPadsAArray[idx + 3] = p.baseRotation
-
-            lilyPadsBArray[idx] = p.notchAngle
-            lilyPadsBArray[idx + 1] = p.swayPhase
-            lilyPadsBArray[idx + 2] = if (p.hasLotus) 1f else 0f
-            lilyPadsBArray[idx + 3] = p.lotusColorVariant.toFloat()
-        }
     }
 
     fun onSurfaceChanged(width: Int, height: Int, config: WallpaperConfig, isBatterySaver: Boolean) {
-        // Clamp up to 4K UHD (2160x3840)
         surfaceWidth = width.coerceIn(1, 2160)
         surfaceHeight = height.coerceIn(1, 3840)
-        aspect = surfaceHeight.toFloat() / surfaceWidth.toFloat()
+        aspect = (surfaceHeight.toFloat() / surfaceWidth.toFloat()).coerceIn(0.5f, 3.0f)
 
         val initialScale = if (isBatterySaver) 0.60f else config.qualityPreset.maxScale
         currentScale = initialScale.coerceIn(0.60f, 1.00f)
@@ -248,22 +205,20 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
     }
 
     fun setParallaxTargets(scrollOffsetX: Float, gyroX: Float, gyroY: Float) {
-        // Gentle parallax amplitude so scene feels deep without disorienting home-screen icons
-        targetParallaxX = (scrollOffsetX - 0.5f) * 0.14f + gyroX * 0.045f
-        targetParallaxY = gyroY * 0.045f
+        targetParallaxX = (scrollOffsetX - 0.5f) * 0.14f + gyroX * 0.05f
+        targetParallaxY = gyroY * 0.05f
     }
 
     fun onTouchWater(screenX: Float, screenY: Float) {
         val ndcX = (screenX / surfaceWidth.toFloat()) * 2f - 1f
         val ndcY = 1f - (screenY / surfaceHeight.toFloat()) * 2f
-        val worldX = ndcX
-        val worldY = ndcY / aspect
-        simulation.spawnRipple(worldX, worldY, amplitude = 1.0f, startleFish = true, aspect = aspect)
+        simulation.spawnRipple(ndcX, ndcY, amplitude = 1.0f, startleFish = true)
     }
 
-    /**
-     * Adjusts dynamic resolution scale (0.60x .. 1.00x) when frame time drifts from budget.
-     */
+    fun randomizeFishOnUnlock() {
+        simulation.randomizeEcosystemOnUnlock(System.nanoTime())
+    }
+
     fun updateDynamicResolution(
         lastFrameCpuGpuMs: Float,
         config: WallpaperConfig,
@@ -299,25 +254,22 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
     }
 
     fun drawFrame(dt: Float, config: WallpaperConfig, isBatterySaver: Boolean) {
-        val activeKoi = if (isBatterySaver) (config.koiCount - 2).coerceAtLeast(3) else config.koiCount
-        val activeMinnows = if (isBatterySaver) 2 else simulation.minnowCount
+        val activeHero = if (isBatterySaver) (config.koiCount - 2).coerceAtLeast(3) else config.koiCount
+        val activeSchool = if (isBatterySaver) 3 else simulation.maxSchoolFish
         val activeParticles = if (isBatterySaver) {
             16
         } else {
             (48 * config.qualityPreset.particleMultiplier).roundToInt().coerceIn(16, 48)
         }
 
-        // Smooth parallax interpolation
         val lerpFactor = (dt * 6f).coerceIn(0.01f, 1f)
         smoothParallaxX += (targetParallaxX - smoothParallaxX) * lerpFactor
         smoothParallaxY += (targetParallaxY - smoothParallaxY) * lerpFactor
 
-        simulation.update(dt, aspect, activeKoi, activeMinnows, activeParticles)
+        simulation.update(dt, activeHero, activeSchool, activeParticles)
 
-        // Compute normalized 3D sunlight vector entering from upper-left at config.sunAngleDeg
         val elevRad = (config.sunAngleDeg * PI / 180.0).toFloat()
         val horiz = cos(elevRad)
-        // Azimuth from upper-left (-X, +Y)
         val sunX = -0.7071f * horiz
         val sunY =  0.7071f * horiz
         val sunZ =  sin(elevRad)
@@ -325,13 +277,13 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
         val simTime = simulation.simulationTime
 
         // =========================================================================
-        // PASS 1: Render Underwater Scene into Dynamic-Scale Offscreen FBO
+        // PASS 1: Render Split-View Backdrop, Underwater Seagrass & Multi-Species Fish
         // =========================================================================
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fboId)
         GLES30.glViewport(0, 0, fboWidth, fboHeight)
         GLES30.glDisable(GLES30.GL_BLEND)
 
-        // 1A. Pond Floor (River Stones, Gravel, Moss, Dappled Canopy Shadows, Caustics)
+        // 1A. Split-View Backdrop (Over-Water Sky & Surface + Underwater Column & Cobble Floor)
         GLES30.glUseProgram(bedProgram)
         GLES30.glUniform1f(bedTimeLoc, simTime)
         GLES30.glUniform1f(bedAspectLoc, aspect)
@@ -346,22 +298,7 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
         GLES30.glEnable(GLES30.GL_BLEND)
         GLES30.glBlendFunc(GLES30.GL_SRC_ALPHA, GLES30.GL_ONE_MINUS_SRC_ALPHA)
 
-        // 1B. Vallisneria Soft Shadows on Pond Floor
-        val bladeCount = if (isBatterySaver) 14 else simulation.vallisneriaBlades.size
-        GLES30.glUseProgram(vallisneriaProgram)
-        GLES30.glUniform1f(valTimeLoc, simTime)
-        GLES30.glUniform1f(valAspectLoc, aspect)
-        GLES30.glUniform2f(valParallaxLoc, smoothParallaxX, smoothParallaxY)
-        GLES30.glUniform3f(valSunDirLoc, sunX, sunY, sunZ)
-        GLES30.glUniform1f(valShadowPassLoc, 1.0f)
-        for (i in 0 until bladeCount) {
-            val b = simulation.vallisneriaBlades[i]
-            GLES30.glUniform4f(valBladeDataLoc, b.rootX, b.rootY, b.length, b.width)
-            GLES30.glUniform3f(valBladeMetaLoc, b.baseAngle, b.phase, b.hueShift)
-            vallisneriaMesh?.draw()
-        }
-
-        // 1C. Sort active fish back-to-front by depth (deepest drawn first) without allocations
+        // 1B. Sort active fish back-to-front by zDepth (deepest drawn first)
         for (i in 1 until simulation.totalMaxFish) {
             val key = fishOrder[i]
             val keyDepth = simulation.fish[key].zDepth
@@ -373,63 +310,64 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
             fishOrder[j + 1] = key
         }
 
-        // 1D. Projected Koi & Minnow Soft Shadows onto Pond Bed
+        // 1C. Background Seagrass Blades (zDepth >= 0.45)
+        val bladeCount = if (isBatterySaver) 16 else simulation.vallisneriaBlades.size
+        GLES30.glUseProgram(vallisneriaProgram)
+        GLES30.glUniform1f(valTimeLoc, simTime)
+        GLES30.glUniform1f(valAspectLoc, aspect)
+        GLES30.glUniform2f(valParallaxLoc, smoothParallaxX, smoothParallaxY)
+        GLES30.glUniform3f(valSunDirLoc, sunX, sunY, sunZ)
+        GLES30.glUniform1f(valShadowPassLoc, 0.0f)
+        for (i in 0 until bladeCount) {
+            val b = simulation.vallisneriaBlades[i]
+            if (b.depthZ >= 0.45f) {
+                GLES30.glUniform4f(valBladeDataLoc, b.rootX, b.rootY, b.length, b.width)
+                GLES30.glUniform3f(valBladeMetaLoc, b.baseAngle, b.phase, b.hueShift)
+                vallisneriaMesh?.draw()
+            }
+        }
+
+        // 1D. Multi-Species 3D Side-View Fish
         GLES30.glUseProgram(koiProgram)
         GLES30.glUniform1f(koiTimeLoc, simTime)
         GLES30.glUniform1f(koiAspectLoc, aspect)
         GLES30.glUniform2f(koiParallaxLoc, smoothParallaxX, smoothParallaxY)
         GLES30.glUniform3f(koiSunDirLoc, sunX, sunY, sunZ)
         GLES30.glUniform1f(koiClarityLoc, config.waterClarity)
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, noiseTexId)
         GLES30.glUniform1i(koiNoiseTexLoc, 0)
-        GLES30.glUniform1f(koiShadowPassLoc, 1.0f)
 
         for (idx in 0 until simulation.totalMaxFish) {
             val fishIdx = fishOrder[idx]
             val f = simulation.fish[fishIdx]
-            if (!f.isMinnow && fishIdx >= activeKoi) continue
-            if (f.isMinnow && (fishIdx - simulation.maxKoi) >= activeMinnows) continue
+            if (!f.isSmallSchooler && fishIdx >= activeHero) continue
+            if (f.isSmallSchooler && (fishIdx - simulation.maxHeroFish) >= activeSchool) continue
 
             GLES30.glUniform3f(koiWorldPosLoc, f.x, f.y, f.zDepth)
-            GLES30.glUniform2f(koiScaleLoc, f.bodyWidth, f.bodyLength)
+            GLES30.glUniform2f(koiScaleLoc, f.bodyLength, f.bodyHeight)
             GLES30.glUniform1f(koiHeadingLoc, f.heading)
             GLES30.glUniform1f(koiSwimPhaseLoc, f.swimPhase)
-            GLES30.glUniform1f(koiCurvatureLoc, f.smoothedCurvature)
-            GLES30.glUniform1i(koiPatternVariantLoc, f.patternVariant)
+            GLES30.glUniform1f(koiCurvatureLoc, f.pitch + f.smoothedCurvature * 0.35f)
+            GLES30.glUniform1f(koiShadowPassLoc, f.finScale)
+            GLES30.glUniform1i(koiPatternVariantLoc, f.speciesId)
             GLES30.glUniform1f(koiPatternSeedLoc, f.patternSeed)
             fishMesh?.draw()
         }
 
-        // 1E. Swaying Underwater Vallisneria Grass Blades
+        // 1E. Foreground Seagrass Blades (zDepth < 0.45) so fish can swim behind foreground plants
         GLES30.glUseProgram(vallisneriaProgram)
-        GLES30.glUniform1f(valShadowPassLoc, 0.0f)
         for (i in 0 until bladeCount) {
             val b = simulation.vallisneriaBlades[i]
-            GLES30.glUniform4f(valBladeDataLoc, b.rootX, b.rootY, b.length, b.width)
-            GLES30.glUniform3f(valBladeMetaLoc, b.baseAngle, b.phase, b.hueShift)
-            vallisneriaMesh?.draw()
-        }
-
-        // 1F. Lit 3D Koi & Silver Minnows (with Caustics, Scales, and Spine Bending)
-        GLES30.glUseProgram(koiProgram)
-        GLES30.glUniform1f(koiShadowPassLoc, 0.0f)
-        for (idx in 0 until simulation.totalMaxFish) {
-            val fishIdx = fishOrder[idx]
-            val f = simulation.fish[fishIdx]
-            if (!f.isMinnow && fishIdx >= activeKoi) continue
-            if (f.isMinnow && (fishIdx - simulation.maxKoi) >= activeMinnows) continue
-
-            GLES30.glUniform3f(koiWorldPosLoc, f.x, f.y, f.zDepth)
-            GLES30.glUniform2f(koiScaleLoc, f.bodyWidth, f.bodyLength)
-            GLES30.glUniform1f(koiHeadingLoc, f.heading)
-            GLES30.glUniform1f(koiSwimPhaseLoc, f.swimPhase)
-            GLES30.glUniform1f(koiCurvatureLoc, f.smoothedCurvature)
-            GLES30.glUniform1i(koiPatternVariantLoc, f.patternVariant)
-            GLES30.glUniform1f(koiPatternSeedLoc, f.patternSeed)
-            fishMesh?.draw()
+            if (b.depthZ < 0.45f) {
+                GLES30.glUniform4f(valBladeDataLoc, b.rootX, b.rootY, b.length, b.width)
+                GLES30.glUniform3f(valBladeMetaLoc, b.baseAngle, b.phase, b.hueShift)
+                vallisneriaMesh?.draw()
+            }
         }
 
         // =========================================================================
-        // PASS 2: Full-Resolution Water Refraction, Lily Pads, Lotus & God Rays
+        // PASS 2: Full-Resolution Meniscus Wave Line, Bubbles, Plankton & Tone Map
         // =========================================================================
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0)
         GLES30.glViewport(0, 0, surfaceWidth, surfaceHeight)
@@ -459,8 +397,6 @@ class KoiPondRenderer(private val simulation: PondSimulation) {
             rippleUniformArray[base + 3] = r.amplitude
         }
         GLES30.glUniform4fv(waterRipplesLoc, simulation.maxRipples, rippleUniformArray, 0)
-        GLES30.glUniform4fv(waterLilyPadsALoc, 7, lilyPadsAArray, 0)
-        GLES30.glUniform4fv(waterLilyPadsBLoc, 7, lilyPadsBArray, 0)
 
         GLES30.glUniform1i(waterParticleCountLoc, activeParticles)
         for (i in 0 until activeParticles) {

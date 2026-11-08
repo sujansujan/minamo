@@ -11,9 +11,6 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/**
- * Holds VAO/VBO/IBO handles for zero-allocation draw calls.
- */
 class GlMesh(
     val vao: Int,
     private val vbo: Int,
@@ -23,17 +20,6 @@ class GlMesh(
     fun draw() {
         GLES30.glBindVertexArray(vao)
         GLES30.glDrawElements(GLES30.GL_TRIANGLES, indexCount, GLES30.GL_UNSIGNED_SHORT, 0)
-    }
-
-    fun drawInstanced(instanceCount: Int) {
-        GLES30.glBindVertexArray(vao)
-        GLES30.glDrawElementsInstanced(
-            GLES30.GL_TRIANGLES,
-            indexCount,
-            GLES30.GL_UNSIGNED_SHORT,
-            0,
-            instanceCount
-        )
     }
 
     fun release() {
@@ -60,28 +46,20 @@ object Meshes {
     }
 
     /**
-     * Unit quad [-1, 1] for foliage, lily pads, lotus flowers, and particle billboards.
-     * Vertex layout: [posX, posY, u, v] (4 floats)
-     */
-    fun createUnitQuad(): GlMesh = createFullscreenQuad()
-
-    /**
-     * Subdivided ribbon mesh for swaying underwater vallisneria blades.
+     * Subdivided ribbon mesh for swaying underwater vallisneria / kelp blades.
      * u in [0, 1] across blade width, v in [0, 1] from root to tip.
-     * Vertex layout: [localX, localY, u, v]
      */
-    fun createVallisneriaRibbon(segmentsY: Int = 20): GlMesh {
+    fun createVallisneriaRibbon(segmentsY: Int = 22): GlMesh {
         val verts = FloatArray((segmentsY + 1) * 2 * 4)
         var vIdx = 0
         for (i in 0..segmentsY) {
             val v = i.toFloat() / segmentsY.toFloat()
-            val halfWidth = (1f - v.pow(1.6f) * 0.82f).coerceAtLeast(0.12f)
-            // Left edge
+            val halfWidth = (1f - v.pow(1.45f) * 0.80f).coerceAtLeast(0.14f)
             verts[vIdx++] = -halfWidth
             verts[vIdx++] = v
             verts[vIdx++] = 0f
             verts[vIdx++] = v
-            // Right edge
+
             verts[vIdx++] = halfWidth
             verts[vIdx++] = v
             verts[vIdx++] = 1f
@@ -104,22 +82,26 @@ object Meshes {
     }
 
     /**
-     * Articulated 3D top-down Koi / Minnow body + pectoral, ventral, dorsal, and caudal fins.
-     * Spine runs along Y from +0.5 (snout, spineT=0) to -0.65 (tail tip, spineT=1).
-     * Vertex layout:
+     * Builds a 3D side-profile + oblique-perspective fish mesh designed for an underwater split-view camera.
+     * In local fish coordinates:
+     *   +X = forward snout (spineT = 0.0) to -X = tail tip (spineT = 1.25)
+     *   +Y = dorsal (top) to -Y = ventral (belly)
+     *   +Z = right flank facing camera, -Z = left flank
+     *
+     * Vertex layout (9 floats):
      *   aPos:    vec3 (x, y, z)
      *   aNormal: vec3 (nx, ny, nz)
-     *   aUvPart: vec3 (u, spineT, partId)
-     *     where partId: 0.0 = main body, 1.0 = pectoral fin, 2.0 = dorsal fin, 3.0 = caudal tail fin
+     *   aUvPart: vec3 (vHeight [0=belly..1=back], spineT [0=nose..1.25=tail], partId)
+     *     where partId: 0.0 = body, 1.0 = pectoral fin, 2.0 = dorsal/ventral fin, 3.0 = caudal tail fin
      */
-    fun createFishMesh(spineSegments: Int = 32, radialSegments: Int = 14): GlMesh {
+    fun createFishMesh(spineSegments: Int = 28, radialSegments: Int = 12): GlMesh {
         val vertexList = ArrayList<Float>(4096)
         val indexList = ArrayList<Short>(8192)
 
         fun addVertex(
             x: Float, y: Float, z: Float,
             nx: Float, ny: Float, nz: Float,
-            u: Float, spineT: Float, partId: Float
+            vHeight: Float, spineT: Float, partId: Float
         ): Short {
             val idx = (vertexList.size / 9).toShort()
             val len = sqrt(nx * nx + ny * ny + nz * nz).coerceAtLeast(1e-4f)
@@ -129,41 +111,42 @@ object Meshes {
             vertexList.add(nx / len)
             vertexList.add(ny / len)
             vertexList.add(nz / len)
-            vertexList.add(u)
+            vertexList.add(vHeight)
             vertexList.add(spineT)
             vertexList.add(partId)
             return idx
         }
 
-        // 1. Main fusiform koi body (upper + lower dome so top-down normal shading is smooth 3D)
+        // 1. Closed 3D fusiform body tube so the fish looks solid from any 3D yaw/pitch angle
         val stride = radialSegments + 1
         for (i in 0..spineSegments) {
-            val t = i.toFloat() / spineSegments.toFloat() // 0 = nose, 1 = tail base
-            val spineY = 0.50f - t * 0.92f
+            val t = i.toFloat() / spineSegments.toFloat() // 0 = snout, 1 = caudal peduncle
+            val spineX = 0.50f - t * 0.92f
 
-            // Teardrop fusiform width profile: widest around t = 0.24 (shoulders)
-            val widthProfile = if (t < 0.24f) {
-                val nt = t / 0.24f
-                0.22f * sqrt(nt.coerceAtLeast(0f)) * (0.75f + 0.25f * nt)
+            // Base vertical body height (can be scaled per species in vertex shader)
+            val heightProfile = if (t < 0.28f) {
+                val nt = t / 0.28f
+                0.24f * sqrt(nt.coerceAtLeast(0f)) * (0.78f + 0.22f * nt)
             } else {
-                val nt = (t - 0.24f) / 0.76f
-                0.22f * (1f - nt).pow(1.45f) + 0.024f * (1f - nt)
+                val nt = (t - 0.28f) / 0.72f
+                0.24f * (1f - nt).pow(1.35f) + 0.042f * (1f - nt)
             }
-            val heightProfile = widthProfile * 0.85f
+            val thicknessProfile = heightProfile * 0.58f
 
             for (j in 0..radialSegments) {
-                val rFrac = j.toFloat() / radialSegments.toFloat() // 0 = left flank, 0.5 = dorsal crest, 1 = right flank
-                val angle = (1f - rFrac) * PI.toFloat() // PI to 0 across upper dome
-                val cx = cos(angle)
-                val sz = sin(angle)
+                val rFrac = j.toFloat() / radialSegments.toFloat()
+                val theta = rFrac * 2f * PI.toFloat() // Full 360 tube around spine
+                val sy = cos(theta) // +1 at dorsal crest, -1 at belly
+                val sz = sin(theta) // +1 facing camera, -1 away
 
-                val x = cx * widthProfile
-                val z = sz * heightProfile
-                val nx = cx * 0.9f
-                val ny = (0.22f - t) * 0.35f
-                val nz = sz.coerceAtLeast(0.15f)
+                val y = sy * heightProfile
+                val z = sz * thicknessProfile
+                val nx = (0.25f - t) * 0.30f
+                val ny = sy * 0.85f
+                val nz = sz * 1.15f
+                val vHeight = sy * 0.5f + 0.5f // 0 = belly, 1 = dorsal ridge
 
-                addVertex(x, spineY, z, nx, ny, nz, rFrac, t, 0f)
+                addVertex(spineX, y, z, nx, ny, nz, vHeight, t, 0f)
             }
         }
 
@@ -172,83 +155,43 @@ object Meshes {
                 val r0 = (i * stride + j).toShort()
                 val r1 = ((i + 1) * stride + j).toShort()
                 indexList.add(r0)
-                indexList.add((r0 + 1).toShort())
                 indexList.add(r1)
+                indexList.add((r0 + 1).toShort())
 
-                indexList.add(r1)
                 indexList.add((r0 + 1).toShort())
+                indexList.add(r1)
                 indexList.add((r1 + 1).toShort())
             }
         }
 
-        // 2. Pectoral fins (left and right fans at t = 0.22..0.38)
-        fun addFinFan(side: Float, attachY: Float, attachX: Float, spineT: Float, radiusX: Float, radiusY: Float, partId: Float) {
-            val fanSegs = 8
-            val rootIdx = addVertex(
-                attachX * side, attachY, 0.02f,
-                0f, 0f, 1f,
-                0f, spineT, partId
-            )
-            val ringStart = (vertexList.size / 9)
-            for (k in 0..fanSegs) {
-                val f = k.toFloat() / fanSegs.toFloat()
-                val ang = (-0.25f + f * 1.35f)
-                val fx = attachX * side + side * sin(ang) * radiusX
-                val fy = attachY - cos(ang) * radiusY
+        // 2. Dorsal & Anal/Ventral fins (partId = 2.0)
+        fun addRibbonFin(isDorsal: Boolean, startT: Float, endT: Float, maxArch: Float) {
+            val segs = 12
+            val baseIdx = vertexList.size / 9
+            val signY = if (isDorsal) 1f else -1f
+            for (k in 0..segs) {
+                val f = k.toFloat() / segs.toFloat()
+                val spineT = startT + f * (endT - startT)
+                val x = 0.50f - spineT * 0.92f
+                val bodyH = 0.22f * (1f - ((spineT - 0.25f).coerceAtLeast(0f) / 0.75f)).pow(1.2f)
+                val arch = sin(f * PI.toFloat()).pow(0.75f) * maxArch
+
+                // Fin root on body
                 addVertex(
-                    fx, fy, 0.01f,
-                    side * 0.25f, -0.15f, 0.95f,
-                    1f, (spineT + f * 0.12f).coerceAtMost(1f), partId
+                    x, signY * bodyH * 0.88f, 0f,
+                    0f, signY * 0.4f, 0.9f,
+                    if (isDorsal) 1f else 0f, spineT, 2f
+                )
+                // Swept fin tip
+                addVertex(
+                    x - 0.08f * f, signY * (bodyH * 0.88f + arch), 0.01f,
+                    -0.15f, signY * 0.5f, 0.85f,
+                    if (isDorsal) 1f else 0f, (spineT + 0.08f).coerceAtMost(1.15f), 2f
                 )
             }
-            for (k in 0 until fanSegs) {
-                val v0 = (ringStart + k).toShort()
-                val v1 = (ringStart + k + 1).toShort()
-                if (side > 0f) {
-                    indexList.add(rootIdx)
-                    indexList.add(v0)
-                    indexList.add(v1)
-                } else {
-                    indexList.add(rootIdx)
-                    indexList.add(v1)
-                    indexList.add(v0)
-                }
-            }
-        }
-
-        // Pectoral fins
-        addFinFan(-1f, 0.29f, 0.16f, 0.24f, 0.23f, 0.22f, 1f)
-        addFinFan(+1f, 0.29f, 0.16f, 0.24f, 0.23f, 0.22f, 1f)
-
-        // Ventral (pelvic) smaller fins
-        addFinFan(-1f, 0.02f, 0.11f, 0.52f, 0.13f, 0.14f, 1f)
-        addFinFan(+1f, 0.02f, 0.11f, 0.52f, 0.13f, 0.14f, 1f)
-
-        // 3. Flowing Caudal (Tail) Fin (t = 0.88 .. 1.25)
-        val tailRows = 10
-        val tailCols = 8
-        val tailBaseVertex = vertexList.size / 9
-        for (r in 0..tailRows) {
-            val rf = r.toFloat() / tailRows.toFloat()
-            val spineT = 0.86f + rf * 0.36f
-            val y = -0.34f - rf * 0.34f
-            val spread = 0.03f + rf * 0.24f
-            for (c in 0..tailCols) {
-                val cf = c.toFloat() / tailCols.toFloat() // 0..1 across left-to-right lobes
-                val uSigned = (cf - 0.5f) * 2f
-                // Bilobed swallowtail notch in the center
-                val lobeNotch = 1f - 0.38f * (1f - uSigned * uSigned) * rf
-                val x = uSigned * spread
-                val yNotched = y * lobeNotch
-                val z = 0.03f * (1f - rf * 0.7f) + 0.015f * cos(uSigned * PI.toFloat())
-                addVertex(x, yNotched, z, uSigned * 0.3f, -0.2f, 0.92f, cf, spineT, 3f)
-            }
-        }
-        val tStride = tailCols + 1
-        for (r in 0 until tailRows) {
-            for (c in 0 until tailCols) {
-                val v0 = (tailBaseVertex + r * tStride + c).toShort()
-                val v1 = (tailBaseVertex + (r + 1) * tStride + c).toShort()
+            for (k in 0 until segs) {
+                val v0 = (baseIdx + k * 2).toShort()
+                val v1 = (baseIdx + (k + 1) * 2).toShort()
                 indexList.add(v0)
                 indexList.add((v0 + 1).toShort())
                 indexList.add(v1)
@@ -258,34 +201,73 @@ object Meshes {
             }
         }
 
-        // 4. Dorsal fin ridge (t = 0.34 .. 0.74)
-        val dorsalSegs = 10
-        val dorsalBase = vertexList.size / 9
-        for (i in 0..dorsalSegs) {
-            val df = i.toFloat() / dorsalSegs.toFloat()
-            val spineT = 0.34f + df * 0.40f
-            val y = 0.50f - spineT * 0.92f
-            val arch = sin(df * PI.toFloat())
-            // Root on spine
-            addVertex(0f, y, 0.16f * (1f - df * 0.45f), 0f, 0f, 1f, 0f, spineT, 2f)
-            // Elevated trailing ridge
-            addVertex(
-                0.025f * sin(df * 2f),
-                y - 0.04f,
-                0.24f * (1f - df * 0.35f) + 0.06f * arch,
-                0.4f, 0f, 0.9f,
-                1f, spineT + 0.05f, 2f
+        addRibbonFin(isDorsal = true, startT = 0.28f, endT = 0.76f, maxArch = 0.24f)
+        addRibbonFin(isDorsal = false, startT = 0.52f, endT = 0.82f, maxArch = 0.18f)
+
+        // 3. Pectoral fins (left and right flanks, partId = 1.0)
+        fun addPectoralFin(sideZ: Float) {
+            val fanSegs = 7
+            val rootIdx = addVertex(
+                0.22f, -0.06f, sideZ * 0.11f,
+                0f, -0.2f, sideZ,
+                0.5f, 0.26f, 1f
             )
+            val ringStart = vertexList.size / 9
+            for (k in 0..fanSegs) {
+                val f = k.toFloat() / fanSegs.toFloat()
+                val ang = -0.35f + f * 1.15f
+                val fx = 0.22f - cos(ang) * 0.18f
+                val fy = -0.06f - sin(ang) * 0.14f
+                val fz = sideZ * (0.11f + 0.09f * sin(f * PI.toFloat()))
+                addVertex(
+                    fx, fy, fz,
+                    -0.2f, -0.2f, sideZ * 0.95f,
+                    f, 0.32f + f * 0.08f, 1f
+                )
+            }
+            for (k in 0 until fanSegs) {
+                val v0 = (ringStart + k).toShort()
+                val v1 = (ringStart + k + 1).toShort()
+                indexList.add(rootIdx)
+                indexList.add(v0)
+                indexList.add(v1)
+            }
         }
-        for (i in 0 until dorsalSegs) {
-            val v0 = (dorsalBase + i * 2).toShort()
-            val v1 = (dorsalBase + (i + 1) * 2).toShort()
-            indexList.add(v0)
-            indexList.add((v0 + 1).toShort())
-            indexList.add(v1)
-            indexList.add(v1)
-            indexList.add((v0 + 1).toShort())
-            indexList.add((v1 + 1).toShort())
+        addPectoralFin(+1f)
+        addPectoralFin(-1f)
+
+        // 4. Flowing Forked / Veil Caudal Tail Fin (partId = 3.0)
+        val tailRows = 10
+        val tailCols = 8
+        val tailBase = vertexList.size / 9
+        for (r in 0..tailRows) {
+            val rf = r.toFloat() / tailRows.toFloat() // 0 at peduncle, 1 at tail tip
+            val spineT = 0.90f + rf * 0.35f
+            val baseX = -0.40f - rf * 0.34f
+            val spreadY = 0.05f + rf * 0.30f
+            for (c in 0..tailCols) {
+                val cf = c.toFloat() / tailCols.toFloat() // 0 = lower lobe, 1 = upper lobe
+                val ySigned = (cf - 0.5f) * 2f
+                // Forked swallowtail indentation in center
+                val notch = 1f - 0.42f * (1f - ySigned * ySigned) * rf
+                val x = baseX * notch - 0.04f * rf * (1f - ySigned * ySigned)
+                val y = ySigned * spreadY
+                val z = 0.015f * sin(cf * PI.toFloat()) * (1f - rf * 0.5f)
+                addVertex(x, y, z, -0.25f, ySigned * 0.25f, 0.92f, cf, spineT, 3f)
+            }
+        }
+        val tStride = tailCols + 1
+        for (r in 0 until tailRows) {
+            for (c in 0 until tailCols) {
+                val v0 = (tailBase + r * tStride + c).toShort()
+                val v1 = (tailBase + (r + 1) * tStride + c).toShort()
+                indexList.add(v0)
+                indexList.add(v1)
+                indexList.add((v0 + 1).toShort())
+                indexList.add((v0 + 1).toShort())
+                indexList.add(v1)
+                indexList.add((v1 + 1).toShort())
+            }
         }
 
         val vertices = FloatArray(vertexList.size) { vertexList[it] }
@@ -322,7 +304,6 @@ object Meshes {
         indexBuffer.position(0)
 
         GLES30.glBindVertexArray(vao)
-
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo)
         GLES30.glBufferData(
             GLES30.GL_ARRAY_BUFFER,

@@ -2,10 +2,11 @@
 <resources>
     <string name="app_name">Minamo</string>
     <string name="wallpaper_label">Minamo</string>
-    <string name="wallpaper_description">Real-time sunlit koi pond live wallpaper.</string>
+    <string name="wallpaper_description">Half-over, half-underwater sunlit aquatic live wallpaper with randomized fish on every unlock.</string>
     <string name="settings_title">Minamo</string>
-    <string name="apply_wallpaper">Set Wallpaper</string>
-    <string name="label_fish_count">Koi Count: %1$d</string>
+    <string name="apply_wallpaper">Set Live Wallpaper</string>
+    <string name="shuffle_fish">Shuffle Fish Species (Simulates Unlock)</string>
+    <string name="label_fish_count">Main Fish Count: %1$d</string>
     <string name="label_water_clarity">Water Clarity: %1$d%%</string>
     <string name="label_sun_angle">Sun Elevation: %1$d°</string>
     <string name="label_fps_cap">Frame Rate</string>
