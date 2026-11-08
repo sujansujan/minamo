@@ -348,7 +348,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="10dp"
-                            android:text="predator visits (fish hide in kelp)" />
+                            android:text="predator visits (fish scatter & evade)" />
                     </LinearLayout>
 
                     <!-- Bottom feeders checkbox -->
@@ -621,7 +621,7 @@
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="( ) 38c" />
+                            android:text="( ) 68c" />
 
                         <TextView
                             android:id="@+id/btnGridBalanced"
@@ -631,7 +631,7 @@
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="(*) 46c" />
+                            android:text="(*) 82c" />
 
                         <TextView
                             android:id="@+id/btnGridDense"
@@ -641,7 +641,7 @@
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="( ) 56c" />
+                            android:text="( ) 96c" />
                     </LinearLayout>
 
                     <TextView
@@ -766,7 +766,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="separation ......... strict 2d occupancy grid
-predator alert ..... ! fish hide in kelp beds
+predator alert ..... ! 2d scatter & juke evasion
 battery saver ...... 0% cpu when screen off"
                         android:textColor="@color/ascii_dim" />
                 </LinearLayout>
@@ -806,7 +806,7 @@ battery saver ...... 0% cpu when screen off"
                         android:text="barracuda pike .. &gt;&lt;(((====º&lt;
 reef shark ...... &gt;&lt;))))º&gt;===&lt;
 moray eel ....... ~^~^~===º&lt;
-kingfisher ...... \\(º)/ -&gt; \\V/" />
+swordfish ....... &gt;&lt;(((º&gt;====--" />
                 </LinearLayout>
 
                 <TextView

@@ -194,7 +194,7 @@ class SettingsActivity : AppCompatActivity() {
                     updateConfig(currentConfig.copy(enablePredators = true))
                 }
                 val predName = asciiPondView.summonPredatorNow()
-                textBiomeStatus.text = "! alert .. $predName spotted (fish hiding)"
+                textBiomeStatus.text = "! alert .. $predName spotted (fish evading)"
             }
         }
 
@@ -404,9 +404,9 @@ class SettingsActivity : AppCompatActivity() {
         textClarityBar.text = "rays: $clarityBarStr"
         textClarityBar.contentDescription = "Water clarity and sun rays: $clarityPct percent"
 
-        styleRadio(btnGridCozy, currentConfig.gridDensity == GridDensity.COZY, "38c")
-        styleRadio(btnGridBalanced, currentConfig.gridDensity == GridDensity.BALANCED, "46c")
-        styleRadio(btnGridDense, currentConfig.gridDensity == GridDensity.DENSE, "56c")
+        styleRadio(btnGridCozy, currentConfig.gridDensity == GridDensity.COZY, "68c")
+        styleRadio(btnGridBalanced, currentConfig.gridDensity == GridDensity.BALANCED, "82c")
+        styleRadio(btnGridDense, currentConfig.gridDensity == GridDensity.DENSE, "96c")
 
         styleRadio(btnFps30, currentConfig.targetFps == 30, "30fps")
         styleRadio(btnFps60, currentConfig.targetFps == 60, "60fps")

@@ -26,23 +26,22 @@ enum class TimeCycleMode(val id: Int, val label: String) {
     }
 }
 
+/**
+ * High-resolution character grid presets so multi-line ASCII fish look detailed and appropriately small:
+ *   COZY: 68 columns (~140 rows on modern phones)
+ *   BALANCED: 82 columns (~170 rows on modern phones — default)
+ *   DENSE: 96 columns (~200 rows on modern phones)
+ */
 enum class GridDensity(val id: Int, val label: String, val targetCols: Int) {
-    COZY(0, "cozy (38c)", 38),
-    BALANCED(1, "std (46c)", 46),
-    DENSE(2, "dense (56c)", 56);
+    COZY(0, "68c", 68),
+    BALANCED(1, "82c", 82),
+    DENSE(2, "96c", 96);
 
     companion object {
         fun fromId(id: Int): GridDensity = entries.firstOrNull { it.id == id } ?: BALANCED
     }
 }
 
-/**
- * Power saver policy:
- *   AUTO_SAVER: Automatically drops FPS to 15 and reduces background particle count when system Battery Saver is on
- *   MAX_ECO: Always runs at ultra-low 15 FPS & minimal particles for maximum battery life
- *   OFF: Runs at full configured targetFps regardless of system Battery Saver
- * Note: Rendering ALWAYS pauses 100% (0 CPU/GPU wakeups) when the screen is off or another app covers the home screen.
- */
 enum class PowerSaveMode(val id: Int, val label: String) {
     AUTO_SAVER(0, "auto"),
     MAX_ECO(1, "eco"),
@@ -56,7 +55,7 @@ enum class PowerSaveMode(val id: Int, val label: String) {
 data class WallpaperConfig(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val timeCycleMode: TimeCycleMode = TimeCycleMode.AUTO_REALTIME,
-    val heroFishCount: Int = 5,
+    val heroFishCount: Int = 6,
     val waterClarity: Float = 0.85f,
     val targetFps: Int = 30,
     val gridDensity: GridDensity = GridDensity.BALANCED,
@@ -76,7 +75,7 @@ class WallpaperSettingsRepository(context: Context) {
         return WallpaperConfig(
             themeMode = ThemeMode.fromId(prefs.getInt(KEY_THEME_MODE, ThemeMode.SYSTEM.id)),
             timeCycleMode = TimeCycleMode.fromId(prefs.getInt(KEY_TIME_CYCLE, TimeCycleMode.AUTO_REALTIME.id)),
-            heroFishCount = prefs.getInt(KEY_FISH_COUNT, 5).coerceIn(2, 9),
+            heroFishCount = prefs.getInt(KEY_FISH_COUNT, 6).coerceIn(2, 9),
             waterClarity = prefs.getFloat(KEY_WATER_CLARITY, 0.85f).coerceIn(0.35f, 1.0f),
             targetFps = if (prefs.getInt(KEY_TARGET_FPS, 30) == 60) 60 else 30,
             gridDensity = GridDensity.fromId(prefs.getInt(KEY_GRID_DENSITY, GridDensity.BALANCED.id)),
