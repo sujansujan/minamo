@@ -126,21 +126,21 @@ enum class AsciiFishSpecies(
         rightFrameA = arrayOf(
             "   /|  ",
             " >||°> ",
-            "   \|  "
+            "   \\|  "
         ),
         rightFrameB = arrayOf(
             "   /)  ",
             " }|/°> ",
-            "   \)  "
+            "   \\)  "
         ),
         leftFrameA = arrayOf(
-            "  |\   ",
+            "  |\\   ",
             " <°||< ",
             "  |/   "
         ),
         leftFrameB = arrayOf(
-            "  (\   ",
-            " <°\|{ ",
+            "  (\\   ",
+            " <°\\|{ ",
             "  (/   "
         )
     ),
@@ -151,24 +151,24 @@ enum class AsciiFishSpecies(
         colorRole = 4,
         baseSpeedColsPerSec = 2.2f,
         rightFrameA = arrayOf(
-            " ~-\_  ",
+            " ~-\\_  ",
             ">)))º> ",
             " ~-/   "
         ),
         rightFrameB = arrayOf(
-            "  ~\_  ",
+            "  ~\\_  ",
             "}))º>  ",
             "  ~/   "
         ),
         leftFrameA = arrayOf(
             "  _/-~ ",
             " <º(((<",
-            "   \-~ "
+            "   \\-~ "
         ),
         leftFrameB = arrayOf(
             "  _/~  ",
             "  <º(({",
-            "   \~  "
+            "   \\~  "
         )
     );
 
@@ -459,13 +459,13 @@ class PondSimulation {
             // Radiant Sun ASCII art with animated rays
             val rayPulse = ((simTime * 1.5f).toInt() % 2 == 0)
             if (rayPulse) {
-                drawStringAt(celestialCol - 3, celestialRow - 1, " \ | / ", pal.celestialGlyph)
+                drawStringAt(celestialCol - 3, celestialRow - 1, " \\ | / ", pal.celestialGlyph)
                 drawStringAt(celestialCol - 3, celestialRow,     "--(O)--", pal.celestialGlyph)
-                drawStringAt(celestialCol - 3, celestialRow + 1, " / | \ ", pal.celestialGlyph)
+                drawStringAt(celestialCol - 3, celestialRow + 1, " / | \\ ", pal.celestialGlyph)
             } else {
-                drawStringAt(celestialCol - 3, celestialRow - 1, "  \|/  ", pal.celestialGlyph)
+                drawStringAt(celestialCol - 3, celestialRow - 1, "  \\|/  ", pal.celestialGlyph)
                 drawStringAt(celestialCol - 3, celestialRow,     " -(o)- ", pal.celestialGlyph)
-                drawStringAt(celestialCol - 3, celestialRow + 1, "  /|\  ", pal.celestialGlyph)
+                drawStringAt(celestialCol - 3, celestialRow + 1, "  /|\\  ", pal.celestialGlyph)
             }
         }
 
