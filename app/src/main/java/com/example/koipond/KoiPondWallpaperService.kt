@@ -19,8 +19,10 @@ import android.os.HandlerThread
 import android.os.PowerManager
 import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
+import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceHolder
+import androidx.core.content.ContextCompat
 
 /**
  * Android Live Wallpaper service managing a dedicated EGL14 / OpenGL ES 3.0 render thread,
@@ -121,9 +123,18 @@ class KoiPondWallpaperService : WallpaperService() {
             powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
             updateBatterySaverState()
 
-            val filter = IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
-            registerReceiver(powerSaverReceiver, filter)
-            isReceiverRegistered = true
+            try {
+                val filter = IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+                ContextCompat.registerReceiver(
+                    this@KoiPondWallpaperService,
+                    powerSaverReceiver,
+                    filter,
+                    ContextCompat.RECEIVER_NOT_EXPORTED
+                )
+                isReceiverRegistered = true
+            } catch (e: Exception) {
+                Log.w("KoiPondEngine", "Could not register power receiver", e)
+            }
 
             sensorManager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager
             gyroSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
@@ -137,20 +148,27 @@ class KoiPondWallpaperService : WallpaperService() {
         override fun onSurfaceCreated(holder: SurfaceHolder) {
             super.onSurfaceCreated(holder)
             renderHandler?.post {
-                initEgl(holder)
-                val r = KoiPondRenderer(simulation)
-                r.onSurfaceCreated()
-                renderer = r
-                surfaceReady = true
-                lastFrameTimestampNs = 0L
-                scheduleNextFrame()
+                try {
+                    initEgl(holder)
+                    val r = KoiPondRenderer(simulation)
+                    r.onSurfaceCreated()
+                    renderer = r
+                    surfaceReady = true
+                    lastFrameTimestampNs = 0L
+                    scheduleNextFrame()
+                } catch (t: Throwable) {
+                    Log.e("KoiPondEngine", "Failed to initialize OpenGL ES 3.0 surface", t)
+                    surfaceReady = false
+                }
             }
         }
 
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             super.onSurfaceChanged(holder, format, width, height)
             renderHandler?.post {
-                renderer?.onSurfaceChanged(width, height, currentConfig, isBatterySaverActive)
+                if (surfaceReady) {
+                    renderer?.onSurfaceChanged(width, height, currentConfig, isBatterySaverActive)
+                }
             }
         }
 
@@ -198,7 +216,9 @@ class KoiPondWallpaperService : WallpaperService() {
                 val tx = event.x
                 val ty = event.y
                 renderHandler?.post {
-                    renderer?.onTouchWater(tx, ty)
+                    if (surfaceReady) {
+                        renderer?.onTouchWater(tx, ty)
+                    }
                 }
             }
             super.onTouchEvent(event)
@@ -211,7 +231,6 @@ class KoiPondWallpaperService : WallpaperService() {
 
         override fun onSensorChanged(event: SensorEvent) {
             if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
-                // Integrate angular rate softly with exponential decay back to center
                 gyroTiltX = (gyroTiltX * 0.94f + event.values[1] * 0.08f).coerceIn(-1f, 1f)
                 gyroTiltY = (gyroTiltY * 0.94f + event.values[0] * 0.08f).coerceIn(-1f, 1f)
             }
@@ -222,7 +241,9 @@ class KoiPondWallpaperService : WallpaperService() {
         override fun onDestroy() {
             unregisterGyro()
             if (isReceiverRegistered) {
-                unregisterReceiver(powerSaverReceiver)
+                try {
+                    unregisterReceiver(powerSaverReceiver)
+                } catch (_: Exception) {}
                 isReceiverRegistered = false
             }
             settingsRepo.unregisterListener(this)
@@ -273,7 +294,7 @@ class KoiPondWallpaperService : WallpaperService() {
             EGL14.eglInitialize(eglDisplay, version, 0, version, 1)
 
             val attribList = intArrayOf(
-                EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT or 0x0040, // ES 3.0 bit
+                EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT or 0x0040,
                 EGL14.EGL_RED_SIZE, 8,
                 EGL14.EGL_GREEN_SIZE, 8,
                 EGL14.EGL_BLUE_SIZE, 8,

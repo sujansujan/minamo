@@ -139,11 +139,11 @@ void main() {
     float hVal = mix(pebbleMed.z, pebbleLarge.z, hasLargeStone);
     vec3 slateStone   = vec3(0.22, 0.26, 0.28);
     vec3 warmOchre    = vec3(0.46, 0.36, 0.26);
-    vec3jadePebble    = vec3(0.24, 0.34, 0.30);
+    vec3 jadePebble   = vec3(0.24, 0.34, 0.30);
     vec3 paleGranite  = vec3(0.52, 0.49, 0.44);
 
     vec3 stoneAlbedo = mix(slateStone, warmOchre, smoothstep(0.15, 0.45, hVal));
-    stoneAlbedo = mix(stoneAlbedo, vec3jadePebble, smoothstep(0.45, 0.72, hVal));
+    stoneAlbedo = mix(stoneAlbedo, jadePebble, smoothstep(0.45, 0.72, hVal));
     stoneAlbedo = mix(stoneAlbedo, paleGranite, smoothstep(0.75, 0.95, hVal));
 
     // Fine mineral speckles & vein bands on stones

@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:padding="24dp">
+    android:padding="20dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,14 +15,20 @@
             android:layout_height="wrap_content"
             android:text="@string/settings_title"
             android:textAppearance="?attr/textAppearanceHeadlineSmall"
-            android:layout_marginBottom="20dp" />
+            android:layout_marginBottom="12dp" />
+
+        <android.opengl.GLSurfaceView
+            android:id="@+id/glPreviewSurface"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:layout_marginBottom="16dp" />
 
         <Button
             android:id="@+id/buttonApplyWallpaper"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/apply_wallpaper"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="20dp" />
 
         <TextView
             android:id="@+id/textFishCount"
@@ -35,7 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="20dp" />
+            android:layout_marginBottom="16dp" />
 
         <TextView
             android:id="@+id/textWaterClarity"
@@ -48,7 +54,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="20dp" />
+            android:layout_marginBottom="16dp" />
 
         <TextView
             android:id="@+id/textSunAngle"
@@ -61,7 +67,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="20dp" />
 
         <TextView
             android:layout_width="match_parent"
@@ -74,7 +80,7 @@
             android:id="@+id/radioGroupFps"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="20dp">
 
             <RadioButton
                 android:id="@+id/radioFps30"
@@ -100,7 +106,7 @@
             android:id="@+id/radioGroupPreset"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="20dp">
 
             <RadioButton
                 android:id="@+id/radioPresetLow"
