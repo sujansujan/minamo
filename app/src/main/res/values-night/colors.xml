@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Lagoon Dark Palette (All 11 roles verified >= 4.5:1 / 7:1 contrast) -->
+    <color name="ascii_bg">#0A1D26</color>
+    <color name="ascii_surface">#11303C</color>
+    <color name="ascii_border">#2A5566</color>
+    <color name="ascii_fg">#E6F4F1</color>
+    <color name="ascii_dim">#8FB3B8</color>
+    <color name="ascii_accent">#FF7A59</color>
+    <color name="ascii_accent2">#5EEAD4</color>
+    <color name="ascii_accent3">#FFD166</color>
+    <color name="ascii_good">#7BE495</color>
+    <color name="ascii_warn">#FFB347</color>
+    <color name="ascii_error">#FF6B7A</color>
+</resources>

@@ -9,11 +9,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.opengl.EGL14
-import android.opengl.EGLConfig
-import android.opengl.EGLContext
-import android.opengl.EGLDisplay
-import android.opengl.EGLSurface
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.PowerManager
@@ -25,15 +20,16 @@ import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
 
 /**
- * Android Live Wallpaper service for the Half-Over / Half-Underwater Split-View Aquarium.
- * Listens for phone unlock (ACTION_USER_PRESENT / ACTION_SCREEN_ON) to randomize the fish species
- * ecosystem on every unlock.
+ * Plain-Text ASCII Split-View Live Wallpaper Service (`minamo`).
+ * - Renders the colorful Half-Over / Half-Underwater character grid at 30 or 60 FPS.
+ * - Shifts colors dynamically based on the real-time clock (Dawn / Noon / Dusk / Night).
+ * - Randomizes the aquatic fish species mix every time the phone is unlocked (`ACTION_USER_PRESENT`).
  */
 class KoiPondWallpaperService : WallpaperService() {
 
-    override fun onCreateEngine(): Engine = KoiPondEngine()
+    override fun onCreateEngine(): Engine = AsciiPondEngine()
 
-    inner class KoiPondEngine : Engine(),
+    inner class AsciiPondEngine : Engine(),
         SharedPreferences.OnSharedPreferenceChangeListener,
         SensorEventListener {
 
@@ -59,13 +55,9 @@ class KoiPondWallpaperService : WallpaperService() {
         private var renderThread: HandlerThread? = null
         private var renderHandler: Handler? = null
 
-        private var eglDisplay: EGLDisplay = EGL14.EGL_NO_DISPLAY
-        private var eglContext: EGLContext = EGL14.EGL_NO_CONTEXT
-        private var eglSurface: EGLSurface = EGL14.EGL_NO_SURFACE
-        private var eglConfig: EGLConfig? = null
-
         private val simulation = PondSimulation()
-        private var renderer: KoiPondRenderer? = null
+        private var surfaceWidth = 1080
+        private var surfaceHeight = 2400
 
         @Volatile
         private var isVisibleNow = false
@@ -79,9 +71,8 @@ class KoiPondWallpaperService : WallpaperService() {
                         updateBatterySaverState()
                     }
                     Intent.ACTION_USER_PRESENT, Intent.ACTION_SCREEN_ON -> {
-                        // Randomize fish species & sizes on every phone unlock / wake!
                         renderHandler?.post {
-                            renderer?.randomizeFishOnUnlock()
+                            simulation.randomizeEcosystemOnUnlock(System.nanoTime())
                         }
                     }
                 }
@@ -97,26 +88,48 @@ class KoiPondWallpaperService : WallpaperService() {
                 val dt = if (lastFrameTimestampNs == 0L) {
                     1f / 30f
                 } else {
-                    ((frameStartNs - lastFrameTimestampNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.1f)
+                    ((frameStartNs - lastFrameTimestampNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.08f)
                 }
                 lastFrameTimestampNs = frameStartNs
 
                 val cfg = currentConfig
                 val batterySaver = isBatterySaverActive
+                val holder = surfaceHolder
 
-                renderer?.let { r ->
-                    r.setParallaxTargets(scrollOffsetX, gyroTiltX, gyroTiltY)
-                    r.drawFrame(dt, cfg, batterySaver)
-                    EGL14.eglSwapBuffers(eglDisplay, eglSurface)
-
-                    val frameElapsedMs = (SystemClock.elapsedRealtimeNanos() - frameStartNs) / 1_000_000f
-                    r.updateDynamicResolution(frameElapsedMs, cfg, batterySaver)
+                var canvas = try {
+                    holder.lockHardwareCanvas()
+                } catch (_: Throwable) {
+                    try {
+                        holder.lockCanvas()
+                    } catch (_: Throwable) {
+                        null
+                    }
                 }
 
-                val targetFps = if (batterySaver) 30 else cfg.targetFps
+                if (canvas != null) {
+                    try {
+                        val px = (scrollOffsetX - 0.5f) * 1.2f + gyroTiltX * 0.6f
+                        val py = gyroTiltY * 0.6f
+                        simulation.updateAndRender(
+                            canvas = canvas,
+                            dt = dt,
+                            config = cfg,
+                            parallaxX = px,
+                            parallaxY = py,
+                            isBatterySaver = batterySaver,
+                            isWallpaperMode = true
+                        )
+                    } finally {
+                        try {
+                            holder.unlockCanvasAndPost(canvas)
+                        } catch (_: Throwable) {}
+                    }
+                }
+
+                val targetFps = if (batterySaver) 20 else cfg.targetFps
                 val targetIntervalMs = 1000L / targetFps
                 val workDurationMs = (SystemClock.elapsedRealtimeNanos() - frameStartNs) / 1_000_000L
-                val delayMs = (targetIntervalMs - workDurationMs).coerceAtLeast(1L)
+                val delayMs = (targetIntervalMs - workDurationMs).coerceAtLeast(4L)
 
                 renderHandler?.postDelayed(this, delayMs)
             }
@@ -147,13 +160,13 @@ class KoiPondWallpaperService : WallpaperService() {
                 )
                 isReceiverRegistered = true
             } catch (e: Exception) {
-                Log.w("KoiPondEngine", "Could not register system event receiver", e)
+                Log.w("AsciiPondEngine", "Could not register system receiver", e)
             }
 
             sensorManager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager
             gyroSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
-            val thread = HandlerThread("KoiPondGLThread")
+            val thread = HandlerThread("MinamoAsciiThread")
             thread.start()
             renderThread = thread
             renderHandler = Handler(thread.looper)
@@ -162,36 +175,28 @@ class KoiPondWallpaperService : WallpaperService() {
         override fun onSurfaceCreated(holder: SurfaceHolder) {
             super.onSurfaceCreated(holder)
             renderHandler?.post {
-                try {
-                    initEgl(holder)
-                    val r = KoiPondRenderer(simulation)
-                    r.onSurfaceCreated()
-                    renderer = r
-                    surfaceReady = true
-                    lastFrameTimestampNs = 0L
-                    scheduleNextFrame()
-                } catch (t: Throwable) {
-                    Log.e("KoiPondEngine", "Failed to initialize OpenGL ES 3.0 surface", t)
-                    surfaceReady = false
-                }
+                val frame = holder.surfaceFrame
+                surfaceWidth = frame.width().coerceAtLeast(320)
+                surfaceHeight = frame.height().coerceAtLeast(480)
+                simulation.configureGrid(surfaceWidth, surfaceHeight, currentConfig.gridDensity)
+                surfaceReady = true
+                lastFrameTimestampNs = 0L
+                scheduleNextFrame()
             }
         }
 
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             super.onSurfaceChanged(holder, format, width, height)
             renderHandler?.post {
-                if (surfaceReady) {
-                    renderer?.onSurfaceChanged(width, height, currentConfig, isBatterySaverActive)
-                }
+                surfaceWidth = width.coerceAtLeast(320)
+                surfaceHeight = height.coerceAtLeast(480)
+                simulation.configureGrid(surfaceWidth, surfaceHeight, currentConfig.gridDensity)
             }
         }
 
         override fun onSurfaceDestroyed(holder: SurfaceHolder) {
             renderHandler?.removeCallbacks(drawRunnable)
-            renderHandler?.post {
-                surfaceReady = false
-                releaseEglAndResources()
-            }
+            surfaceReady = false
             super.onSurfaceDestroyed(holder)
         }
 
@@ -225,28 +230,30 @@ class KoiPondWallpaperService : WallpaperService() {
 
         override fun onTouchEvent(event: MotionEvent) {
             if (event.actionMasked == MotionEvent.ACTION_DOWN ||
-                (event.actionMasked == MotionEvent.ACTION_MOVE && event.historySize > 0 && event.eventTime - event.downTime > 180L)
+                (event.actionMasked == MotionEvent.ACTION_MOVE && event.historySize > 0 && event.eventTime - event.downTime > 160L)
             ) {
                 val tx = event.x
                 val ty = event.y
                 renderHandler?.post {
-                    if (surfaceReady) {
-                        renderer?.onTouchWater(tx, ty)
-                    }
+                    simulation.onTouch(tx, ty)
                 }
             }
             super.onTouchEvent(event)
         }
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-            currentConfig = settingsRepo.loadConfig()
+            val newCfg = settingsRepo.loadConfig()
+            currentConfig = newCfg
+            renderHandler?.post {
+                simulation.configureGrid(surfaceWidth, surfaceHeight, newCfg.gridDensity)
+            }
             updateGyroRegistration()
         }
 
         override fun onSensorChanged(event: SensorEvent) {
             if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
-                gyroTiltX = (gyroTiltX * 0.94f + event.values[1] * 0.08f).coerceIn(-1f, 1f)
-                gyroTiltY = (gyroTiltY * 0.94f + event.values[0] * 0.08f).coerceIn(-1f, 1f)
+                gyroTiltX = (gyroTiltX * 0.92f + event.values[1] * 0.08f).coerceIn(-1f, 1f)
+                gyroTiltY = (gyroTiltY * 0.92f + event.values[0] * 0.08f).coerceIn(-1f, 1f)
             }
         }
 
@@ -261,12 +268,8 @@ class KoiPondWallpaperService : WallpaperService() {
                 isReceiverRegistered = false
             }
             settingsRepo.unregisterListener(this)
-
             renderHandler?.removeCallbacksAndMessages(null)
-            renderHandler?.post {
-                releaseEglAndResources()
-                renderThread?.quitSafely()
-            }
+            renderThread?.quitSafely()
             renderThread = null
             renderHandler = null
             super.onDestroy()
@@ -299,74 +302,6 @@ class KoiPondWallpaperService : WallpaperService() {
                 isGyroRegistered = false
                 gyroTiltX = 0f
                 gyroTiltY = 0f
-            }
-        }
-
-        private fun initEgl(holder: SurfaceHolder) {
-            eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
-            val version = IntArray(2)
-            EGL14.eglInitialize(eglDisplay, version, 0, version, 1)
-
-            val attribList = intArrayOf(
-                EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT or 0x0040,
-                EGL14.EGL_RED_SIZE, 8,
-                EGL14.EGL_GREEN_SIZE, 8,
-                EGL14.EGL_BLUE_SIZE, 8,
-                EGL14.EGL_ALPHA_SIZE, 8,
-                EGL14.EGL_DEPTH_SIZE, 0,
-                EGL14.EGL_STENCIL_SIZE, 0,
-                EGL14.EGL_NONE
-            )
-            val configs = arrayOfNulls<EGLConfig>(1)
-            val numConfigs = IntArray(1)
-            EGL14.eglChooseConfig(eglDisplay, attribList, 0, configs, 0, 1, numConfigs, 0)
-            eglConfig = configs[0]
-
-            val contextAttribs = intArrayOf(
-                EGL14.EGL_CONTEXT_CLIENT_VERSION, 3,
-                EGL14.EGL_NONE
-            )
-            eglContext = EGL14.eglCreateContext(
-                eglDisplay,
-                eglConfig,
-                EGL14.EGL_NO_CONTEXT,
-                contextAttribs,
-                0
-            )
-
-            val surfaceAttribs = intArrayOf(EGL14.EGL_NONE)
-            eglSurface = EGL14.eglCreateWindowSurface(
-                eglDisplay,
-                eglConfig,
-                holder.surface,
-                surfaceAttribs,
-                0
-            )
-
-            EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)
-        }
-
-        private fun releaseEglAndResources() {
-            renderer?.release()
-            renderer = null
-
-            if (eglDisplay !== EGL14.EGL_NO_DISPLAY) {
-                EGL14.eglMakeCurrent(
-                    eglDisplay,
-                    EGL14.EGL_NO_SURFACE,
-                    EGL14.EGL_NO_SURFACE,
-                    EGL14.EGL_NO_CONTEXT
-                )
-                if (eglSurface !== EGL14.EGL_NO_SURFACE) {
-                    EGL14.eglDestroySurface(eglDisplay, eglSurface)
-                    eglSurface = EGL14.EGL_NO_SURFACE
-                }
-                if (eglContext !== EGL14.EGL_NO_CONTEXT) {
-                    EGL14.eglDestroyContext(eglDisplay, eglContext)
-                    eglContext = EGL14.EGL_NO_CONTEXT
-                }
-                EGL14.eglTerminate(eglDisplay)
-                eglDisplay = EGL14.EGL_NO_DISPLAY
             }
         }
     }

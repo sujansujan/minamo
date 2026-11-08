@@ -1,101 +1,215 @@
 package com.example.koipond
 
-import kotlin.math.PI
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Typeface
 import kotlin.math.abs
-import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * 8 distinct aquatic species with unique body aspect ratios, fin profiles, and shader patterns.
+ * Approved Plain-Text Monospace ASCII Fish Species (Single-Line & 3-Line Hero Sprites).
  */
-enum class FishSpecies(
+enum class AsciiFishSpecies(
     val id: Int,
-    val lengthMin: Float,
-    val lengthMax: Float,
-    val heightAspect: Float, // relative vertical tallness (e.g. Angelfish/Idol > Clownfish > Tetra)
-    val finScale: Float,     // dorsal/caudal fin extension multiplier
-    val baseSpeed: Float,
-    val swimFreq: Float,
-    val isSchoolingDarter: Boolean
+    val displayName: String,
+    val isHeroMultiLine: Boolean,
+    val colorRole: Int, // 0=Coral, 1=Aqua, 2=Gold, 3=Foam, 4=Rose
+    val baseSpeedColsPerSec: Float,
+    val rightFrameA: Array<String>,
+    val rightFrameB: Array<String>,
+    val leftFrameA: Array<String>,
+    val leftFrameB: Array<String>
 ) {
-    CLOWNFISH(0, 0.11f, 0.145f, 1.15f, 1.05f, 0.14f, 4.2f, false),
-    BLUE_TANG(1, 0.12f, 0.160f, 1.30f, 1.00f, 0.16f, 4.0f, false),
-    MOORISH_IDOL(2, 0.13f, 0.175f, 1.65f, 1.75f, 0.13f, 3.3f, false),
-    KOI_CARP(3, 0.14f, 0.185f, 0.95f, 1.15f, 0.12f, 3.1f, false),
-    NEON_TETRA(4, 0.065f, 0.088f, 0.85f, 0.90f, 0.21f, 5.8f, true),
-    ROYAL_BETTA(5, 0.11f, 0.145f, 1.15f, 1.85f, 0.10f, 2.9f, false),
-    MANDARIN_FISH(6, 0.10f, 0.135f, 1.10f, 1.30f, 0.12f, 3.8f, false),
-    SILVER_MINNOW(7, 0.060f, 0.082f, 0.78f, 0.85f, 0.23f, 6.2f, true);
+    NEON_TETRA(
+        id = 0,
+        displayName = "neon tetra",
+        isHeroMultiLine = false,
+        colorRole = 1,
+        baseSpeedColsPerSec = 4.6f,
+        rightFrameA = arrayOf("><>°"),
+        rightFrameB = arrayOf("}><>°"),
+        leftFrameA  = arrayOf("°<><"),
+        leftFrameB  = arrayOf("°<><{")
+    ),
+    SILVER_MINNOW(
+        id = 1,
+        displayName = "silver minnow",
+        isHeroMultiLine = false,
+        colorRole = 3,
+        baseSpeedColsPerSec = 5.0f,
+        rightFrameA = arrayOf(">-))°>"),
+        rightFrameB = arrayOf(">~))°>"),
+        leftFrameA  = arrayOf("<°((-<"),
+        leftFrameB  = arrayOf("<°((~<")
+    ),
+    CLOWNFISH(
+        id = 2,
+        displayName = "clownfish",
+        isHeroMultiLine = false,
+        colorRole = 0,
+        baseSpeedColsPerSec = 3.2f,
+        rightFrameA = arrayOf(">))|°>"),
+        rightFrameB = arrayOf("})))|°>"),
+        leftFrameA  = arrayOf("<°|((<"),
+        leftFrameB  = arrayOf("<°|((({")
+    ),
+    BLUE_TANG(
+        id = 3,
+        displayName = "blue tang",
+        isHeroMultiLine = false,
+        colorRole = 1,
+        baseSpeedColsPerSec = 3.5f,
+        rightFrameA = arrayOf(">==))°>"),
+        rightFrameB = arrayOf("}=~))°>"),
+        leftFrameA  = arrayOf("<°((==<"),
+        leftFrameB  = arrayOf("<°((~={")
+    ),
+    GOLD_OGON(
+        id = 4,
+        displayName = "gold ogon",
+        isHeroMultiLine = false,
+        colorRole = 2,
+        baseSpeedColsPerSec = 2.9f,
+        rightFrameA = arrayOf(">)))'>"),
+        rightFrameB = arrayOf("}))'>"),
+        leftFrameA  = arrayOf("<'(((<"),
+        leftFrameB  = arrayOf("<'((({")
+    ),
+    MANDARIN(
+        id = 5,
+        displayName = "mandarin",
+        isHeroMultiLine = false,
+        colorRole = 4,
+        baseSpeedColsPerSec = 3.0f,
+        rightFrameA = arrayOf(">~#°>"),
+        rightFrameB = arrayOf("}>~#°>"),
+        leftFrameA  = arrayOf("<°#~<"),
+        leftFrameB  = arrayOf("<°#~<{")
+    ),
+    KOHAKU_KOI(
+        id = 6,
+        displayName = "kohaku koi",
+        isHeroMultiLine = true,
+        colorRole = 0,
+        baseSpeedColsPerSec = 2.4f,
+        rightFrameA = arrayOf(
+            "  _.._  ",
+            "><(((º> ",
+            "  '--'  "
+        ),
+        rightFrameB = arrayOf(
+            "  _.._  ",
+            ">}(((º> ",
+            "  '--'  "
+        ),
+        leftFrameA = arrayOf(
+            "  _.._  ",
+            " <º)))><",
+            "  '--'  "
+        ),
+        leftFrameB = arrayOf(
+            "  _.._  ",
+            " <º)))<{",
+            "  '--'  "
+        )
+    ),
+    MOORISH_IDOL(
+        id = 7,
+        displayName = "moorish idol",
+        isHeroMultiLine = true,
+        colorRole = 2,
+        baseSpeedColsPerSec = 2.6f,
+        rightFrameA = arrayOf(
+            "   /|  ",
+            " >||°> ",
+            "   \|  "
+        ),
+        rightFrameB = arrayOf(
+            "   /)  ",
+            " }|/°> ",
+            "   \)  "
+        ),
+        leftFrameA = arrayOf(
+            "  |\   ",
+            " <°||< ",
+            "  |/   "
+        ),
+        leftFrameB = arrayOf(
+            "  (\   ",
+            " <°\|{ ",
+            "  (/   "
+        )
+    ),
+    VEIL_BETTA(
+        id = 8,
+        displayName = "veil betta",
+        isHeroMultiLine = true,
+        colorRole = 4,
+        baseSpeedColsPerSec = 2.2f,
+        rightFrameA = arrayOf(
+            " ~-\_  ",
+            ">)))º> ",
+            " ~-/   "
+        ),
+        rightFrameB = arrayOf(
+            "  ~\_  ",
+            "}))º>  ",
+            "  ~/   "
+        ),
+        leftFrameA = arrayOf(
+            "  _/-~ ",
+            " <º(((<",
+            "   \-~ "
+        ),
+        leftFrameB = arrayOf(
+            "  _/~  ",
+            "  <º(({",
+            "   \~  "
+        )
+    );
 
     companion object {
-        val heroSpecies = arrayOf(CLOWNFISH, BLUE_TANG, MOORISH_IDOL, KOI_CARP, ROYAL_BETTA, MANDARIN_FISH)
-        val schoolingSpecies = arrayOf(NEON_TETRA, SILVER_MINNOW)
+        val heroPool = arrayOf(CLOWNFISH, BLUE_TANG, GOLD_OGON, MANDARIN, KOHAKU_KOI, MOORISH_IDOL, VEIL_BETTA)
+        val schoolPool = arrayOf(NEON_TETRA, SILVER_MINNOW)
     }
 }
 
-class FishAgent(
+class AsciiFishAgent(
     val id: Int,
-    var isSmallSchooler: Boolean,
-    var speciesId: Int,
-    var x: Float,
-    var y: Float,           // Normalized screen Y in [-0.82 .. +0.10] (strictly underwater below the split waterline)
-    var zDepth: Float,      // 0.12 (foreground crisp) .. 0.85 (deep background)
-    var heading: Float,     // 3D yaw angle in XZ plane: 0 = swimming right (+X), PI = swimming left (-X)
-    var pitch: Float,       // vertical pitch angle [-0.35 .. +0.35]
-    var speed: Float,
-    var baseSpeed: Float,
-    var bodyLength: Float,  // Properly scaled for phone screens (0.06 .. 0.18 of width)
-    var bodyHeight: Float,
-    var finScale: Float,
-    var patternSeed: Float,
-    var swimPhase: Float,
-    var swimFreq: Float,
-    var smoothedCurvature: Float,
-    var targetX: Float,
-    var targetY: Float,
-    var targetZ: Float,
+    var isSchooler: Boolean,
+    var species: AsciiFishSpecies,
+    var colX: Float,
+    var rowY: Float,
+    var vxDir: Float,      // +1f = right, -1f = left
+    var vySpeed: Float,
+    var speedScale: Float,
+    var animPhase: Float,
     var startleBoost: Float = 0f
 )
 
-class VallisneriaBlade(
-    val rootX: Float,
-    val rootY: Float,
-    val length: Float,
-    val width: Float,
-    val baseAngle: Float,
-    val phase: Float,
-    val hueShift: Float,
-    val depthZ: Float
+class AsciiBubble(
+    var colX: Float = 0f,
+    var rowY: Float = 0f,
+    var speedY: Float = 2.2f,
+    var isBubble: Boolean = true,
+    var phase: Float = 0f
 )
 
-class RippleWave(
-    var x: Float = 0f,
-    var y: Float = 0f,
-    var age: Float = 99f,
-    var maxDuration: Float = 3.2f,
-    var amplitude: Float = 0f
-)
-
-class ParticleMote(
-    var x: Float,
-    var y: Float,
-    var z: Float,
-    var vx: Float,
-    var vy: Float,
-    var size: Float,
-    var isBubble: Boolean,
-    var phase: Float
+class AsciiTouchRipple(
+    var colX: Float = 0f,
+    var rowY: Float = 0f,
+    var radius: Float = 99f,
+    var maxRadius: Float = 14f,
+    var active: Boolean = false
 )
 
 /**
- * Split-view ("Over-Under") Phone Ecosystem Simulation:
- * - Waterline sits at screen NDC Y = +0.22 (top ~39% is scenic sunlit sky, distant hills, and floating surface pads;
- *   bottom ~61% is crystal-clear cross-section underwater world).
- * - Calling randomizeEcosystemOnUnlock() generates a fresh biome mix of fish species and sizes every time
- *   the user unlocks their phone.
+ * Zero-allocation Character-Grid Simulation & Canvas Renderer for the Half-Over / Half-Underwater
+ * ASCII Live Wallpaper.
  */
 class PondSimulation {
 
@@ -103,301 +217,519 @@ class PondSimulation {
     val maxSchoolFish = 7
     val totalMaxFish = maxHeroFish + maxSchoolFish
 
-    // Waterline in NDC Y [-1..+1]: +0.22 puts the split surface just above center
-    val waterlineNdcY = 0.22f
-
-    private var unlockCounter = 1L
-
     val fish = Array(totalMaxFish) { idx ->
-        FishAgent(
+        AsciiFishAgent(
             id = idx,
-            isSmallSchooler = idx >= maxHeroFish,
-            speciesId = idx % 8,
-            x = 0f,
-            y = -0.3f,
-            zDepth = 0.3f,
-            heading = 0f,
-            pitch = 0f,
-            speed = 0.14f,
-            baseSpeed = 0.14f,
-            bodyLength = 0.13f,
-            bodyHeight = 0.13f,
-            finScale = 1.0f,
-            patternSeed = idx * 1.7f,
-            swimPhase = 0f,
-            swimFreq = 3.8f,
-            smoothedCurvature = 0f,
-            targetX = 0.4f,
-            targetY = -0.3f,
-            targetZ = 0.3f
+            isSchooler = idx >= maxHeroFish,
+            species = AsciiFishSpecies.entries[idx % AsciiFishSpecies.entries.size],
+            colX = 10f,
+            rowY = 20f,
+            vxDir = if (idx % 2 == 0) 1f else -1f,
+            vySpeed = 0.25f,
+            speedScale = 1.0f,
+            animPhase = idx * 1.3f
         )
     }
 
-    // Underwater swaying seagrass & kelp rooted along the sloped riverbed at the bottom
-    val vallisneriaBlades = Array(28) { idx ->
-        val rand = Random(idx * 4177 + 13)
-        val xPos = -0.95f + (idx / 27.0f) * 1.90f + (rand.nextFloat() - 0.5f) * 0.08f
-        val depthZ = 0.18f + (idx % 4) * 0.18f
-        val rootY = -0.96f + depthZ * 0.12f
-        VallisneriaBlade(
-            rootX = xPos,
-            rootY = rootY,
-            length = 0.22f + rand.nextFloat() * 0.28f,
-            width = 0.016f + rand.nextFloat() * 0.010f,
-            baseAngle = 1.570796f + (rand.nextFloat() - 0.5f) * 0.22f, // Grows upward (+Y)
-            phase = rand.nextFloat() * 6.28f,
-            hueShift = rand.nextFloat(),
-            depthZ = depthZ
+    val bubbles = Array(28) { idx ->
+        AsciiBubble(
+            colX = (idx * 7 % 45).toFloat(),
+            rowY = (15 + (idx * 5 % 25)).toFloat(),
+            speedY = if (idx < 10) 2.4f + (idx % 3) * 0.5f else 0.35f,
+            isBubble = idx < 10,
+            phase = idx * 0.9f
         )
     }
 
-    val maxRipples = 8
-    val ripples = Array(maxRipples) { RippleWave() }
+    val ripples = Array(6) { AsciiTouchRipple() }
     private var nextRippleIdx = 0
-    private var surfaceDropTimer = 3.0f
 
-    val maxParticles = 48
-    val particles = Array(maxParticles) { idx ->
-        val r = Random(idx * 6151 + 99)
-        val isBubble = idx < 12
-        ParticleMote(
-            x = (r.nextFloat() - 0.5f) * 1.9f,
-            y = -0.92f + r.nextFloat() * 1.08f, // Strictly below waterline
-            z = 0.15f + r.nextFloat() * 0.75f,
-            vx = (r.nextFloat() - 0.5f) * 0.016f,
-            vy = if (isBubble) (0.08f + r.nextFloat() * 0.06f) else (r.nextFloat() - 0.5f) * 0.012f,
-            size = if (isBubble) (0.008f + r.nextFloat() * 0.007f) else (0.004f + r.nextFloat() * 0.004f),
-            isBubble = isBubble,
-            phase = r.nextFloat() * 6.28f
-        )
+    var simTime = 0f
+        private set
+    private var unlockSeedCounter = 1L
+
+    var gridCols = 46
+        private set
+    var gridRows = 82
+        private set
+    var waterlineRow = 30
+        private set
+
+    // Pre-allocated 2D character & color buffers (max 80 cols x 140 rows -> zero GC allocations)
+    private val maxCols = 80
+    private val maxRows = 140
+    private val charGrid = CharArray(maxCols * maxRows) { ' ' }
+    private val colorGrid = IntArray(maxCols * maxRows)
+    private val rowCharScratch = CharArray(maxCols)
+
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.MONOSPACE
+        fontFeatureSettings = "liga 0, calt 0"
+        textAlign = Paint.Align.LEFT
     }
+    private val bgPaint = Paint()
 
-    var simulationTime = 0f
+    private var cellWidthPx = 24f
+    private var cellHeightPx = 42f
+    private var baselineOffsetPx = 32f
+
+    var activeSpeciesSummary: String = "clownfish, kohaku koi, neon tetra"
         private set
 
     init {
         randomizeEcosystemOnUnlock(System.nanoTime())
     }
 
-    /**
-     * Picks a fresh, cohesive combination of fish species, sizes, and depths every time
-     * the user unlocks or wakes their phone.
-     */
-    fun randomizeEcosystemOnUnlock(seedInput: Long = System.nanoTime()) {
-        unlockCounter++
-        val rand = Random(seedInput xor (unlockCounter * 0x9E3779B97F4A7C15UL.toLong()))
+    fun configureGrid(widthPx: Int, heightPx: Int, density: GridDensity) {
+        if (widthPx <= 0 || heightPx <= 0) return
+        val cols = density.targetCols.coerceIn(30, maxCols - 2)
+        cellWidthPx = widthPx.toFloat() / cols.toFloat()
 
-        // Pick 2 or 3 hero species for this unlock session so the scene feels curated yet surprising
-        val heroPool = FishSpecies.heroSpecies
-        val primaryHero = heroPool[rand.nextInt(heroPool.size)]
-        val secondaryHero = heroPool[rand.nextInt(heroPool.size)]
-        val tertiaryHero = heroPool[rand.nextInt(heroPool.size)]
-        val schoolSpecies = FishSpecies.schoolingSpecies[rand.nextInt(FishSpecies.schoolingSpecies.size)]
+        // Measure monospace 'M' so character cells have crisp aspect ratio
+        textPaint.textSize = cellWidthPx * 1.66f
+        val actualAdvance = textPaint.measureText("M").coerceAtLeast(1f)
+        textPaint.textSize = textPaint.textSize * (cellWidthPx / actualAdvance)
+
+        val fm = textPaint.fontMetrics
+        cellHeightPx = (fm.descent - fm.ascent + fm.leading).coerceAtLeast(cellWidthPx * 1.45f)
+        baselineOffsetPx = -fm.ascent
+
+        gridCols = cols
+        gridRows = (heightPx / cellHeightPx).toInt().coerceIn(28, maxRows - 2)
+        // Half-over / half-underwater split: ~38% sky & surface, ~62% underwater cross-section
+        waterlineRow = (gridRows * 0.38f).roundToInt().coerceIn(10, gridRows - 14)
+    }
+
+    /**
+     * Randomizes the fish species mix and positions every time the user unlocks their phone.
+     */
+    fun randomizeEcosystemOnUnlock(seed: Long = System.nanoTime()) {
+        unlockSeedCounter++
+        val rand = Random(seed xor (unlockSeedCounter * 0x9E3779B97F4A7C15UL.toLong()))
+
+        val h1 = AsciiFishSpecies.heroPool[rand.nextInt(AsciiFishSpecies.heroPool.size)]
+        var h2 = AsciiFishSpecies.heroPool[rand.nextInt(AsciiFishSpecies.heroPool.size)]
+        if (h2 == h1) {
+            h2 = AsciiFishSpecies.heroPool[(h1.ordinal + 2) % AsciiFishSpecies.heroPool.size]
+        }
+        val h3 = AsciiFishSpecies.heroPool[rand.nextInt(AsciiFishSpecies.heroPool.size)]
+        val schoolSp = AsciiFishSpecies.schoolPool[rand.nextInt(AsciiFishSpecies.schoolPool.size)]
+
+        activeSpeciesSummary = "${h1.displayName}, ${h2.displayName}, ${schoolSp.displayName}"
+
+        val minUnderwaterRow = (waterlineRow + 3).coerceAtMost(gridRows - 10)
+        val maxUnderwaterRow = (gridRows - 8).coerceAtLeast(minUnderwaterRow + 4)
 
         for (i in 0 until totalMaxFish) {
             val f = fish[i]
-            val isSchooler = i >= maxHeroFish
-            f.isSmallSchooler = isSchooler
-
-            val sp = if (isSchooler) {
-                schoolSpecies
+            val isSchool = i >= maxHeroFish
+            f.isSchooler = isSchool
+            f.species = if (isSchool) {
+                schoolSp
             } else {
                 when (i % 3) {
-                    0 -> primaryHero
-                    1 -> secondaryHero
-                    else -> tertiaryHero
+                    0 -> h1
+                    1 -> h2
+                    else -> h3
                 }
             }
-
-            f.speciesId = sp.id
-            f.zDepth = if (isSchooler) {
-                0.22f + rand.nextFloat() * 0.45f
-            } else {
-                0.16f + (i.toFloat() / maxHeroFish.toFloat()) * 0.62f
-            }
-
-            // Perspective scale: deeper fish appear naturally smaller
-            val depthScale = 1.05f - f.zDepth * 0.42f
-            val baseLen = sp.lengthMin + rand.nextFloat() * (sp.lengthMax - sp.lengthMin)
-            f.bodyLength = baseLen * depthScale
-            f.bodyHeight = f.bodyLength * sp.heightAspect
-            f.finScale = sp.finScale
-
-            f.x = (rand.nextFloat() - 0.5f) * 1.45f
-            // Keep fish comfortably in the underwater zone [-0.68 .. +0.06] away from bottom dock
-            f.y = -0.66f + rand.nextFloat() * 0.72f
-            val dirRight = rand.nextBoolean()
-            f.heading = if (dirRight) (rand.nextFloat() - 0.5f) * 0.4f else PI.toFloat() + (rand.nextFloat() - 0.5f) * 0.4f
-            f.pitch = 0f
-            f.baseSpeed = sp.baseSpeed * (0.85f + rand.nextFloat() * 0.30f) * depthScale
-            f.speed = f.baseSpeed
-            f.swimFreq = sp.swimFreq * (0.9f + rand.nextFloat() * 0.25f)
-            f.swimPhase = rand.nextFloat() * 6.28f
-            f.patternSeed = rand.nextFloat() * 20f + i * 2.3f
-            f.smoothedCurvature = 0f
+            f.colX = rand.nextFloat() * (gridCols - 8).coerceAtLeast(10) + 2f
+            f.rowY = minUnderwaterRow + rand.nextFloat() * (maxUnderwaterRow - minUnderwaterRow)
+            f.vxDir = if (rand.nextBoolean()) 1f else -1f
+            f.vySpeed = (rand.nextFloat() - 0.5f) * 0.55f
+            f.speedScale = 0.82f + rand.nextFloat() * 0.36f
+            f.animPhase = rand.nextFloat() * 6.28f
             f.startleBoost = 0f
-
-            f.targetX = if (dirRight) 0.65f else -0.65f
-            f.targetY = (-0.62f + rand.nextFloat() * 0.66f)
-            f.targetZ = f.zDepth
         }
     }
 
-    fun spawnRipple(ndcX: Float, ndcY: Float, amplitude: Float, startleFish: Boolean) {
-        val r = ripples[nextRippleIdx]
-        r.x = ndcX
-        r.y = ndcY
-        r.age = 0f
-        r.maxDuration = 3.2f
-        r.amplitude = amplitude
-        nextRippleIdx = (nextRippleIdx + 1) % maxRipples
+    fun onTouch(screenX: Float, screenY: Float) {
+        val c = (screenX / cellWidthPx).coerceIn(1f, (gridCols - 2).toFloat())
+        val r = (screenY / cellHeightPx).coerceIn(1f, (gridRows - 2).toFloat())
 
-        if (startleFish) {
-            for (i in fish.indices) {
-                val f = fish[i]
-                val dx = f.x - ndcX
-                val dy = f.y - ndcY
-                val dist = hypot(dx, dy)
-                if (dist < 0.55f && dist > 0.001f) {
-                    f.targetX = (f.x + (dx / dist) * 0.65f).coerceIn(-0.82f, 0.82f)
-                    f.targetY = (f.y + (dy / dist) * 0.35f).coerceIn(-0.68f, 0.06f)
-                    f.startleBoost = 0.22f * (1f - dist / 0.55f)
-                }
-            }
-        }
-    }
+        val rp = ripples[nextRippleIdx]
+        rp.colX = c
+        rp.rowY = r
+        rp.radius = 0.5f
+        rp.maxRadius = 13f
+        rp.active = true
+        nextRippleIdx = (nextRippleIdx + 1) % ripples.size
 
-    fun update(
-        dt: Float,
-        activeHeroCount: Int,
-        activeSchoolCount: Int,
-        activeParticleCount: Int
-    ) {
-        val clampedDt = dt.coerceIn(0.001f, 0.05f)
-        simulationTime += clampedDt
-
-        // Occasional gentle surface droplet ripple along the waterline
-        surfaceDropTimer -= clampedDt
-        if (surfaceDropTimer <= 0f) {
-            surfaceDropTimer = 3.4f + (sin(simulationTime * 1.9f) * 0.5f + 0.5f) * 3.5f
-            val rx = sin(simulationTime * 11.3f) * 0.72f
-            spawnRipple(rx, waterlineNdcY, amplitude = 0.45f, startleFish = false)
-        }
-
-        for (i in 0 until maxRipples) {
-            val r = ripples[i]
-            if (r.age < r.maxDuration) {
-                r.age += clampedDt
-            }
-        }
-
-        // Update 3D side-view fish steering inside the underwater volume
+        // Startle nearby fish gently away from the tap
         for (i in 0 until totalMaxFish) {
             val f = fish[i]
-            if (!f.isSmallSchooler && i >= activeHeroCount) continue
-            if (f.isSmallSchooler && (i - maxHeroFish) >= activeSchoolCount) continue
-
-            f.startleBoost *= (1f - clampedDt * 2.0f).coerceAtLeast(0f)
-
-            // Check if close to target waypoint or boundary, pick a smooth new underwater waypoint
-            val dxTarget = f.targetX - f.x
-            val dyTarget = f.targetY - f.y
-            if (hypot(dxTarget, dyTarget) < 0.16f || abs(f.x) > 0.86f) {
-                val r1 = sin(simulationTime * 1.37f + i * 4.19f)
-                val r2 = cos(simulationTime * 0.91f + i * 2.73f)
-                // Gently cruise across the screen horizontally with subtle vertical & depth changes
-                f.targetX = if (f.x > 0.25f) {
-                    -0.75f + abs(r1) * 0.55f
-                } else if (f.x < -0.25f) {
-                    0.75f - abs(r1) * 0.55f
-                } else {
-                    r1 * 0.78f
-                }
-                // Keep fish below waterline (+0.08) and above bottom icon dock (-0.68)
-                f.targetY = (-0.30f + r2 * 0.34f).coerceIn(-0.66f, 0.06f)
+            val dx = f.colX - c
+            val dy = f.rowY - r
+            val dist = hypot(dx, dy)
+            if (dist < 14f) {
+                f.vxDir = if (dx >= 0f) 1f else -1f
+                f.startleBoost = 5.5f * (1f - dist / 14f)
             }
+        }
+    }
 
-            var steerX = dxTarget
-            var steerY = dyTarget * 1.35f
+    fun updateAndRender(
+        canvas: Canvas,
+        dt: Float,
+        config: WallpaperConfig,
+        parallaxX: Float,
+        parallaxY: Float,
+        isBatterySaver: Boolean,
+        isWallpaperMode: Boolean
+    ) {
+        val clampedDt = dt.coerceIn(0.001f, 0.08f)
+        simTime += clampedDt
 
-            // Mutual separation so fish never overlap unnaturally
-            for (j in 0 until totalMaxFish) {
-                if (i == j) continue
-                val other = fish[j]
-                if (!other.isSmallSchooler && j >= activeHeroCount) continue
-                if (other.isSmallSchooler && (j - maxHeroFish) >= activeSchoolCount) continue
+        val snapshot = TimeOfDayPalette.resolve(config.timeCycleMode)
+        val pal = snapshot.colors
 
-                if (abs(f.zDepth - other.zDepth) < 0.16f) {
-                    val ox = f.x - other.x
-                    val oy = f.y - other.y
-                    val d = hypot(ox, oy)
-                    val minSep = (f.bodyLength + other.bodyLength) * 0.65f
-                    if (d < minSep && d > 0.001f) {
-                        val push = (minSep - d) / minSep
-                        steerX += (ox / d) * push * 0.65f
-                        steerY += (oy / d) * push * 0.65f
+        val cols = gridCols
+        val rows = gridRows
+        val pShiftCols = (parallaxX * 6f).roundToInt()
+        val pShiftRows = (parallaxY * 2f).roundToInt()
+        val splitRow = (waterlineRow + pShiftRows).coerceIn(8, rows - 12)
+
+        // Usability calm bands for wallpaper mode (keep top 15% clock & bottom 18% icon dock calmer)
+        val topCalmRow = if (isWallpaperMode) (rows * 0.14f).toInt() else 0
+        val bottomCalmRow = if (isWallpaperMode) (rows * 0.84f).toInt() else rows - 4
+
+        // 1. Paint solid tinted background bands (Sky above splitRow, Shallow-to-Deep Water below)
+        bgPaint.color = pal.skyBg
+        canvas.drawRect(0f, 0f, canvas.width.toFloat(), splitRow * cellHeightPx, bgPaint)
+
+        val underwaterRows = (rows - splitRow).coerceAtLeast(1)
+        for (r in splitRow until rows) {
+            val depthFrac = (r - splitRow).toFloat() / underwaterRows.toFloat()
+            bgPaint.color = TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.waterBgDeep, depthFrac)
+            canvas.drawRect(
+                0f,
+                r * cellHeightPx,
+                canvas.width.toFloat(),
+                (r + 1) * cellHeightPx + 1f,
+                bgPaint
+            )
+        }
+
+        // Clear character grid
+        val totalCells = cols * rows
+        for (i in 0 until totalCells) {
+            charGrid[i] = ' '
+            colorGrid[i] = pal.cloudReedFg
+        }
+
+        fun setCell(c: Int, r: Int, ch: Char, color: Int) {
+            if (c in 0 until cols && r in 0 until rows && ch != ' ') {
+                val idx = r * cols + c
+                charGrid[idx] = ch
+                colorGrid[idx] = color
+            }
+        }
+
+        fun drawStringAt(c: Int, r: Int, text: String, color: Int) {
+            if (r !in 0 until rows) return
+            for (i in text.indices) {
+                val ch = text[i]
+                if (ch != ' ') {
+                    setCell(c + i, r, ch, color)
+                }
+            }
+        }
+
+        // =========================================================================
+        // 2. OVER-WATER REGION (Rows 0 .. splitRow - 1): Sun/Moon, Stars, Clouds, Shore Reeds
+        // =========================================================================
+        val celestialCol = ((snapshot.sunArcX * (cols - 10)).roundToInt() + 5 + pShiftCols).coerceIn(4, cols - 6)
+        val skyHeight = (splitRow - 4).coerceAtLeast(4)
+        val celestialRow = ((1f - snapshot.sunArcY) * (skyHeight - 3) + 2).roundToInt().coerceIn(2, splitRow - 4)
+
+        if (snapshot.isNight) {
+            // Twinkling stars in night sky
+            for (s in 0 until 14) {
+                val sc = ((s * 13 + 5 + pShiftCols) % (cols - 2)).coerceAtLeast(1)
+                val sr = ((s * 7 + 2) % (splitRow - 3)).coerceAtLeast(1)
+                val twinkle = sin(simTime * 2.2f + s * 1.7f)
+                val starChar = if (twinkle > 0.3f) '*' else '.'
+                setCell(sc, sr, starChar, pal.celestialGlyph)
+            }
+            // Crescent Moon ASCII art
+            drawStringAt(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
+            drawStringAt(celestialCol - 2, celestialRow,     "( (   ", pal.celestialGlyph)
+            drawStringAt(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
+        } else {
+            // Radiant Sun ASCII art with animated rays
+            val rayPulse = ((simTime * 1.5f).toInt() % 2 == 0)
+            if (rayPulse) {
+                drawStringAt(celestialCol - 3, celestialRow - 1, " \ | / ", pal.celestialGlyph)
+                drawStringAt(celestialCol - 3, celestialRow,     "--(O)--", pal.celestialGlyph)
+                drawStringAt(celestialCol - 3, celestialRow + 1, " / | \ ", pal.celestialGlyph)
+            } else {
+                drawStringAt(celestialCol - 3, celestialRow - 1, "  \|/  ", pal.celestialGlyph)
+                drawStringAt(celestialCol - 3, celestialRow,     " -(o)- ", pal.celestialGlyph)
+                drawStringAt(celestialCol - 3, celestialRow + 1, "  /|\  ", pal.celestialGlyph)
+            }
+        }
+
+        // Drifting ASCII Clouds
+        val cloud1Col = ((simTime * 0.7f + 6f + pShiftCols).toInt() % (cols + 12)) - 8
+        val cloud1Row = (splitRow * 0.34f).toInt().coerceIn(2, splitRow - 4)
+        drawStringAt(cloud1Col, cloud1Row,     "  .--.   ", pal.cloudReedFg)
+        drawStringAt(cloud1Col, cloud1Row + 1, "-(    )-.", pal.cloudReedFg)
+
+        val cloud2Col = (((simTime * 0.45f + cols * 0.55f + pShiftCols).toInt()) % (cols + 12)) - 8
+        val cloud2Row = (splitRow * 0.52f).toInt().coerceIn(3, splitRow - 3)
+        drawStringAt(cloud2Col, cloud2Row, " .-(   )-.", pal.cloudReedFg)
+
+        // Shoreline Reeds & Distant Horizon just above the waterline (splitRow - 2, splitRow - 1)
+        val swayLeft = sin(simTime * 1.4f) > 0f
+        for (c in 0 until cols) {
+            // Left and right bank reed clusters
+            if (c in 2..7 || c in (cols - 9)..(cols - 3)) {
+                val reedTop = if ((c + if (swayLeft) 1 else 0) % 2 == 0) '/' else '|'
+                setCell(c, splitRow - 2, reedTop, pal.kelpFg)
+                setCell(c, splitRow - 1, '|', pal.kelpFg)
+            } else if (c % 3 == 0) {
+                setCell(c, splitRow - 1, '.', pal.cloudReedFg)
+            }
+        }
+
+        // =========================================================================
+        // 3. SPLIT WATERLINE MENISCUS & FLOATING LILY PADS / LOTUS (Row = splitRow)
+        // =========================================================================
+        val wavePhase = (simTime * 3.0f).toInt()
+        val wavePattern = "~^~._."
+        for (c in 0 until cols) {
+            val ch = wavePattern[(c + wavePhase).mod(wavePattern.length)]
+            setCell(c, splitRow, ch, pal.meniscusWaveFg)
+        }
+
+        // Floating surface lily pads `[_v_]` and blooming lotus `(*)` on the meniscus line
+        val pad1Col = (cols * 0.22f + sin(simTime * 0.6f) * 1.5f + pShiftCols).roundToInt()
+        drawStringAt(pad1Col, splitRow, "[_v_]", pal.lilyPadFg)
+        drawStringAt(pad1Col + 1, splitRow - 1, "(*)", pal.lotusFlowerFg)
+
+        val pad2Col = (cols * 0.70f + cos(simTime * 0.5f) * 1.5f + pShiftCols).roundToInt()
+        drawStringAt(pad2Col, splitRow, "[_v_]", pal.lilyPadFg)
+
+        // Sub-surface caustic shimmer right below meniscus (splitRow + 1)
+        if (config.waterClarity > 0.45f) {
+            for (c in 1 until cols - 1 step 3) {
+                val shimmerChar = if ((c + wavePhase) % 2 == 0) ':' else '.'
+                setCell(c, splitRow + 1, shimmerChar, pal.sunRayFg)
+            }
+        }
+
+        // =========================================================================
+        // 4. UNDERWATER DIAGONAL SUNBEAMS (God Rays), KELP & RIVERBED COBBLES
+        // =========================================================================
+        if (!snapshot.isNight && config.waterClarity > 0.5f) {
+            val rayCount = if (config.waterClarity > 0.78f) 3 else 2
+            for (rayIdx in 0 until rayCount) {
+                val startCol = (cols * (0.20f + rayIdx * 0.28f) + sin(simTime * 0.4f + rayIdx) * 2f).roundToInt()
+                val maxRayDepth = ((rows - splitRow) * 0.68f).toInt()
+                for (d in 2 until maxRayDepth step 2) {
+                    val rc = startCol + (d / 2)
+                    val rr = splitRow + d
+                    if (rr < bottomCalmRow && (d + wavePhase) % 3 != 0) {
+                        val rayCh = if (d % 4 == 0) '/' else ':'
+                        setCell(rc, rr, rayCh, pal.sunRayFg)
                     }
                 }
             }
-
-            // Hard safety ceiling below the air-water meniscus so fish stay underwater
-            if (f.y > 0.07f) {
-                steerY -= (f.y - 0.07f) * 4.5f
-            } else if (f.y < -0.68f) {
-                steerY += (-0.68f - f.y) * 4.5f
-            }
-
-            // Desired horizontal yaw (0 = right, PI = left) and subtle vertical pitch
-            val desiredYaw = if (steerX >= 0f) 0f else PI.toFloat()
-            val yawDiff = normalizeAngle(desiredYaw - f.heading)
-            val turnRate = if (f.isSmallSchooler) 3.4f else 2.1f
-            val yawStep = (yawDiff * turnRate).coerceIn(-turnRate, turnRate)
-            f.heading = normalizeAngle(f.heading + yawStep * clampedDt)
-
-            val desiredPitch = atan2(steerY, abs(steerX).coerceAtLeast(0.15f)).coerceIn(-0.32f, 0.32f)
-            f.pitch += (desiredPitch - f.pitch) * (clampedDt * 3.5f).coerceAtMost(1f)
-
-            // Smooth spine C-bend when turning in 3D
-            val targetCurve = (yawStep / turnRate).coerceIn(-1f, 1f) * 0.38f
-            f.smoothedCurvature += (targetCurve - f.smoothedCurvature) * (clampedDt * 5.0f).coerceAtMost(1f)
-
-            f.speed = f.baseSpeed + f.startleBoost
-            val vx = cos(f.heading) * cos(f.pitch) * f.speed
-            val vy = sin(f.pitch) * f.speed * 0.85f
-
-            f.x += vx * clampedDt
-            f.y = (f.y + vy * clampedDt).coerceIn(-0.74f, 0.09f)
-
-            val freqBoost = 1f + (f.startleBoost / f.baseSpeed.coerceAtLeast(0.05f)) * 1.4f
-            f.swimPhase = (f.swimPhase + clampedDt * f.swimFreq * freqBoost) % (200f * PI.toFloat())
         }
 
-        // Update underwater motes & rising air bubbles (bubbles pop at waterlineNdcY)
-        for (i in 0 until activeParticleCount.coerceAtMost(maxParticles)) {
-            val p = particles[i]
-            p.x += (p.vx + 0.008f * sin(simulationTime * 0.8f + p.phase)) * clampedDt
-            p.y += p.vy * clampedDt
+        // Riverbed Sand & Rounded Cobbles along bottom rows
+        val floorRow = rows - 2
+        val subFloorRow = rows - 1
+        val pebblePattern = "..ooO.._.oOo._..ooO.._."
+        for (c in 0 until cols) {
+            val pCh = pebblePattern[(c - pShiftCols).mod(pebblePattern.length)]
+            setCell(c, floorRow, pCh, pal.pebbleFg)
+            setCell(c, subFloorRow, '~', pal.cloudReedFg)
+        }
 
-            if (p.isBubble) {
-                if (p.y >= waterlineNdcY - 0.04f) {
-                    // Respawn bubble near an active hero fish or riverbed
-                    val refFish = fish[i % activeHeroCount.coerceAtLeast(1)]
-                    p.x = refFish.x + sin(simulationTime * 3.1f + i) * 0.04f
-                    p.y = refFish.y
+        // Swaying Underwater Kelp / Vallisneria rooted at floorRow - 1
+        val kelpPositions = intArrayOf(
+            4, 7, 15, 28, cols - 14, cols - 6, cols - 4
+        )
+        for (kIdx in kelpPositions.indices) {
+            val baseC = (kelpPositions[kIdx] + pShiftCols).mod(cols)
+            val height = 5 + (kIdx % 4) * 2
+            for (h in 0 until height) {
+                val kr = floorRow - 1 - h
+                if (kr <= splitRow + 2) break
+                val sway = sin(simTime * 1.8f + kIdx * 1.3f - h * 0.55f)
+                val kc = baseC + if (sway > 0.35f) 1 else if (sway < -0.35f) -1 else 0
+                val kCh = when {
+                    sway > 0.25f -> ')'
+                    sway < -0.25f -> '('
+                    else -> '|'
                 }
-            } else {
-                if (p.x > 1.0f) p.x = -1.0f
-                if (p.x < -1.0f) p.x = 1.0f
-                if (p.y > waterlineNdcY - 0.05f) p.y = -0.90f
-                if (p.y < -0.92f) p.y = waterlineNdcY - 0.08f
+                setCell(kc, kr, kCh, pal.kelpFg)
             }
         }
-    }
 
-    private fun normalizeAngle(angle: Float): Float {
-        var a = angle
-        while (a > PI.toFloat()) a -= (2f * PI.toFloat())
-        while (a < -PI.toFloat()) a += (2f * PI.toFloat())
-        return a
+        // =========================================================================
+        // 5. UPDATE & RENDER RISING BUBBLES & DRIFTING PLANKTON MOTES
+        // =========================================================================
+        val activeBubbles = if (isBatterySaver) 12 else bubbles.size
+        for (i in 0 until activeBubbles) {
+            val b = bubbles[i]
+            b.rowY -= b.speedY * clampedDt
+            b.colX += sin(simTime * 1.5f + b.phase) * 0.4f * clampedDt
+
+            if (b.rowY <= splitRow + 1) {
+                // Respawn near a fish or riverbed
+                val refFish = fish[i % config.heroFishCount.coerceAtLeast(1)]
+                b.colX = refFish.colX + 2f
+                b.rowY = if (b.isBubble) refFish.rowY else (rows - 4).toFloat()
+            }
+
+            val bc = b.colX.roundToInt()
+            val br = b.rowY.roundToInt()
+            if (br in (splitRow + 2) until (floorRow - 1)) {
+                val bChar = if (b.isBubble) {
+                    if ((br + i) % 2 == 0) 'o' else '°'
+                } else {
+                    '.'
+                }
+                setCell(bc, br, bChar, pal.bubbleFg)
+            }
+        }
+
+        // =========================================================================
+        // 6. UPDATE & RENDER MULTI-SPECIES ASCII FISH (Randomized per Phone Unlock)
+        // =========================================================================
+        val activeHero = if (isBatterySaver) (config.heroFishCount - 2).coerceAtLeast(2) else config.heroFishCount
+        val activeSchool = if (isBatterySaver) 3 else maxSchoolFish
+
+        val minFishRow = (splitRow + 3).coerceAtMost(rows - 10)
+        val maxFishRow = (bottomCalmRow - 3).coerceAtLeast(minFishRow + 4)
+
+        for (i in 0 until totalMaxFish) {
+            val f = fish[i]
+            if (!f.isSchooler && i >= activeHero) continue
+            if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
+
+            f.startleBoost *= (1f - clampedDt * 2.2f).coerceAtLeast(0f)
+            val spd = (f.species.baseSpeedColsPerSec * f.speedScale) + f.startleBoost
+
+            f.colX += f.vxDir * spd * clampedDt
+            f.rowY += (f.vySpeed + sin(simTime * 0.9f + f.id) * 0.25f) * clampedDt
+            f.animPhase += clampedDt * (3.2f + f.startleBoost * 0.8f)
+
+            // Soft horizontal turn-around at screen margins
+            val spriteWidth = f.species.rightFrameA[0].length
+            if (f.vxDir > 0f && f.colX > cols - spriteWidth - 1) {
+                f.vxDir = -1f
+            } else if (f.vxDir < 0f && f.colX < 1f) {
+                f.vxDir = 1f
+            }
+
+            // Keep strictly inside the underwater comfort zone
+            if (f.rowY < minFishRow) {
+                f.rowY = minFishRow.toFloat()
+                f.vySpeed = abs(f.vySpeed)
+            } else if (f.rowY > maxFishRow) {
+                f.rowY = maxFishRow.toFloat()
+                f.vySpeed = -abs(f.vySpeed)
+            }
+
+            val useFrameB = (sin(f.animPhase) > 0f)
+            val lines = if (f.vxDir >= 0f) {
+                if (useFrameB) f.species.rightFrameB else f.species.rightFrameA
+            } else {
+                if (useFrameB) f.species.leftFrameB else f.species.leftFrameA
+            }
+
+            val fishColor = when (f.species.colorRole) {
+                0 -> pal.fishCoral
+                1 -> pal.fishAqua
+                2 -> pal.fishGold
+                3 -> pal.fishFoam
+                else -> pal.fishRose
+            }
+
+            val drawC = (f.colX + pShiftCols * 0.5f).roundToInt()
+            val drawR = f.rowY.roundToInt()
+            val startRowOffset = -(lines.size / 2)
+
+            for (lineIdx in lines.indices) {
+                val r = drawR + startRowOffset + lineIdx
+                if (r in (splitRow + 1) until (floorRow - 1)) {
+                    val rowStr = lines[lineIdx]
+                    for (chIdx in rowStr.indices) {
+                        val ch = rowStr[chIdx]
+                        if (ch != ' ') {
+                            // Highlight fish eyes ('°' or 'º') and Kohaku dorsal markings in contrasting role
+                            val charCol = when {
+                                ch == '°' || ch == 'º' -> pal.fishFoam
+                                f.species == AsciiFishSpecies.KOHAKU_KOI && lineIdx == 0 -> pal.fishCoral
+                                f.species == AsciiFishSpecies.KOHAKU_KOI && lineIdx == 1 -> pal.fishFoam
+                                f.species == AsciiFishSpecies.CLOWNFISH && ch == '|' -> pal.fishFoam
+                                else -> fishColor
+                            }
+                            setCell(drawC + chIdx, r, ch, charCol)
+                        }
+                    }
+                }
+            }
+        }
+
+        // =========================================================================
+        // 7. INTERACTIVE TOUCH RIPPLE RINGS `(   )`
+        // =========================================================================
+        for (i in ripples.indices) {
+            val rp = ripples[i]
+            if (!rp.active) continue
+            rp.radius += clampedDt * 8.5f
+            if (rp.radius > rp.maxRadius) {
+                rp.active = false
+                continue
+            }
+            val steps = 16
+            for (s in 0 until steps) {
+                val ang = (s.toFloat() / steps) * (2f * Math.PI.toFloat())
+                val rc = (rp.colX + cos(ang) * rp.radius).roundToInt()
+                val rr = (rp.rowY + sin(ang) * (rp.radius * 0.55f)).roundToInt()
+                val rCh = if (cos(ang) >= 0f) ')' else '('
+                setCell(rc, rr, rCh, pal.meniscusWaveFg)
+            }
+        }
+
+        // =========================================================================
+        // 8. FLUSH CHARACTER GRID TO CANVAS (Batched per color run for 60fps speed)
+        // =========================================================================
+        for (r in 0 until rows) {
+            if (r < topCalmRow && isWallpaperMode && r % 2 == 1) continue
+            val yPx = r * cellHeightPx + baselineOffsetPx
+            val rowOffset = r * cols
+
+            var c = 0
+            while (c < cols) {
+                val ch = charGrid[rowOffset + c]
+                if (ch == ' ') {
+                    c++
+                    continue
+                }
+                val runColor = colorGrid[rowOffset + c]
+                val runStart = c
+                var runLen = 0
+                while (c < cols) {
+                    val curCh = charGrid[rowOffset + c]
+                    val curCol = colorGrid[rowOffset + c]
+                    if (curCh != ' ' && curCol == runColor) {
+                        rowCharScratch[runLen++] = curCh
+                        c++
+                    } else if (curCh == ' ') {
+                        rowCharScratch[runLen++] = ' '
+                        c++
+                    } else {
+                        break
+                    }
+                }
+                textPaint.color = runColor
+                canvas.drawText(rowCharScratch, 0, runLen, runStart * cellWidthPx, yPx, textPaint)
+            }
+        }
     }
 }

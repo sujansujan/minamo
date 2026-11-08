@@ -1,20 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Minamo</string>
-    <string name="wallpaper_label">Minamo</string>
-    <string name="wallpaper_description">Half-over, half-underwater sunlit aquatic live wallpaper with randomized fish on every unlock.</string>
-    <string name="settings_title">Minamo</string>
-    <string name="apply_wallpaper">Set Live Wallpaper</string>
-    <string name="shuffle_fish">Shuffle Fish Species (Simulates Unlock)</string>
-    <string name="label_fish_count">Main Fish Count: %1$d</string>
-    <string name="label_water_clarity">Water Clarity: %1$d%%</string>
-    <string name="label_sun_angle">Sun Elevation: %1$d°</string>
-    <string name="label_fps_cap">Frame Rate</string>
-    <string name="fps_30">30 FPS (Battery Saver)</string>
-    <string name="fps_60">60 FPS (Smooth)</string>
-    <string name="label_quality_preset">Render Quality</string>
-    <string name="preset_low">Low (0.65x Scale)</string>
-    <string name="preset_balanced">Balanced (Adaptive 0.75x–0.90x)</string>
-    <string name="preset_ultra">Ultra (Native 4K)</string>
-    <string name="label_gyro_parallax">Parallax Tilt</string>
+    <string name="app_name">minamo</string>
+    <string name="wallpaper_label">minamo</string>
+    <string name="wallpaper_description">split-view ascii aquarium that shifts with the sun. nothing else.</string>
+    <string name="settings_title">~/minamo</string>
+    <string name="tagline">split-view ascii aquarium that shifts with the sun. nothing else.</string>
+    <string name="nav_pond">[1 pond]</string>
+    <string name="nav_set">[2 set]</string>
+    <string name="nav_about">[3 about]</string>
+    <string name="action_set_wallpaper">[ + set wallpaper ]</string>
+    <string name="action_shuffle_fish">[ * shuffle fish ]</string>
+    <string name="action_reset_defaults">[ x reset defaults ]</string>
 </resources>

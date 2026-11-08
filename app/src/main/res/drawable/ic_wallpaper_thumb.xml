@@ -4,57 +4,6 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!-- Soft drop shadow under lily pad & koi -->
-    <path
-        android:fillColor="#38020E12"
-        android:pathData="M34,30 C44,24 54,31 50,41 C45,50 31,47 29,37 C28,34 31,32 34,30 Z" />
-    <path
-        android:fillColor="#40020E12"
-        android:pathData="M43,66 C49,51 64,43 75,47 C72,58 63,68 49,73 C44,75 39,79 34,82 C37,75 40,71 43,66 Z" />
-
-    <!-- Botanical notched lily pad in upper-left safe zone -->
-    <path
-        android:fillColor="#1E5E3A"
-        android:pathData="M32,27 L38,35 L30,33 C28,39 33,46 41,45 C49,44 53,36 49,29 C45,22 36,22 32,27 Z" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M38,35 L46,28 M38,35 L48,35 M38,35 L44,42 M38,35 L35,43"
-        android:strokeColor="#388E56"
-        android:strokeLineCap="round"
-        android:strokeWidth="0.9" />
-
-    <!-- Translucent pectoral fins -->
-    <path
-        android:fillColor="#D9F5F2EB"
-        android:pathData="M58,49 C53,43 47,44 46,48 C48,51 53,52 58,49 Z" />
-    <path
-        android:fillColor="#D9F5F2EB"
-        android:pathData="M67,58 C73,62 74,68 70,70 C67,68 65,63 67,58 Z" />
-
-    <!-- Flowing bilobed caudal tail fin -->
-    <path
-        android:fillColor="#E6F7F4EE"
-        android:pathData="M44,68 C37,70 31,75 29,82 C35,80 39,76 42,73 C41,77 39,82 36,86 C43,83 47,77 48,71 Z" />
-
-    <!-- Main curved Kohaku Koi body (ivory-white base) -->
-    <path
-        android:fillColor="#FAF7F0"
-        android:pathData="M74,42 C66,39 54,45 47,57 C43,64 42,69 45,72 C48,74 54,71 61,66 C71,58 78,46 74,42 Z" />
-
-    <!-- Vermilion-orange Hi dorsal markings (Kohaku pattern) -->
-    <path
-        android:fillColor="#E84A1B"
-        android:pathData="M71,44 C65,42 58,46 54,52 C57,56 63,56 68,52 C72,49 73,45 71,44 Z" />
-    <path
-        android:fillColor="#E84A1B"
-        android:pathData="M51,59 C47,63 45,67 47,70 C50,71 55,68 58,64 C56,60 53,58 51,59 Z" />
-
-    <!-- Subtle dorsal ridge highlight -->
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M71,44 C63,48 54,56 46,69"
-        android:strokeColor="#66FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="1.3" />
+    <path android:fillColor="#5EEAD4" android:pathData="M26.50,31.50H31.50V36.50H26.50ZM31.50,31.50H36.50V36.50H31.50ZM46.50,31.50H51.50V36.50H46.50ZM51.50,31.50H56.50V36.50H51.50ZM56.50,31.50H61.50V36.50H56.50ZM71.50,31.50H76.50V36.50H71.50ZM76.50,31.50H81.50V36.50H76.50ZM36.50,36.50H41.50V41.50H36.50ZM41.50,36.50H46.50V41.50H41.50ZM61.50,36.50H66.50V41.50H61.50ZM66.50,36.50H71.50V41.50H66.50ZM61.50,46.50H66.50V51.50H61.50ZM66.50,46.50H71.50V51.50H66.50ZM71.50,46.50H76.50V51.50H71.50ZM46.50,51.50H51.50V56.50H46.50ZM51.50,51.50H56.50V56.50H51.50ZM56.50,51.50H61.50V56.50H56.50ZM61.50,51.50H66.50V56.50H61.50ZM66.50,51.50H71.50V56.50H66.50ZM71.50,51.50H76.50V56.50H71.50ZM41.50,56.50H46.50V61.50H41.50ZM46.50,56.50H51.50V61.50H46.50ZM51.50,56.50H56.50V61.50H51.50ZM56.50,56.50H61.50V61.50H56.50ZM61.50,56.50H66.50V61.50H61.50ZM66.50,56.50H71.50V61.50H66.50ZM71.50,56.50H76.50V61.50H71.50ZM76.50,56.50H81.50V61.50H76.50ZM46.50,61.50H51.50V66.50H46.50ZM51.50,61.50H56.50V66.50H51.50ZM56.50,61.50H61.50V66.50H56.50ZM61.50,61.50H66.50V66.50H61.50ZM66.50,61.50H71.50V66.50H66.50ZM71.50,61.50H76.50V66.50H71.50ZM61.50,66.50H66.50V71.50H61.50ZM66.50,66.50H71.50V71.50H66.50ZM71.50,66.50H76.50V71.50H71.50Z" />
+    <path android:fillColor="#FF7A59" android:pathData="M36.50,46.50H41.50V51.50H36.50ZM41.50,46.50H46.50V51.50H41.50ZM31.50,51.50H36.50V56.50H31.50ZM36.50,51.50H41.50V56.50H36.50ZM41.50,51.50H46.50V56.50H41.50ZM36.50,56.50H41.50V61.50H36.50ZM31.50,61.50H36.50V66.50H31.50ZM36.50,61.50H41.50V66.50H36.50ZM41.50,61.50H46.50V66.50H41.50ZM36.50,66.50H41.50V71.50H36.50ZM41.50,66.50H46.50V71.50H41.50Z" />
 </vector>

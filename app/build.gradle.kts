@@ -11,16 +11,14 @@ android {
         applicationId = "com.example.koipond"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "2.0.0"
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // Sign release builds with the default debug certificate out of the box
-            // so app-release.apk installs directly on any device without NO_CERTIFICATES errors.
             signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
