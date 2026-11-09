@@ -9,6 +9,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.BatteryManager
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.PowerManager
@@ -19,14 +20,6 @@ import android.view.MotionEvent
 import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
 
-/**
- * Plain-Text ASCII Split-View Live Wallpaper Service (`minamo`).
- * - Immediately pauses the render loop and unregisters sensors when the display is off
- *   (`ACTION_SCREEN_OFF` / `!powerManager.isInteractive`) or when covered by another app
- *   (`onVisibilityChanged(false)`), consuming 0% CPU/GPU in the background.
- * - Supports PowerSaveMode (AUTO_SAVER / MAX_ECO / OFF).
- * - Randomizes the aquatic ecosystem on every phone unlock (`ACTION_USER_PRESENT`).
- */
 class KoiPondWallpaperService : WallpaperService() {
 
     override fun onCreateEngine(): Engine = AsciiPondEngine()
@@ -40,10 +33,13 @@ class KoiPondWallpaperService : WallpaperService() {
         private var currentConfig = WallpaperConfig()
 
         private var powerManager: PowerManager? = null
+        private var batteryManager: BatteryManager? = null
         @Volatile
         private var isSystemBatterySaver = false
         @Volatile
         private var isDisplayInteractive = true
+        @Volatile
+        private var currentBatteryPct = 85
 
         private var sensorManager: SensorManager? = null
         private var gyroSensor: Sensor? = null
@@ -67,6 +63,9 @@ class KoiPondWallpaperService : WallpaperService() {
         private var isWallpaperVisible = false
         private var surfaceReady = false
         private var lastFrameTimestampNs = 0L
+        private var lastQuickTileSeq = 0
+        private var touchDownTimeMs = 0L
+        private var longPressTriggered = false
 
         private val systemEventReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
@@ -75,7 +74,6 @@ class KoiPondWallpaperService : WallpaperService() {
                         updatePowerStates()
                     }
                     Intent.ACTION_SCREEN_OFF -> {
-                        // Display turned off: immediately halt rendering & sensors
                         isDisplayInteractive = false
                         pauseRenderingImmediately()
                     }
@@ -89,8 +87,8 @@ class KoiPondWallpaperService : WallpaperService() {
                         }
                     }
                     Intent.ACTION_USER_PRESENT -> {
-                        // User unlocked phone: shuffle fish species & resume if visible
                         isDisplayInteractive = true
+                        updatePowerStates()
                         renderHandler?.post {
                             simulation.randomizeEcosystemOnUnlock(System.nanoTime())
                             scheduleNextFrame()
@@ -109,7 +107,7 @@ class KoiPondWallpaperService : WallpaperService() {
                 val dt = if (lastFrameTimestampNs == 0L) {
                     1f / 30f
                 } else {
-                    ((frameStartNs - lastFrameTimestampNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.08f)
+                    ((frameStartNs - lastFrameTimestampNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.05f)
                 }
                 lastFrameTimestampNs = frameStartNs
 
@@ -142,7 +140,8 @@ class KoiPondWallpaperService : WallpaperService() {
                             parallaxX = px,
                             parallaxY = py,
                             isBatterySaver = effectivePowerSaver,
-                            isWallpaperMode = true
+                            isWallpaperMode = true,
+                            batteryPercent = currentBatteryPct
                         )
                     } finally {
                         try {
@@ -180,13 +179,19 @@ class KoiPondWallpaperService : WallpaperService() {
             simulation.loadBundledFont(this@KoiPondWallpaperService)
             settingsRepo = WallpaperSettingsRepository(this@KoiPondWallpaperService)
             currentConfig = settingsRepo.loadConfig()
+            lastQuickTileSeq = settingsRepo.getQuickTileCommandSeq()
+
             simulation.onHuntOutcomeListener = { caught, predName, preyName ->
                 if (caught) settingsRepo.recordCatchEvent(predName, preyName)
                 else settingsRepo.recordEscapeEvent(predName)
             }
+            simulation.onCrownLevelUpListener = { speciesName ->
+                settingsRepo.recordCrownKoiLevelUp(speciesName)
+            }
             settingsRepo.registerListener(this)
 
             powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+            batteryManager = getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
             updatePowerStates()
 
             try {
@@ -222,7 +227,12 @@ class KoiPondWallpaperService : WallpaperService() {
                 val frame = holder.surfaceFrame
                 surfaceWidth = frame.width().coerceAtLeast(320)
                 surfaceHeight = frame.height().coerceAtLeast(480)
-                simulation.configureGrid(surfaceWidth, surfaceHeight, currentConfig.gridDensity)
+                simulation.configureGrid(
+                    surfaceWidth,
+                    surfaceHeight,
+                    currentConfig.gridDensity,
+                    currentConfig.waterlinePercent
+                )
                 surfaceReady = true
                 lastFrameTimestampNs = 0L
                 scheduleNextFrame()
@@ -234,7 +244,12 @@ class KoiPondWallpaperService : WallpaperService() {
             renderHandler?.post {
                 surfaceWidth = width.coerceAtLeast(320)
                 surfaceHeight = height.coerceAtLeast(480)
-                simulation.configureGrid(surfaceWidth, surfaceHeight, currentConfig.gridDensity)
+                simulation.configureGrid(
+                    surfaceWidth,
+                    surfaceHeight,
+                    currentConfig.gridDensity,
+                    currentConfig.waterlinePercent
+                )
             }
         }
 
@@ -272,13 +287,29 @@ class KoiPondWallpaperService : WallpaperService() {
         }
 
         override fun onTouchEvent(event: MotionEvent) {
-            if (event.actionMasked == MotionEvent.ACTION_DOWN ||
-                (event.actionMasked == MotionEvent.ACTION_MOVE && event.historySize > 0 && event.eventTime - event.downTime > 160L)
-            ) {
-                val tx = event.x
-                val ty = event.y
-                renderHandler?.post {
-                    simulation.onTouch(tx, ty)
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    touchDownTimeMs = event.downTime
+                    longPressTriggered = false
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!longPressTriggered && event.eventTime - touchDownTimeMs > 480L) {
+                        longPressTriggered = true
+                        val tx = event.x
+                        val ty = event.y
+                        renderHandler?.post {
+                            simulation.onLongPress(tx, ty)
+                        }
+                    }
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (!longPressTriggered && event.eventTime - touchDownTimeMs <= 480L) {
+                        val tx = event.x
+                        val ty = event.y
+                        renderHandler?.post {
+                            simulation.onTouch(tx, ty)
+                        }
+                    }
                 }
             }
             super.onTouchEvent(event)
@@ -287,8 +318,23 @@ class KoiPondWallpaperService : WallpaperService() {
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             val newCfg = settingsRepo.loadConfig()
             currentConfig = newCfg
+            val tileSeq = settingsRepo.getQuickTileCommandSeq()
             renderHandler?.post {
-                simulation.configureGrid(surfaceWidth, surfaceHeight, newCfg.gridDensity)
+                simulation.configureGrid(
+                    surfaceWidth,
+                    surfaceHeight,
+                    newCfg.gridDensity,
+                    newCfg.waterlinePercent
+                )
+                if (tileSeq != lastQuickTileSeq) {
+                    lastQuickTileSeq = tileSeq
+                    if (tileSeq % 2 == 0) {
+                        simulation.triggerPredatorVisit(System.nanoTime(), 0.70f)
+                    } else {
+                        simulation.randomizeEcosystemOnUnlock(System.nanoTime())
+                        simulation.onLongPress(surfaceWidth * 0.5f, surfaceHeight * 0.6f)
+                    }
+                }
             }
             updateGyroRegistration()
         }
@@ -328,6 +374,10 @@ class KoiPondWallpaperService : WallpaperService() {
         private fun updatePowerStates() {
             isSystemBatterySaver = powerManager?.isPowerSaveMode == true
             isDisplayInteractive = powerManager?.isInteractive != false
+            val pct = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 85
+            if (pct in 1..100) {
+                currentBatteryPct = pct
+            }
         }
 
         private fun updateGyroRegistration() {

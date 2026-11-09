@@ -306,7 +306,7 @@
 
                         <TextView
                             android:id="@+id/btnWeatherAuto"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -316,7 +316,7 @@
 
                         <TextView
                             android:id="@+id/btnWeatherClear"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -326,7 +326,7 @@
 
                         <TextView
                             android:id="@+id/btnWeatherRain"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -336,13 +336,23 @@
 
                         <TextView
                             android:id="@+id/btnWeatherSnow"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="( ) snow" />
+
+                        <TextView
+                            android:id="@+id/btnWeatherAurora"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.15"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) aurora" />
                     </LinearLayout>
 
                     <TextView
@@ -627,6 +637,41 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/textWaterlineBar"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="line: [####------] 36%" />
+
+                        <TextView
+                            android:id="@+id/btnWaterlineMinus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:gravity="center"
+                            android:text="[ - ]" />
+
+                        <TextView
+                            android:id="@+id/btnWaterlinePlus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
+                            android:gravity="center"
+                            android:text="[ + ]" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
                             android:id="@+id/textClarityBar"
                             style="@style/AsciiText.Body"
                             android:layout_width="0dp"
@@ -746,6 +791,30 @@
 
                         <TextView
                             android:id="@+id/textPauseBgSwitch"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[ on]"
+                            android:textColor="@color/ascii_accent" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowBatteryLanternSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="battery level stone lantern" />
+
+                        <TextView
+                            android:id="@+id/textBatteryLanternSwitch"
                             style="@style/AsciiText.Title"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"

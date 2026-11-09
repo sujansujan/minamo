@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Canvas
 import android.os.SystemClock
 import android.util.AttributeSet
+import android.view.GestureDetector
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 
@@ -19,18 +21,40 @@ class AsciiPondView @JvmOverloads constructor(
         set(value) {
             field = value
             if (width > 0 && height > 0) {
-                simulation.configureGrid(width, height, value.gridDensity)
+                simulation.configureGrid(width, height, value.gridDensity, value.waterlinePercent)
             }
         }
 
     private var lastFrameNs = 0L
     private var isRunning = false
     var onSpeciesRandomized: ((String, String) -> Unit)? = null
+    var onWaferDroppedListener: (() -> Unit)? = null
+
+    private val gestureDetector = GestureDetector(
+        context,
+        object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
+
+            override fun onSingleTapUp(e: MotionEvent): Boolean {
+                simulation.onTouch(e.x, e.y)
+                performClick()
+                invalidate()
+                return true
+            }
+
+            override fun onLongPress(e: MotionEvent) {
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                simulation.onLongPress(e.x, e.y)
+                onWaferDroppedListener?.invoke()
+                invalidate()
+            }
+        }
+    )
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w > 0 && h > 0) {
-            simulation.configureGrid(w, h, config.gridDensity)
+            simulation.configureGrid(w, h, config.gridDensity, config.waterlinePercent)
         }
     }
 
@@ -52,7 +76,8 @@ class AsciiPondView @JvmOverloads constructor(
             parallaxX = 0f,
             parallaxY = 0f,
             isBatterySaver = ecoActive,
-            isWallpaperMode = false
+            isWallpaperMode = false,
+            batteryPercent = 85
         )
 
         if (isRunning) {
@@ -63,13 +88,7 @@ class AsciiPondView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-            simulation.onTouch(event.x, event.y)
-            performClick()
-            invalidate()
-            return true
-        }
-        return super.onTouchEvent(event)
+        return gestureDetector.onTouchEvent(event) || super.onTouchEvent(event)
     }
 
     override fun performClick(): Boolean = super.performClick()

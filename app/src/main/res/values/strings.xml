@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">minamo</string>
     <string name="wallpaper_label">minamo</string>
+    <string name="tile_label">minamo pond</string>
     <string name="wallpaper_description">split-view ascii aquarium that shifts with the sun. nothing else.</string>
     <string name="settings_title">~/minamo</string>
     <string name="tagline">split-view ascii aquarium that shifts with the sun. nothing else.</string>

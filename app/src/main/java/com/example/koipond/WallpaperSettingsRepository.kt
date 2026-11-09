@@ -40,7 +40,8 @@ enum class WeatherMode(val id: Int, val label: String) {
     AUTO(0, "auto"),
     CLEAR(1, "clear"),
     RAIN(2, "rain"),
-    SNOW(3, "snow");
+    SNOW(3, "snow"),
+    AURORA(4, "aurora");
 
     companion object {
         fun fromId(id: Int): WeatherMode = entries.firstOrNull { it.id == id } ?: AUTO
@@ -82,6 +83,7 @@ data class WallpaperConfig(
     val paletteFamily: PaletteFamily = PaletteFamily.LAGOON,
     val timeCycleMode: TimeCycleMode = TimeCycleMode.AUTO_REALTIME,
     val weatherMode: WeatherMode = WeatherMode.AUTO,
+    val waterlinePercent: Int = 36, // 25% .. 65% of screen height from top
     val heroFishCount: Int = 6,
     val waterClarity: Float = 0.85f,
     val targetFps: Int = 30,
@@ -89,6 +91,7 @@ data class WallpaperConfig(
     val enableGyro: Boolean = true,
     val powerSaveMode: PowerSaveMode = PowerSaveMode.AUTO_SAVER,
     val pauseOnBackgroundAndScreenOff: Boolean = true,
+    val enableBatteryLantern: Boolean = true,
     val enablePredators: Boolean = true,
     val huntMode: HuntMode = HuntMode.NATURAL,
     val enableBottomFeeders: Boolean = true
@@ -105,6 +108,7 @@ class WallpaperSettingsRepository(context: Context) {
             paletteFamily = PaletteFamily.fromId(prefs.getInt(KEY_PALETTE_FAMILY, PaletteFamily.LAGOON.id)),
             timeCycleMode = TimeCycleMode.fromId(prefs.getInt(KEY_TIME_CYCLE, TimeCycleMode.AUTO_REALTIME.id)),
             weatherMode = WeatherMode.fromId(prefs.getInt(KEY_WEATHER_MODE, WeatherMode.AUTO.id)),
+            waterlinePercent = prefs.getInt(KEY_WATERLINE_PCT, 36).coerceIn(25, 65),
             heroFishCount = prefs.getInt(KEY_FISH_COUNT, 6).coerceIn(2, 9),
             waterClarity = prefs.getFloat(KEY_WATER_CLARITY, 0.85f).coerceIn(0.35f, 1.0f),
             targetFps = if (prefs.getInt(KEY_TARGET_FPS, 30) == 60) 60 else 30,
@@ -112,6 +116,7 @@ class WallpaperSettingsRepository(context: Context) {
             enableGyro = prefs.getBoolean(KEY_ENABLE_GYRO, true),
             powerSaveMode = PowerSaveMode.fromId(prefs.getInt(KEY_POWER_SAVE_MODE, PowerSaveMode.AUTO_SAVER.id)),
             pauseOnBackgroundAndScreenOff = prefs.getBoolean(KEY_PAUSE_BG, true),
+            enableBatteryLantern = prefs.getBoolean(KEY_BATTERY_LANTERN, true),
             enablePredators = prefs.getBoolean(KEY_ENABLE_PREDATORS, true),
             huntMode = HuntMode.fromId(prefs.getInt(KEY_HUNT_MODE, HuntMode.NATURAL.id)),
             enableBottomFeeders = prefs.getBoolean(KEY_ENABLE_BOTTOM_FEEDERS, true)
@@ -124,6 +129,7 @@ class WallpaperSettingsRepository(context: Context) {
             .putInt(KEY_PALETTE_FAMILY, config.paletteFamily.id)
             .putInt(KEY_TIME_CYCLE, config.timeCycleMode.id)
             .putInt(KEY_WEATHER_MODE, config.weatherMode.id)
+            .putInt(KEY_WATERLINE_PCT, config.waterlinePercent.coerceIn(25, 65))
             .putInt(KEY_FISH_COUNT, config.heroFishCount.coerceIn(2, 9))
             .putFloat(KEY_WATER_CLARITY, config.waterClarity.coerceIn(0.35f, 1.0f))
             .putInt(KEY_TARGET_FPS, config.targetFps)
@@ -131,17 +137,26 @@ class WallpaperSettingsRepository(context: Context) {
             .putBoolean(KEY_ENABLE_GYRO, config.enableGyro)
             .putInt(KEY_POWER_SAVE_MODE, config.powerSaveMode.id)
             .putBoolean(KEY_PAUSE_BG, config.pauseOnBackgroundAndScreenOff)
+            .putBoolean(KEY_BATTERY_LANTERN, config.enableBatteryLantern)
             .putBoolean(KEY_ENABLE_PREDATORS, config.enablePredators)
             .putInt(KEY_HUNT_MODE, config.huntMode.id)
             .putBoolean(KEY_ENABLE_BOTTOM_FEEDERS, config.enableBottomFeeders)
             .apply()
     }
 
+    fun triggerQuickTileCommand(): Int {
+        val nextSeq = prefs.getInt(KEY_QUICK_TILE_SEQ, 0) + 1
+        prefs.edit().putInt(KEY_QUICK_TILE_SEQ, nextSeq).apply()
+        return nextSeq
+    }
+
+    fun getQuickTileCommandSeq(): Int = prefs.getInt(KEY_QUICK_TILE_SEQ, 0)
+
     fun recordCatchEvent(predatorName: String, preyName: String) {
         val catches = prefs.getInt(KEY_STAT_CATCHES, 0) + 1
         prefs.edit()
             .putInt(KEY_STAT_CATCHES, catches)
-            .putString(KEY_LAST_EVENT, "! $predatorName caught $preyName")
+            .putString(KEY_LAST_EVENT, "! " + predatorName + " caught " + preyName)
             .apply()
     }
 
@@ -149,12 +164,21 @@ class WallpaperSettingsRepository(context: Context) {
         val escapes = prefs.getInt(KEY_STAT_ESCAPES, 0) + 1
         prefs.edit()
             .putInt(KEY_STAT_ESCAPES, escapes)
-            .putString(KEY_LAST_EVENT, "ok: school evaded $predatorName")
+            .putString(KEY_LAST_EVENT, "ok: school evaded " + predatorName)
+            .apply()
+    }
+
+    fun recordCrownKoiLevelUp(speciesName: String) {
+        val crowns = prefs.getInt(KEY_STAT_CROWNS, 0) + 1
+        prefs.edit()
+            .putInt(KEY_STAT_CROWNS, crowns)
+            .putString(KEY_LAST_EVENT, "* " + speciesName + " grew into elder crown!")
             .apply()
     }
 
     fun getTotalCatches(): Int = prefs.getInt(KEY_STAT_CATCHES, 0)
     fun getTotalEscapes(): Int = prefs.getInt(KEY_STAT_ESCAPES, 0)
+    fun getTotalCrowns(): Int = prefs.getInt(KEY_STAT_CROWNS, 0)
     fun getLastEvent(): String = prefs.getString(KEY_LAST_EVENT, "ok: calm waters") ?: "ok: calm waters"
 
     fun applyAppNightMode(themeMode: ThemeMode) {
@@ -180,6 +204,7 @@ class WallpaperSettingsRepository(context: Context) {
         const val KEY_PALETTE_FAMILY = "palette_family"
         const val KEY_TIME_CYCLE = "time_cycle"
         const val KEY_WEATHER_MODE = "weather_mode"
+        const val KEY_WATERLINE_PCT = "waterline_pct"
         const val KEY_FISH_COUNT = "koi_count"
         const val KEY_WATER_CLARITY = "water_clarity"
         const val KEY_TARGET_FPS = "target_fps"
@@ -187,11 +212,14 @@ class WallpaperSettingsRepository(context: Context) {
         const val KEY_ENABLE_GYRO = "enable_gyro"
         const val KEY_POWER_SAVE_MODE = "power_save_mode"
         const val KEY_PAUSE_BG = "pause_on_bg"
+        const val KEY_BATTERY_LANTERN = "battery_lantern"
         const val KEY_ENABLE_PREDATORS = "enable_predators"
         const val KEY_HUNT_MODE = "hunt_mode"
         const val KEY_ENABLE_BOTTOM_FEEDERS = "enable_bottom_feeders"
+        const val KEY_QUICK_TILE_SEQ = "quick_tile_seq"
         const val KEY_STAT_CATCHES = "stat_catches"
         const val KEY_STAT_ESCAPES = "stat_escapes"
+        const val KEY_STAT_CROWNS = "stat_crowns"
         const val KEY_LAST_EVENT = "last_event"
     }
 }

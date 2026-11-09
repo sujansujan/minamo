@@ -54,6 +54,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnWeatherClear: TextView
     private lateinit var btnWeatherRain: TextView
     private lateinit var btnWeatherSnow: TextView
+    private lateinit var btnWeatherAurora: TextView
 
     private lateinit var btnPalLagoon: TextView
     private lateinit var btnPalEmber: TextView
@@ -64,6 +65,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnThemeDark: TextView
 
     private lateinit var textFishBar: TextView
+    private lateinit var textWaterlineBar: TextView
     private lateinit var textClarityBar: TextView
 
     private lateinit var textPredatorsCheck: TextView
@@ -72,6 +74,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnHuntHarmless: TextView
     private lateinit var textBottomFeedersCheck: TextView
     private lateinit var textPauseBgSwitch: TextView
+    private lateinit var textBatteryLanternSwitch: TextView
 
     private lateinit var btnPowerAuto: TextView
     private lateinit var btnPowerEco: TextView
@@ -163,6 +166,7 @@ class SettingsActivity : AppCompatActivity() {
         btnWeatherClear = findViewById(R.id.btnWeatherClear)
         btnWeatherRain = findViewById(R.id.btnWeatherRain)
         btnWeatherSnow = findViewById(R.id.btnWeatherSnow)
+        btnWeatherAurora = findViewById(R.id.btnWeatherAurora)
 
         btnPalLagoon = findViewById(R.id.btnPalLagoon)
         btnPalEmber = findViewById(R.id.btnPalEmber)
@@ -173,6 +177,7 @@ class SettingsActivity : AppCompatActivity() {
         btnThemeDark = findViewById(R.id.btnThemeDark)
 
         textFishBar = findViewById(R.id.textFishBar)
+        textWaterlineBar = findViewById(R.id.textWaterlineBar)
         textClarityBar = findViewById(R.id.textClarityBar)
 
         textPredatorsCheck = findViewById(R.id.textPredatorsCheck)
@@ -182,6 +187,7 @@ class SettingsActivity : AppCompatActivity() {
 
         textBottomFeedersCheck = findViewById(R.id.textBottomFeedersCheck)
         textPauseBgSwitch = findViewById(R.id.textPauseBgSwitch)
+        textBatteryLanternSwitch = findViewById(R.id.textBatteryLanternSwitch)
 
         btnPowerAuto = findViewById(R.id.btnPowerAuto)
         btnPowerEco = findViewById(R.id.btnPowerEco)
@@ -202,9 +208,23 @@ class SettingsActivity : AppCompatActivity() {
         navAbout.setOnClickListener { haptic(it); switchTab(3) }
 
         asciiPondView.onSpeciesRandomized = { speciesStr, timeLabel ->
-            textBiomeStatus.text = "biome ... $speciesStr"
-            textBiomeStatus.contentDescription = "Active fish biome: $speciesStr"
-            textHeaderClockTag.text = "[$timeLabel]"
+            textBiomeStatus.text = "biome ... " + speciesStr
+            textBiomeStatus.contentDescription = "Active fish biome: " + speciesStr
+            textHeaderClockTag.text = "[" + timeLabel + "]"
+        }
+
+        asciiPondView.onWaferDroppedListener = {
+            val cGood = ContextCompat.getColor(this, R.color.ascii_good)
+            textHuntStatus.setTextColor(cGood)
+            textHuntStatus.text = "event ... [@] algae wafer dropped for bottom feeders"
+        }
+
+        asciiPondView.simulation.onCrownLevelUpListener = { speciesName ->
+            repository.recordCrownKoiLevelUp(speciesName)
+            val cGold = ContextCompat.getColor(this, R.color.ascii_accent3)
+            textHuntStatus.setTextColor(cGold)
+            textHuntStatus.text = "event ... ^ " + speciesName + " leveled up to elder crown!"
+            updateTelemetryBox()
         }
 
         asciiPondView.simulation.onHuntOutcomeListener = { caught, predName, preyName ->
@@ -212,12 +232,12 @@ class SettingsActivity : AppCompatActivity() {
                 repository.recordCatchEvent(predName, preyName)
                 val cErr = ContextCompat.getColor(this, R.color.ascii_error)
                 textHuntStatus.setTextColor(cErr)
-                textHuntStatus.text = "event ... ! $predName caught $preyName"
+                textHuntStatus.text = "event ... ! " + predName + " caught " + preyName
             } else {
                 repository.recordEscapeEvent(predName)
                 val cGood = ContextCompat.getColor(this, R.color.ascii_good)
                 textHuntStatus.setTextColor(cGood)
-                textHuntStatus.text = "event ... ok: school evaded $predName"
+                textHuntStatus.text = "event ... ok: school evaded " + predName
             }
             updateTelemetryBox()
         }
@@ -228,7 +248,7 @@ class SettingsActivity : AppCompatActivity() {
                 haptic(it)
                 asciiPondView.shuffleEcosystem()
                 textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_fg))
-                textHuntStatus.text = "event ... ok: new biome spawned"
+                textHuntStatus.text = "event ... ok: new biome spawned (hold water for [@] wafer)"
             }
         }
 
@@ -241,7 +261,7 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 val predName = asciiPondView.summonPredatorNow()
                 textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_warn))
-                textHuntStatus.text = "event ... ! $predName hunting"
+                textHuntStatus.text = "event ... ! " + predName + " hunting"
             }
         }
 
@@ -263,6 +283,7 @@ class SettingsActivity : AppCompatActivity() {
         btnWeatherClear.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.CLEAR)) }
         btnWeatherRain.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.RAIN)) }
         btnWeatherSnow.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.SNOW)) }
+        btnWeatherAurora.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.AURORA)) }
 
         btnPalLagoon.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.LAGOON)) }
         btnPalEmber.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.EMBER)) }
@@ -285,6 +306,11 @@ class SettingsActivity : AppCompatActivity() {
             haptic(it)
             updateConfig(currentConfig.copy(pauseOnBackgroundAndScreenOff = !currentConfig.pauseOnBackgroundAndScreenOff))
         }
+        findViewById<LinearLayout>(R.id.rowBatteryLanternSwitch).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(enableBatteryLantern = !currentConfig.enableBatteryLantern))
+        }
+
         btnPowerAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.AUTO_SAVER)) }
         btnPowerEco.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.MAX_ECO)) }
         btnPowerOff.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.OFF)) }
@@ -317,6 +343,21 @@ class SettingsActivity : AppCompatActivity() {
             setOnClickListener {
                 haptic(it)
                 updateConfig(currentConfig.copy(heroFishCount = (currentConfig.heroFishCount + 1).coerceIn(2, 9)))
+            }
+        }
+
+        findViewById<TextView>(R.id.btnWaterlineMinus).apply {
+            contentDescription = "Move waterline higher"
+            setOnClickListener {
+                haptic(it)
+                updateConfig(currentConfig.copy(waterlinePercent = (currentConfig.waterlinePercent - 4).coerceIn(25, 65)))
+            }
+        }
+        findViewById<TextView>(R.id.btnWaterlinePlus).apply {
+            contentDescription = "Move waterline lower"
+            setOnClickListener {
+                haptic(it)
+                updateConfig(currentConfig.copy(waterlinePercent = (currentConfig.waterlinePercent + 4).coerceIn(25, 65)))
             }
         }
 
@@ -405,21 +446,23 @@ class SettingsActivity : AppCompatActivity() {
     private fun updateTelemetryBox() {
         val catches = repository.getTotalCatches()
         val escapes = repository.getTotalEscapes()
+        val crowns = repository.getTotalCrowns()
         val lastEv = repository.getLastEvent()
         val nl = 10.toChar()
         textAboutTelemetry.text =
             "predator catches ... " + catches.toString() + nl +
             "school escapes ..... " + escapes.toString() + nl +
+            "elder crown fish ... " + crowns.toString() + nl +
             "last hunt event .... " + lastEv + nl +
-            "blood plume ........ @#% -> *:~ -> ." + nl +
-            "font engine ........ bundled monospace ttf"
+            "feeding ............ tap (*) pellet / hold [@] wafer" + nl +
+            "quick settings ..... minamo [>°] tile enabled"
     }
 
     private fun refreshAsciiUi() {
         asciiPondView.config = currentConfig
         val snap = TimeOfDayPalette.resolve(currentConfig.timeCycleMode, currentConfig.paletteFamily)
-        textHeaderClockTag.text = "[${snap.timeLabel}]"
-        textBiomeStatus.text = "biome ... ${asciiPondView.simulation.activeSpeciesSummary}"
+        textHeaderClockTag.text = "[" + snap.timeLabel + "]"
+        textBiomeStatus.text = "biome ... " + asciiPondView.simulation.activeSpeciesSummary
         updateTelemetryBox()
 
         val cAccent = ContextCompat.getColor(this, R.color.ascii_accent)
@@ -427,15 +470,15 @@ class SettingsActivity : AppCompatActivity() {
         val cDim = ContextCompat.getColor(this, R.color.ascii_dim)
 
         fun styleRadio(tv: TextView, checked: Boolean, label: String) {
-            tv.text = if (checked) "(*) $label" else "( ) $label"
+            tv.text = if (checked) "(*) " + label else "( ) " + label
             tv.setTextColor(if (checked) cAccent else cFg)
-            tv.contentDescription = "$label, ${if (checked) "selected" else "not selected"}"
+            tv.contentDescription = label + ", " + (if (checked) "selected" else "not selected")
         }
 
         fun styleSwitch(tv: TextView, row: View, enabled: Boolean, spokenName: String) {
             tv.text = if (enabled) "[ on]" else "[off]"
             tv.setTextColor(if (enabled) cAccent else cDim)
-            row.contentDescription = "$spokenName, ${if (enabled) "on" else "off"}"
+            row.contentDescription = spokenName + ", " + (if (enabled) "on" else "off")
         }
 
         styleRadio(btnCycleAuto, currentConfig.timeCycleMode == TimeCycleMode.AUTO_REALTIME, "clock")
@@ -448,6 +491,7 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnWeatherClear, currentConfig.weatherMode == WeatherMode.CLEAR, "clear")
         styleRadio(btnWeatherRain, currentConfig.weatherMode == WeatherMode.RAIN, "rain")
         styleRadio(btnWeatherSnow, currentConfig.weatherMode == WeatherMode.SNOW, "snow")
+        styleRadio(btnWeatherAurora, currentConfig.weatherMode == WeatherMode.AURORA, "aurora")
 
         styleRadio(btnPalLagoon, currentConfig.paletteFamily == PaletteFamily.LAGOON, "lagoon")
         styleRadio(btnPalEmber, currentConfig.paletteFamily == PaletteFamily.EMBER, "ember")
@@ -480,6 +524,12 @@ class SettingsActivity : AppCompatActivity() {
             "Pause when in background or screen is off"
         )
         styleSwitch(
+            textBatteryLanternSwitch,
+            findViewById(R.id.rowBatteryLanternSwitch),
+            currentConfig.enableBatteryLantern,
+            "Battery level stone lantern"
+        )
+        styleSwitch(
             textGyroSwitch,
             findViewById(R.id.rowGyroSwitch),
             currentConfig.enableGyro,
@@ -491,15 +541,21 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnPowerOff, currentConfig.powerSaveMode == PowerSaveMode.OFF, "off")
 
         val fishCells = currentConfig.heroFishCount.coerceIn(2, 9)
-        val fishBarStr = "[" + "#".repeat(fishCells) + "-".repeat(9 - fishCells) + "] $fishCells"
-        textFishBar.text = "fish: $fishBarStr"
-        textFishBar.contentDescription = "Main fish count: $fishCells out of 9"
+        val fishBarStr = "[" + "#".repeat(fishCells) + "-".repeat(9 - fishCells) + "] " + fishCells.toString()
+        textFishBar.text = "fish: " + fishBarStr
+        textFishBar.contentDescription = "Main fish count: " + fishCells.toString() + " out of 9"
+
+        val wlPct = currentConfig.waterlinePercent.coerceIn(25, 65)
+        val wlFilled = (((wlPct - 25) / 40f) * 10f).roundToInt().coerceIn(1, 10)
+        val wlBarStr = "[" + "#".repeat(wlFilled) + "-".repeat(10 - wlFilled) + "] " + wlPct.toString() + "%"
+        textWaterlineBar.text = "line: " + wlBarStr
+        textWaterlineBar.contentDescription = "Waterline split position: " + wlPct.toString() + " percent from top"
 
         val clarityPct = (currentConfig.waterClarity * 100f).roundToInt()
         val clarityFilled = ((currentConfig.waterClarity * 10f).roundToInt()).coerceIn(1, 10)
-        val clarityBarStr = "[" + "#".repeat(clarityFilled) + "-".repeat(10 - clarityFilled) + "] $clarityPct%"
-        textClarityBar.text = "rays: $clarityBarStr"
-        textClarityBar.contentDescription = "Water clarity and sun rays: $clarityPct percent"
+        val clarityBarStr = "[" + "#".repeat(clarityFilled) + "-".repeat(10 - clarityFilled) + "] " + clarityPct.toString() + "%"
+        textClarityBar.text = "rays: " + clarityBarStr
+        textClarityBar.contentDescription = "Water clarity and sun rays: " + clarityPct.toString() + " percent"
 
         styleRadio(btnGridCozy, currentConfig.gridDensity == GridDensity.COZY, "68c")
         styleRadio(btnGridBalanced, currentConfig.gridDensity == GridDensity.BALANCED, "82c")
