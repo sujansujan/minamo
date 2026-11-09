@@ -526,6 +526,10 @@ class BottomFeederAgent(
     val id: Int,
     var species: BottomFeederSpecies,
     var colX: Float,
+    var rowY: Float,
+    var preferredTier: Int, // 0..4 vertical tier along the sloped riverbed bank
+    var vx: Float,
+    var vy: Float,
     var vxDir: Float,
     var animPhase: Float,
     var pauseTimer: Float = 0f,
@@ -635,11 +639,16 @@ class PondSimulation {
 
     val maxBottomFeeders = 5
     val bottomFeeders = Array(maxBottomFeeders) { idx ->
+        val dir = if (idx % 2 == 0) 1f else -1f
         BottomFeederAgent(
             id = idx,
             species = BottomFeederSpecies.entries[idx % BottomFeederSpecies.entries.size],
             colX = 6f + idx * 14f,
-            vxDir = if (idx % 2 == 0) 1f else -1f,
+            rowY = 150f - idx,
+            preferredTier = idx,
+            vx = dir * 2.0f,
+            vy = 0f,
+            vxDir = dir,
             animPhase = idx * 1.7f
         )
     }
@@ -832,11 +841,24 @@ class PondSimulation {
             f.isElderCrown = (i == 0 && rand.nextFloat() < 0.35f) // Occasional Elder Crown boss fish on unlock
         }
 
+        val baseFloor = (gridRows - 2).coerceAtLeast(30)
         for (b in 0 until maxBottomFeeders) {
             val bf = bottomFeeders[b]
-            bf.species = if (b == 0) BottomFeederSpecies.RIVER_CRAB else BottomFeederSpecies.entries[rand.nextInt(BottomFeederSpecies.entries.size)]
-            bf.colX = 4f + b * ((gridCols - 14).coerceAtLeast(25) / maxBottomFeeders.toFloat())
-            bf.vxDir = if (rand.nextBoolean()) 1f else -1f
+            bf.species = when (b) {
+                0 -> BottomFeederSpecies.RIVER_CRAB
+                1 -> BottomFeederSpecies.CHERRY_SHRIMP
+                2 -> BottomFeederSpecies.CORY_CATFISH
+                3 -> BottomFeederSpecies.APPLE_SNAIL
+                else -> BottomFeederSpecies.entries[rand.nextInt(BottomFeederSpecies.entries.size)]
+            }
+            // Each bottom feeder gets its own distinct depth tier (0..4) on the sloped riverbed
+            bf.preferredTier = b
+            bf.rowY = (baseFloor - 1 - b).toFloat()
+            bf.colX = 4f + b * ((gridCols - 16).coerceAtLeast(25) / maxBottomFeeders.toFloat())
+            val dir = if (b % 2 == 0) 1f else -1f
+            bf.vxDir = dir
+            bf.vx = dir * bf.species.speedColsPerSec
+            bf.vy = 0f
             bf.pauseTimer = 0f
             bf.isSnappingAtPredator = false
         }
@@ -1229,10 +1251,16 @@ class PondSimulation {
         // =========================================================================
         // 4. RIVERBED COBBLES & REACTIVE BATTERY-LEVEL STONE LANTERN
         // =========================================================================
-        val pebblePattern = "..ooO.._.oOo._..ooO.._."
+        val pebbleUpper = "  .   ..o..   .    .o.   "
+        val pebbleMid   = " .o. ..ooO.. .o. _.oOo._ "
+        val pebbleLower = "..ooO.._.oOo._..ooO.._..o"
         for (c in 0 until cols) {
-            val pCh = pebblePattern[(c - pShiftInt).mod(pebblePattern.length)]
-            setCell(c, floorRow, pCh, pal.pebbleFg)
+            val uCh = pebbleUpper[(c - pShiftInt).mod(pebbleUpper.length)]
+            val mCh = pebbleMid[(c - pShiftInt).mod(pebbleMid.length)]
+            val lCh = pebbleLower[(c - pShiftInt).mod(pebbleLower.length)]
+            if (uCh != ' ') setCell(c, floorRow - 3, uCh, pal.cloudReedFg)
+            if (mCh != ' ') setCell(c, floorRow - 1, mCh, pal.pebbleFg)
+            setCell(c, floorRow, lCh, pal.pebbleFg)
             setCell(c, subFloorRow, '~', pal.cloudReedFg)
         }
 
@@ -1448,70 +1476,104 @@ class PondSimulation {
         }
 
         if (config.enableBottomFeeders) {
-            val activeFeeders = if (isBatterySaver) 2 else maxBottomFeeders
-            val critterRowFloat = (floorRow - 1).toFloat()
+            val activeFeeders = if (isBatterySaver) 3 else maxBottomFeeders
+            val minBedRow = (floorRow - 5).toFloat().coerceAtLeast((splitRow + 10).toFloat())
+            val maxBedRow = (floorRow - 0.4f)
+
             for (b in 0 until activeFeeders) {
                 val bf = bottomFeeders[b]
                 bf.isSnappingAtPredator = false
 
-                // Territorial Crab Standoff: if a predator swims close to the riverbed near a crab,
-                // the crab raises its claws `\ (V) / (°^°) \ (V) /` and repels the predator upward!
+                // Each critter has its own home depth tier along the sloped riverbed bank
+                val homeTierRow = (floorRow - 0.6f - bf.preferredTier * 1.05f).coerceIn(minBedRow, maxBedRow)
+
+                // Territorial Crab Standoff when predator dives near the riverbed
                 if (predator.active && predator.rowY > floorRow - 18 && abs(predator.colX + 5f - bf.colX) < 16f) {
                     bf.isSnappingAtPredator = true
-                    bf.pauseTimer = 0.2f
-                    // Repel predator upward away from the riverbed!
                     predator.rowY = (predator.rowY - 8.5f * clampedDt).coerceAtLeast((splitRow + 6).toFloat())
                 }
 
-                val attractTargetCol = when {
+                val attractCenterCol = when {
                     activeWaferCol > 0f -> activeWaferCol
                     lastBloodSiteTimer > 0f && lastBloodSiteCol > 0f -> lastBloodSiteCol
                     else -> -1f
                 }
 
-                if (attractTargetCol > 0f && !bf.isSnappingAtPredator) {
-                    val dxTarget = attractTargetCol - bf.colX
-                    if (abs(dxTarget) > 2.5f) {
-                        bf.vxDir = if (dxTarget >= 0f) 1f else -1f
-                        bf.pauseTimer = 0f
-                    } else {
-                        // Tug-of-war nibble around the algae wafer!
-                        bf.pauseTimer = 0.15f
-                        bf.animPhase = (bf.animPhase + clampedDt * 12f) % 6.2831855f
-                    }
-                }
-
-                if (bf.pauseTimer > 0f) {
-                    bf.pauseTimer -= clampedDt
-                } else {
-                    val mult = if (attractTargetCol > 0f) 1.55f else 1.0f
-                    bf.colX += bf.vxDir * bf.species.speedColsPerSec * mult * clampedDt
-                    bf.animPhase = (bf.animPhase + clampedDt * 5.0f * mult) % 6.2831855f
-                    if (attractTargetCol < 0f && sin(simTime * 2.1f + bf.id * 3.7f) > 0.96f) {
-                        bf.pauseTimer = 0.8f
-                    }
-                }
-
                 val spriteLen = bf.species.rightFrameA.length
-                val minC = 2f
-                val maxC = (cols - spriteLen - 2).toFloat().coerceAtLeast(minC + 2f)
-                if (bf.colX >= maxC) {
-                    bf.colX = maxC
-                    bf.vxDir = -1f
-                } else if (bf.colX <= minC) {
-                    bf.colX = minC
-                    bf.vxDir = 1f
-                }
+                val minC = 2.0f
+                val maxC = (cols - spriteLen - 2.0f).coerceAtLeast(minC + 4f)
 
-                for (otherIdx in 0 until b) {
-                    val other = bottomFeeders[otherIdx]
-                    val dx = bf.colX - other.colX
-                    val minSep = (spriteLen + other.species.rightFrameA.length) * 0.55f + 2.0f
-                    if (abs(dx) < minSep) {
-                        bf.vxDir = if (dx >= 0f) 1f else -1f
-                        bf.colX = (bf.colX + bf.vxDir * clampedDt * 3f).coerceIn(minC, maxC)
+                val baseSpd = bf.species.speedColsPerSec
+                var desiredVx = bf.vxDir * baseSpd
+                // Shrimp & Catfish gently bob/hop along the slope; Crabs & Snails hug their terrace
+                val hopBob = if (bf.species == BottomFeederSpecies.CHERRY_SHRIMP || bf.species == BottomFeederSpecies.CORY_CATFISH) {
+                    sin(simTime * 2.8f + bf.id * 1.9f) * 0.65f
+                } else {
+                    0f
+                }
+                var desiredVy = (homeTierRow - bf.rowY) * 2.4f + hopBob
+
+                if (attractCenterCol > 0f && !bf.isSnappingAtPredator) {
+                    // Form a non-overlapping 2D semi-circle around the algae wafer / scales
+                    // so critters never pile onto the same coordinate!
+                    val ringSlotOffset = (b - 2) * 4.5f
+                    val targetSlotCol = (attractCenterCol + ringSlotOffset).coerceIn(minC, maxC)
+                    val dxSlot = targetSlotCol - bf.colX
+                    if (abs(dxSlot) > 1.2f) {
+                        bf.vxDir = if (dxSlot >= 0f) 1f else -1f
+                        desiredVx = bf.vxDir * baseSpd * 1.45f
+                    } else {
+                        desiredVx = 0f
+                        bf.animPhase = (bf.animPhase + clampedDt * 10f) % 6.2831855f
                     }
                 }
+
+                // Smooth 2D Vertical & Horizontal Passing (Critters step/hop around each other — never stuck!)
+                for (otherIdx in 0 until activeFeeders) {
+                    if (b == otherIdx) continue
+                    val other = bottomFeeders[otherIdx]
+                    val otherLen = other.species.rightFrameA.length
+
+                    val centerA = bf.colX + spriteLen * 0.5f
+                    val centerB = other.colX + otherLen * 0.5f
+                    val dx = centerA - centerB
+                    val dy = bf.rowY - other.rowY
+
+                    val safeX = (spriteLen + otherLen) * 0.55f + 2.0f
+                    val safeY = 1.35f
+
+                    if (abs(dx) < safeX && abs(dy) < safeY) {
+                        // Separate vertically into distinct riverbed tiers so they pass cleanly over/under each other!
+                        val pushSignY = if (bf.preferredTier > other.preferredTier) -1f else 1f
+                        val overlapY = (safeY - abs(dy)) / safeY
+                        desiredVy += pushSignY * overlapY * 4.8f
+
+                        // Gentle horizontal nudge without flipping vxDir back and forth
+                        val pushSignX = if (dx >= 0f) 1f else -1f
+                        desiredVx += pushSignX * ((safeX - abs(dx)) / safeX) * 1.6f
+                    }
+                }
+
+                // Turn smoothly before left/right screen boundaries
+                if (bf.vxDir > 0f && bf.colX >= maxC - 0.8f) {
+                    bf.vxDir = -1f
+                    desiredVx = -baseSpd
+                } else if (bf.vxDir < 0f && bf.colX <= minC + 0.8f) {
+                    bf.vxDir = 1f
+                    desiredVx = baseSpd
+                }
+
+                val smoothRate = (clampedDt * 7.0f).coerceIn(0.05f, 1.0f)
+                bf.vx += (desiredVx - bf.vx) * smoothRate
+                bf.vy += (desiredVy - bf.vy) * smoothRate
+
+                if (!bf.isSnappingAtPredator) {
+                    bf.colX = (bf.colX + bf.vx * clampedDt).coerceIn(minC, maxC)
+                    bf.rowY = (bf.rowY + bf.vy * clampedDt).coerceIn(minBedRow, maxBedRow)
+                }
+
+                val moveSpd = hypot(bf.vx, bf.vy)
+                bf.animPhase = (bf.animPhase + clampedDt * (2.2f + moveSpd * 1.6f)) % 6.2831855f
 
                 val frameB = sin(bf.animPhase) > 0f
                 val sprite = when {
@@ -1529,7 +1591,7 @@ class PondSimulation {
                 }
                 textPaint.color = bfColor
                 val bxPx = ((bf.colX + pShiftCols * 0.3f).coerceIn(1f, (cols - sprite.length - 1).toFloat())) * cellWidthPx
-                val byPx = critterRowFloat * cellHeightPx + baselineOffsetPx
+                val byPx = bf.rowY * cellHeightPx + baselineOffsetPx
                 drawTextZeroAlloc(canvas, sprite, bxPx, byPx, textPaint)
             }
         }
@@ -1538,7 +1600,7 @@ class PondSimulation {
         // 9. PREDATOR CHASE, ELDER CROWN INTIMIDATION & JAW-SNAP CATCH
         // =========================================================================
         val minFishRow = (splitRow + 4).toFloat()
-        val maxFishRow = (floorRow - 4).toFloat().coerceAtLeast(minFishRow + 12f)
+        val maxFishRow = (floorRow - 6).toFloat().coerceAtLeast(minFishRow + 12f)
         val underwaterSpan = (maxFishRow - minFishRow).coerceAtLeast(12f)
 
         if (config.enablePredators) {
