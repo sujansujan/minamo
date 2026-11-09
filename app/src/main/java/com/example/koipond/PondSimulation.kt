@@ -480,6 +480,8 @@ class AsciiFishAgent(
     var depthLayer: Int,
     var zDepth: Float = 0.4f, // Continuous 3D Z-depth: 0.05 (near glass) .. 0.95 (deep background)
     var baseZ: Float = 0.4f,
+    var vz: Float = 0.0f,     // Active Z-axis velocity (- = toward camera, + = away into deep)
+    var zSwimTimer: Float = 0f,
     var isSchooler: Boolean,
     var species: AsciiFishSpecies,
     var colFrac: Float,
@@ -716,6 +718,11 @@ class PondSimulation {
     private val insectDayFrameB = charArrayOf('-', 'o', '-')
     private val insectNightFrameA = charArrayOf(' ', '*', ' ')
     private val insectNightFrameB = charArrayOf(' ', '·', ' ')
+    private val zSwimAwayHero = arrayOf("  _._  ", " (|X|) ", "  '-'  ")
+    private val zSwimAwaySmall = arrayOf(" (x) ")
+    private val shadowCharsNear = charArrayOf('.', '=', '=', '=', '.')
+    private val shadowCharsFar  = charArrayOf('.', '.', '.')
+    private val reflectChars    = charArrayOf('~', '.', '.', '~')
 
     private fun drawTextZeroAlloc(canvas: Canvas, str: String, x: Float, y: Float, paint: Paint) {
         val len = str.length.coerceAtMost(spriteCharScratch.size)
@@ -1214,6 +1221,26 @@ class PondSimulation {
         val pad2Col = (cols * 0.62f + cos(simTime * 0.5f) * 1.5f + pShiftInt).roundToInt()
         drawStringAtGrid(pad2Col, splitRow, "[_v_]", pal.lilyPadFg)
 
+        // 3D Dangling Lily-Pad Root Filaments hanging beneath each surface pad into the water column
+        val rootColor = TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.lilyPadFg, 0.52f)
+        for (padC in intArrayOf(pad1Col, pad2Col)) {
+            for (rStep in 1..4) {
+                val rootSway = sin(simTime * 1.4f - rStep * 0.6f + padC * 0.2f)
+                val rc = padC + 2 + (if (rootSway > 0.35f) 1 else if (rootSway < -0.35f) -1 else 0)
+                val rr = splitRow + rStep
+                val rootCh = when (rStep) {
+                    1 -> '|'
+                    2 -> ':'
+                    3 -> if (rootSway >= 0f) ')' else '('
+                    else -> '.'
+                }
+                setCell(rc, rr, rootCh, rootColor)
+                if (rStep <= 2) {
+                    setCell(rc - 1, rr, ':', rootColor)
+                }
+            }
+        }
+
         // Perched Shoreline Mossy Rock & Frog `(o.o)` / Turtle `_(@)_` at Right Bank
         val rockCol = cols - 13
         drawStringAtGrid(rockCol, splitRow, "_.-._", pal.pebbleFg)
@@ -1325,6 +1352,24 @@ class PondSimulation {
             setCell(c, subFloorRow, '~', pal.cloudReedFg)
         }
 
+        // 3D Linear-Perspective Floor Grid fanning outward from the central vanishing point
+        val perspGridColor = TimeOfDayPalette.lerpColor(pal.waterBgDeep, pal.pebbleFg, 0.36f)
+        val centerCol = cols / 2 - pShiftInt / 2
+        for (beam in -4..4) {
+            for (rOff in 0..4) {
+                // Fan out wider as rOff approaches the bottom edge (rOff = 4 is closest to viewer)
+                val cPos = centerCol + beam * (6 + rOff * 2)
+                val rPos = floorRow - 4 + rOff
+                val gridCh = when {
+                    beam < -1 -> '/'
+                    beam > 1  -> '\\'
+                    beam == 0 -> '|'
+                    else      -> ':'
+                }
+                setCell(cPos, rPos, gridCh, perspGridColor)
+            }
+        }
+
         // Reactive Battery-Level Sunken Stone Lantern on the Riverbed:
         //   >= 50%: `[o]` glowing sun-gold
         //   20..49%: `[*]` warm coral-amber
@@ -1356,11 +1401,14 @@ class PondSimulation {
         val activeHero = if (isBatterySaver) (config.heroFishCount - 2).coerceAtLeast(2) else config.heroFishCount
         val activeSchool = if (isBatterySaver) 2 else maxSchoolFish
 
-        val activeBubbles = if (isBatterySaver) 8 else bubbles.size
+        val activeBubbles = if (isBatterySaver) 10 else bubbles.size
         for (i in 0 until activeBubbles) {
             val b = bubbles[i]
             b.rowY -= b.speedY * clampedDt
-            b.colX += sin(simTime * 1.5f + b.phase) * 0.4f * clampedDt
+            // 3D Corkscrew Helix: x uses cos(helixAngle), zDepth uses sin(helixAngle)
+            val helixAngle = simTime * 2.1f + b.phase
+            b.colX += cos(helixAngle) * 0.55f * clampedDt
+            b.zDepth = (0.50f + sin(helixAngle) * 0.44f).coerceIn(0.04f, 0.94f)
 
             if (b.rowY <= splitRow + 1) {
                 val refFish = fish[i % activeHero.coerceAtLeast(1)]
@@ -1368,16 +1416,28 @@ class PondSimulation {
                 b.rowY = if (b.isBubble) refFish.rowY else (rows - 4).toFloat()
             }
 
-            val bc = b.colX.roundToInt()
-            val br = b.rowY.roundToInt()
-            if (br in (splitRow + 2) until (floorRow - 1) && bc in 0 until cols) {
-                val bChar = if (b.isBubble) {
-                    if ((br + i) % 2 == 0) 'o' else '°'
-                } else {
-                    if (snapshot.isNight && (i + wavePhase) % 3 == 0) '·' else '.'
+            // Background & midground bubbles go into the grid; extreme foreground bokeh bubbles (z < 0.18)
+            // are drawn after fish at 1.40x scale!
+            if (b.zDepth >= 0.18f) {
+                val bc = (b.colX + pShiftCols * (0.8f - b.zDepth * 0.6f)).roundToInt()
+                val br = b.rowY.roundToInt()
+                if (br in (splitRow + 2) until (floorRow - 1) && bc in 0 until cols) {
+                    val bChar = if (b.isBubble) {
+                        when {
+                            b.zDepth < 0.42f -> 'o'
+                            b.zDepth < 0.70f -> '°'
+                            else -> '·'
+                        }
+                    } else {
+                        if (snapshot.isNight && (i + wavePhase) % 3 == 0) '·' else '.'
+                    }
+                    val bCol = if (snapshot.isNight && !b.isBubble) {
+                        pal.fishRose
+                    } else {
+                        TimeOfDayPalette.lerpColor(pal.bubbleFg, pal.waterBgDeep, b.zDepth * 0.65f)
+                    }
+                    setCell(bc, br, bChar, bCol)
                 }
-                val bCol = if (snapshot.isNight && !b.isBubble) pal.fishRose else pal.bubbleFg
-                setCell(bc, br, bChar, bCol)
             }
         }
 
@@ -1453,7 +1513,8 @@ class PondSimulation {
             finColor: Int,
             eyeColor: Int,
             isDimmedLayer: Boolean,
-            zDepth: Float = 0.25f
+            zDepth: Float = 0.25f,
+            inSunbeamShaft: Boolean = false
         ) {
             // 3D Perspective Scale: zDepth = 0.05 (foreground glass -> 1.15x size) .. 0.92 (deep background -> 0.62x size)
             val zClamped = zDepth.coerceIn(0.0f, 1.0f)
@@ -1467,8 +1528,11 @@ class PondSimulation {
             val localWaterBg = TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.waterBgDeep, vertFrac)
             val fogFactor = (zClamped * 0.68f + vertFrac * 0.18f).coerceIn(0f, 0.80f)
 
-            val foggedBody = TimeOfDayPalette.lerpColor(bodyColor, localWaterBg, fogFactor)
-            val foggedFin  = TimeOfDayPalette.lerpColor(finColor, localWaterBg, fogFactor)
+            // If the fish is swimming through a 3D sunbeam shaft, brighten its dorsal crest & body!
+            val litBody = if (inSunbeamShaft) TimeOfDayPalette.lerpColor(bodyColor, pal.fishGold, 0.35f) else bodyColor
+            val litFin  = if (inSunbeamShaft) TimeOfDayPalette.lerpColor(finColor, pal.fishFoam, 0.45f) else finColor
+            val foggedBody = TimeOfDayPalette.lerpColor(litBody, localWaterBg, fogFactor)
+            val foggedFin  = TimeOfDayPalette.lerpColor(litFin, localWaterBg, fogFactor)
             val foggedEye  = TimeOfDayPalette.lerpColor(eyeColor, localWaterBg, (fogFactor * 0.75f))
 
             val baseX = colFloat * cellWidthPx
@@ -1793,7 +1857,8 @@ class PondSimulation {
 
             val perspSpeedFactor = 1.12f - f.zDepth * 0.45f
             val cruiseSpd = f.species.baseSpeedColsPerSec * f.speedScale * perspSpeedFactor
-            var desiredVx = f.facingDir * cruiseSpd
+            val zForwardDamp = if (f.zSwimTimer > 0f) 0.25f else 1.0f
+            var desiredVx = f.facingDir * cruiseSpd * zForwardDamp
             val targetLaneRow = minFishRow + f.preferredDepthFrac * underwaterSpan
             var desiredVy = (targetLaneRow - f.rowY) * 1.4f + sin(simTime * 1.3f + f.id * 1.9f) * 0.75f
 
@@ -1872,8 +1937,22 @@ class PondSimulation {
                 }
             }
 
-            // Gently weave in and out along the 3D Z-axis over time
-            f.zDepth = (f.baseZ + sin(simTime * 0.32f + f.id * 1.7f) * 0.18f).coerceIn(0.06f, 0.92f)
+            // True 3D Z-Axis Swimming: fish periodically turn toward the camera glass (vz < 0)
+            // or swim deep into the canyon (vz > 0), displaying foreshortened front/back sprites!
+            if (f.zSwimTimer > 0f) {
+                f.zSwimTimer = (f.zSwimTimer - clampedDt).coerceAtLeast(0f)
+                f.baseZ = (f.baseZ + f.vz * clampedDt).coerceIn(0.08f, 0.90f)
+                if (f.baseZ <= 0.09f || f.baseZ >= 0.89f) {
+                    f.vz = -f.vz
+                }
+            } else if (!f.isEvading && sin(simTime * 0.75f + f.id * 3.1f) > 0.975f) {
+                f.zSwimTimer = 1.6f
+                f.vz = if (f.baseZ > 0.48f) -0.22f else 0.22f
+            } else {
+                f.vz = 0f
+            }
+
+            f.zDepth = (f.baseZ + sin(simTime * 0.32f + f.id * 1.7f) * 0.14f).coerceIn(0.06f, 0.92f)
             f.depthLayer = when {
                 f.zDepth > 0.64f -> 0
                 f.zDepth > 0.32f -> 1
@@ -1992,11 +2071,12 @@ class PondSimulation {
                 }
             }
 
-            // Continuous parallax multiplier based on Z-depth (0.20x in deep background .. 0.85x near glass)
             val parallaxMult = 0.85f - f.zDepth * 0.65f
             val useFrameB = sin(f.animPhase) > 0f
             val lines = when {
                 f.turnTimer > 0f -> f.species.turnFrame
+                f.zSwimTimer > 0f && f.vz < 0f -> f.species.turnFrame // Swimming toward camera glass!
+                f.zSwimTimer > 0f && f.vz > 0f -> if (f.isSchooler) zSwimAwaySmall else zSwimAwayHero // Swimming away into deep!
                 f.facingDir >= 0 -> if (useFrameB) f.species.rightFrameB else f.species.rightFrameA
                 else -> if (useFrameB) f.species.leftFrameB else f.species.leftFrameA
             }
@@ -2004,6 +2084,44 @@ class PondSimulation {
             val sw = lines[0].length
             val clampedDrawCol = (f.colX + pShiftCols * parallaxMult)
                 .coerceIn(0.5f, (cols - sw - 0.5f).coerceAtLeast(1f))
+
+            // 1. Cast 3D Drop-Shadow onto the Sloped Riverbed when fish is in the lower water column
+            val distFromFloor = floorRow - f.rowY
+            if (distFromFloor in 2.5f..42.0f) {
+                val shadowRowFloat = (floorRow - 0.5f - f.zDepth * 3.8f).coerceIn((floorRow - 4.5f), (floorRow - 0.4f))
+                val sunOffsetCols = (distFromFloor * 0.14f)
+                val shadowColFloat = (clampedDrawCol + sunOffsetCols + sw * 0.2f).coerceIn(2f, (cols - 6).toFloat())
+                textPaint.color = TimeOfDayPalette.lerpColor(pal.waterBgDeep, 0xFF02080C.toInt(), (1f - f.zDepth * 0.6f) * 0.65f)
+                val sBuf = if (f.zDepth < 0.45f && !f.isSchooler) shadowCharsNear else shadowCharsFar
+                canvas.drawText(sBuf, 0, sBuf.size, shadowColFloat * cellWidthPx, shadowRowFloat * cellHeightPx + baselineOffsetPx, textPaint)
+            }
+
+            // 2. Underside Meniscus Reflection ("Snell's Window" Mirror) when fish swims near the surface
+            val distFromSurface = f.rowY - splitRow
+            if (distFromSurface in 2.5f..18.0f) {
+                val reflectRowFloat = splitRow + 1.1f + (distFromSurface * 0.08f)
+                val reflectColFloat = (clampedDrawCol + sw * 0.2f).coerceIn(2f, (cols - 6).toFloat())
+                val reflectAlphaMix = (1f - distFromSurface / 18.0f) * (1f - f.zDepth * 0.5f) * 0.55f
+                textPaint.color = TimeOfDayPalette.lerpColor(
+                    pal.waterBgTop,
+                    resolveRoleColor(f.species.primaryRole),
+                    reflectAlphaMix
+                )
+                canvas.drawText(reflectChars, 0, reflectChars.size, reflectColFloat * cellWidthPx, reflectRowFloat * cellHeightPx + baselineOffsetPx, textPaint)
+            }
+
+            // 3. Check if fish is intersecting a 3D diagonal sunbeam shaft for volumetric dorsal lighting
+            var inBeam = false
+            if (!snapshot.isNight && config.waterClarity > 0.5f) {
+                val dRow = f.rowY - splitRow
+                for (rayIdx in 0..2) {
+                    val beamColAtDepth = cols * (0.18f + rayIdx * 0.28f) + (dRow * 0.5f)
+                    if (abs((clampedDrawCol + sw * 0.5f) - beamColAtDepth) < 4.5f) {
+                        inBeam = true
+                        break
+                    }
+                }
+            }
 
             drawSubPixelSprite(
                 colFloat = clampedDrawCol,
@@ -2013,7 +2131,8 @@ class PondSimulation {
                 finColor = if (f.isElderCrown) pal.fishGold else resolveRoleColor(f.species.finAccentRole),
                 eyeColor = pal.fishFoam,
                 isDimmedLayer = false,
-                zDepth = if (f.isElderCrown) (f.zDepth * 0.5f) else f.zDepth
+                zDepth = if (f.isElderCrown) (f.zDepth * 0.5f) else f.zDepth,
+                inSunbeamShaft = inBeam
             )
 
             if (f.isElderCrown) {
@@ -2097,5 +2216,21 @@ class PondSimulation {
                 zDepth = 0.10f
             )
         }
+
+        // =========================================================================
+        // 12. EXTREME FOREGROUND GLASS-EDGE BOKEH BUBBLES (`z < 0.18`, `1.42x` scale, `1.25x` parallax)
+        // =========================================================================
+        textPaint.textSize = baseTextSizePx * 1.42f
+        val bokehColor = TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.bubbleFg, 0.55f)
+        textPaint.color = bokehColor
+        for (i in 0 until activeBubbles) {
+            val b = bubbles[i]
+            if (b.zDepth < 0.18f && b.rowY > splitRow + 3 && b.rowY < floorRow - 2) {
+                val bx = (b.colX + pShiftCols * 1.25f) * cellWidthPx
+                val by = b.rowY * cellHeightPx + baselineOffsetPx
+                drawCharZeroAlloc(canvas, if (b.isBubble) 'O' else '°', bx, by, textPaint)
+            }
+        }
+        textPaint.textSize = baseTextSizePx
     }
 }
