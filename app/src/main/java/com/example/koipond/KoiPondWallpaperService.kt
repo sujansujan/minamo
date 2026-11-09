@@ -249,6 +249,9 @@ class KoiPondWallpaperService : WallpaperService() {
                 pendingCrowns++
                 pendingLastEvent = "* " + speciesName + " grew into elder crown!"
             }
+            simulation.onLegendarySightingListener = { legName ->
+                settingsRepo.recordLegendarySighting(legName)
+            }
             settingsRepo.registerListener(this)
 
             powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
@@ -428,8 +431,9 @@ class KoiPondWallpaperService : WallpaperService() {
 
         override fun onSensorChanged(event: SensorEvent) {
             if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
-                gyroTiltX = (gyroTiltX * 0.92f + event.values[1] * 0.08f).coerceIn(-1f, 1f)
-                gyroTiltY = (gyroTiltY * 0.92f + event.values[0] * 0.08f).coerceIn(-1f, 1f)
+                // Smoothly integrate angular velocity with gentle centering spring for a deep 3D window effect
+                gyroTiltX = (gyroTiltX * 0.94f + event.values[1] * 0.14f).coerceIn(-1.25f, 1.25f)
+                gyroTiltY = (gyroTiltY * 0.94f + event.values[0] * 0.14f).coerceIn(-1.25f, 1.25f)
             }
         }
 

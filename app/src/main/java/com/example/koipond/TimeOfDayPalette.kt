@@ -187,6 +187,14 @@ object TimeOfDayPalette {
                 fishRose = 0xFF6EE7A0.toInt(),
                 fishDimBg = 0xFF5A7561.toInt()
             )
+            PaletteFamily.AMOLED -> c.copy(
+                // True #000000 Pitch-Black OLED Background (pixels completely off!)
+                // while characters glow with time-of-day neon terminal hues
+                skyBg = 0xFF000000.toInt(),
+                waterBgTop = 0xFF000000.toInt(),
+                waterBgDeep = 0xFF000000.toInt(),
+                fishDimBg = 0xFF1E3E48.toInt()
+            )
         }
     }
 

@@ -551,6 +551,105 @@ class AsciiFishAgent(
     var isElderCrown: Boolean = false // Levels up after eating 3 pellets; intimidates predators!
 )
 
+/**
+ * 3 Rare Mythic "Legendary" Creatures that have a ~6% chance to spawn when unlocking the phone!
+ */
+enum class LegendarySpecies(
+    val id: Int,
+    val displayName: String,
+    val speedColsPerSec: Float,
+    val rightFrameA: Array<String>,
+    val rightFrameB: Array<String>,
+    val leftFrameA: Array<String>,
+    val leftFrameB: Array<String>
+) {
+    DRAGON_KOI(
+        id = 0,
+        displayName = "ryujin dragon koi",
+        speedColsPerSec = 3.8f,
+        rightFrameA = arrayOf(
+            "    _/^\\_.._    ",
+            "}><((((({(º>==~ ",
+            "    '-..--'     "
+        ),
+        rightFrameB = arrayOf(
+            "    _/^\\_.._    ",
+            "><(((((({(º>=~- ",
+            "    '-..--'     "
+        ),
+        leftFrameA = arrayOf(
+            "    _.._/^\\_    ",
+            " ~==<º)}))))><{ ",
+            "     '--..-'    "
+        ),
+        leftFrameB = arrayOf(
+            "    _.._/^\\_    ",
+            " -~=<º)})))))>< ",
+            "     '--..-'    "
+        )
+    ),
+    GIANT_OARFISH(
+        id = 1,
+        displayName = "regal oarfish",
+        speedColsPerSec = 4.2f,
+        rightFrameA = arrayOf(
+            "   ~^~^~^~^~\\|// ",
+            " ~===))))))))º>  ",
+            "        '---'    "
+        ),
+        rightFrameB = arrayOf(
+            "   ^~^~^~^~^\\|// ",
+            " -===))))))))º>  ",
+            "        '---'    "
+        ),
+        leftFrameA = arrayOf(
+            " \\|//~^~^~^~^~   ",
+            "  <º((((((((===~ ",
+            "    '---'        "
+        ),
+        leftFrameB = arrayOf(
+            " \\|//^~^~^~^~^   ",
+            "  <º((((((((===- ",
+            "    '---'        "
+        )
+    ),
+    ANCIENT_COELACANTH(
+        id = 2,
+        displayName = "living coelacanth",
+        speedColsPerSec = 3.2f,
+        rightFrameA = arrayOf(
+            "    _/|_/|_    ",
+            "}><((({#{(º>   ",
+            "    \\/  \\/    "
+        ),
+        rightFrameB = arrayOf(
+            "    _/|_/|_    ",
+            "><(((({#{(º>   ",
+            "    \\/  \\/    "
+        ),
+        leftFrameA = arrayOf(
+            "    _|\\_|\\_    ",
+            "   <º)}#}))><{ ",
+            "    \\/  \\/    "
+        ),
+        leftFrameB = arrayOf(
+            "    _|\\_|\\_    ",
+            "   <º)}#})))>< ",
+            "    \\/  \\/    "
+        )
+    )
+}
+
+class LegendaryAgent(
+    var active: Boolean = false,
+    var species: LegendarySpecies = LegendarySpecies.DRAGON_KOI,
+    var colX: Float = 20f,
+    var rowY: Float = 45f,
+    var zDepth: Float = 0.14f,
+    var vxDir: Float = 1f,
+    var animPhase: Float = 0f
+)
+
 class PredatorAgent(
     var active: Boolean = false,
     var species: PredatorSpecies = PredatorSpecies.BARRACUDA_PIKE,
@@ -700,6 +799,7 @@ class PondSimulation {
         )
     }
 
+    val legendary = LegendaryAgent()
     val predator = PredatorAgent()
     val bloodParticles = Array(18) { BloodParticle() }
     var lastBloodSiteCol = -1f
@@ -817,6 +917,7 @@ class PondSimulation {
         private set
     var onHuntOutcomeListener: ((Boolean, String, String) -> Unit)? = null
     var onCrownLevelUpListener: ((String) -> Unit)? = null
+    var onLegendarySightingListener: ((String) -> Unit)? = null
 
     init {
         randomizeEcosystemOnUnlock(System.nanoTime())
@@ -955,6 +1056,29 @@ class PondSimulation {
         lastBloodSiteTimer = 0f
         predator.active = false
         predator.cooldownTimer = 10f + rand.nextFloat() * 14f
+
+        // Rare Legendary Spawn Roll (~7% chance on every phone unlock!)
+        if (rand.nextFloat() < 0.07f) {
+            spawnLegendaryCreature(rand)
+        } else {
+            legendary.active = false
+        }
+    }
+
+    fun spawnLegendaryCreature(rand: Random = Random(System.nanoTime())): String {
+        val sp = LegendarySpecies.entries[rand.nextInt(LegendarySpecies.entries.size)]
+        legendary.species = sp
+        legendary.active = true
+        legendary.colX = 8f + rand.nextFloat() * (gridCols - 28).coerceAtLeast(16)
+        val minR = (waterlineRow + 9).coerceAtMost(gridRows - 22)
+        val maxR = (gridRows - 14).coerceAtLeast(minR + 6)
+        legendary.rowY = minR + rand.nextFloat() * (maxR - minR)
+        legendary.zDepth = 0.12f
+        legendary.vxDir = if (rand.nextBoolean()) 1f else -1f
+        legendary.animPhase = 0f
+        activeSpeciesSummary = "★ " + sp.displayName + " + " + activeSpeciesSummary
+        onLegendarySightingListener?.invoke(sp.displayName)
+        return sp.displayName
     }
 
     fun triggerPredatorVisit(seed: Long = System.nanoTime(), catchProbability: Float = 0.45f) {
@@ -1118,36 +1242,43 @@ class PondSimulation {
 
         val cols = gridCols
         val rows = gridRows
-        val pShiftCols = (parallaxX * 6f)
-        val pShiftRows = (parallaxY * 2f).roundToInt()
+        // Enhanced 3D Window-into-a-Tank Gyro Parallax amplitude (`parallaxX`, `parallaxY`)
+        val pShiftCols = (parallaxX * 11.5f)
+        val pShiftRowsFloat = (parallaxY * 6.5f)
+        val pShiftRows = (pShiftRowsFloat * 0.45f).roundToInt()
         val splitRow = (waterlineRow + pShiftRows).coerceIn(14, rows - 24)
 
         val topCalmRow = if (isWallpaperMode) (rows * 0.12f).toInt() else 0
         val floorRow = rows - 2
         val subFloorRow = rows - 1
-
-        bgPaint.color = pal.skyBg
-        canvas.drawRect(0f, 0f, canvas.width.toFloat(), splitRow * cellHeightPx, bgPaint)
-
         val underwaterRows = (rows - splitRow).coerceAtLeast(1)
-        // Non-linear Beer-Lambert optical depth gradient + bright sub-meniscus Snell's window glow
-        for (r in splitRow until rows) {
-            val linearD = (r - splitRow).toFloat() / underwaterRows.toFloat()
-            // Steep near-surface light falloff transitioning to a deep abyssal trench
-            val curveD = 1f - (1f - linearD) * (1f - linearD)
-            var rowBg = TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.waterBgDeep, curveD)
-            if (r - splitRow <= 3) {
-                val glowFrac = (1f - (r - splitRow) / 4f) * 0.22f
-                rowBg = TimeOfDayPalette.lerpColor(rowBg, pal.meniscusWaveFg, glowFrac)
+        val isAmoled = (config.paletteFamily == PaletteFamily.AMOLED)
+
+        if (isAmoled) {
+            // True #000000 Pitch-Black OLED Fast Path: 90%+ of screen pixels are completely turned off!
+            bgPaint.color = 0xFF000000.toInt()
+            canvas.drawRect(0f, 0f, canvas.width.toFloat(), canvas.height.toFloat(), bgPaint)
+        } else {
+            bgPaint.color = pal.skyBg
+            canvas.drawRect(0f, 0f, canvas.width.toFloat(), splitRow * cellHeightPx, bgPaint)
+
+            for (r in splitRow until rows) {
+                val linearD = (r - splitRow).toFloat() / underwaterRows.toFloat()
+                val curveD = 1f - (1f - linearD) * (1f - linearD)
+                var rowBg = TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.waterBgDeep, curveD)
+                if (r - splitRow <= 3) {
+                    val glowFrac = (1f - (r - splitRow) / 4f) * 0.22f
+                    rowBg = TimeOfDayPalette.lerpColor(rowBg, pal.meniscusWaveFg, glowFrac)
+                }
+                bgPaint.color = rowBg
+                canvas.drawRect(
+                    0f,
+                    r * cellHeightPx,
+                    canvas.width.toFloat(),
+                    (r + 1) * cellHeightPx + 1f,
+                    bgPaint
+                )
             }
-            bgPaint.color = rowBg
-            canvas.drawRect(
-                0f,
-                r * cellHeightPx,
-                canvas.width.toFloat(),
-                (r + 1) * cellHeightPx + 1f,
-                bgPaint
-            )
         }
 
         val totalCells = cols * rows
@@ -1403,7 +1534,7 @@ class PondSimulation {
         }
 
         // Far Abyssal Submerged Canyon Ridge (`z = 0.88`, moves slowly at 0.15x parallax for deep 3D space)
-        val canyonBaseRow = splitRow + (underwaterRows * 0.62f).toInt()
+        val canyonBaseRow = (splitRow + (underwaterRows * 0.62f) + pShiftRowsFloat * 0.15f).roundToInt().coerceIn(splitRow + 6, floorRow - 8)
         val canyonColor = TimeOfDayPalette.lerpColor(pal.waterBgDeep, pal.pebbleFg, 0.28f)
         val canyonShift = (pShiftCols * 0.15f).roundToInt()
         val canyonPattern = "__..--~~^^~~--..____..--~~^~~--..__"
@@ -1414,7 +1545,7 @@ class PondSimulation {
         }
 
         // Midground Submerged Reef Shelf (`z = 0.55`, moves at 0.38x parallax)
-        val shelfBaseRow = floorRow - 7
+        val shelfBaseRow = (floorRow - 7 + pShiftRowsFloat * 0.38f).roundToInt().coerceIn(splitRow + 10, floorRow - 4)
         val shelfColor = TimeOfDayPalette.lerpColor(pal.waterBgDeep, pal.pebbleFg, 0.48f)
         val shelfShift = (pShiftCols * 0.38f).roundToInt()
         val shelfPattern = "  .._.-~-._..      .._.-~-._..  "
@@ -2264,12 +2395,13 @@ class PondSimulation {
                 }
             }
 
-            val parallaxMult = 0.85f - f.zDepth * 0.65f
+            // 3D Depth-Differential Gyro Parallax (X & Y shift proportional to how close the fish is to the front glass)
+            val parallaxMult = 1.05f - f.zDepth * 0.88f
             val useFrameB = sin(f.animPhase) > 0f
             val lines = when {
                 f.turnTimer > 0f -> f.species.turnFrame
-                f.zSwimTimer > 0f && f.vz < 0f -> f.species.turnFrame // Swimming toward camera glass!
-                f.zSwimTimer > 0f && f.vz > 0f -> if (f.isSchooler) zSwimAwaySmall else zSwimAwayHero // Swimming away into deep!
+                f.zSwimTimer > 0f && f.vz < 0f -> f.species.turnFrame
+                f.zSwimTimer > 0f && f.vz > 0f -> if (f.isSchooler) zSwimAwaySmall else zSwimAwayHero
                 f.facingDir >= 0 -> if (useFrameB) f.species.rightFrameB else f.species.rightFrameA
                 else -> if (useFrameB) f.species.leftFrameB else f.species.leftFrameA
             }
@@ -2277,6 +2409,8 @@ class PondSimulation {
             val sw = lines[0].length
             val clampedDrawCol = (f.colX + pShiftCols * parallaxMult)
                 .coerceIn(0.5f, (cols - sw - 0.5f).coerceAtLeast(1f))
+            val parallaxDrawRow = (f.rowY + pShiftRowsFloat * parallaxMult)
+                .coerceIn(minFishRow, maxFishRow)
 
             // 1. Cast 3D Drop-Shadow onto the Sloped Riverbed when fish is in the lower water column
             val distFromFloor = floorRow - f.rowY
@@ -2318,7 +2452,7 @@ class PondSimulation {
 
             drawSubPixelSprite(
                 colFloat = clampedDrawCol,
-                rowFloat = f.rowY,
+                rowFloat = parallaxDrawRow,
                 lines = lines,
                 bodyColor = resolveRoleColor(f.species.primaryRole),
                 finColor = if (f.isElderCrown) pal.fishGold else resolveRoleColor(f.species.finAccentRole),
@@ -2341,6 +2475,48 @@ class PondSimulation {
                 textPaint.color = pal.bubbleFg
                 drawCharZeroAlloc(canvas, '~', wakeCol * cellWidthPx, f.rowY * cellHeightPx + baselineOffsetPx, textPaint)
             }
+        }
+
+        // Update & Render Rare Mythic Legendary Creature (if spawned on this unlock!)
+        if (legendary.active) {
+            legendary.animPhase = (legendary.animPhase + clampedDt * 3.8f) % 62.831855f
+            legendary.colX += legendary.vxDir * legendary.species.speedColsPerSec * clampedDt
+            legendary.rowY = (legendary.rowY + sin(simTime * 1.1f) * 0.9f * clampedDt).coerceIn(minFishRow + 2f, maxFishRow - 2f)
+            legendary.zDepth = (0.14f + 0.10f * sin(simTime * 0.4f)).coerceIn(0.06f, 0.30f)
+
+            val legWidth = legendary.species.rightFrameA[0].length
+            if (legendary.vxDir > 0f && legendary.colX > cols - legWidth - 2f) {
+                legendary.vxDir = -1f
+            } else if (legendary.vxDir < 0f && legendary.colX < 2f) {
+                legendary.vxDir = 1f
+            }
+
+            val legParallax = 1.05f - legendary.zDepth * 0.88f
+            val legDrawCol = (legendary.colX + pShiftCols * legParallax).coerceIn(1f, (cols - legWidth - 1).toFloat())
+            val legDrawRow = (legendary.rowY + pShiftRowsFloat * legParallax).coerceIn(minFishRow, maxFishRow)
+            val useLegB = sin(legendary.animPhase) > 0f
+            val legLines = if (legendary.vxDir >= 0f) {
+                if (useLegB) legendary.species.rightFrameB else legendary.species.rightFrameA
+            } else {
+                if (useLegB) legendary.species.leftFrameB else legendary.species.leftFrameA
+            }
+
+            drawSubPixelSprite(
+                colFloat = legDrawCol,
+                rowFloat = legDrawRow,
+                lines = legLines,
+                bodyColor = pal.fishGold,
+                finColor = pal.fishCoral,
+                eyeColor = pal.fishFoam,
+                isDimmedLayer = false,
+                zDepth = legendary.zDepth,
+                inSunbeamShaft = true
+            )
+
+            // Shimmering stardust wake (`*`, `·`) trailing behind the Legendary Creature
+            val trailCol = if (legendary.vxDir >= 0f) legDrawCol - 2.0f else legDrawCol + legWidth + 1.0f
+            textPaint.color = pal.fishGold
+            drawCharZeroAlloc(canvas, if (wavePhase % 2 == 0) '*' else '·', trailCol * cellWidthPx, legDrawRow * cellHeightPx + baselineOffsetPx, textPaint)
         }
 
         // Update & Render 3D Multi-Stage ASCII Blood Plume & Sinking Scales (with Z-depth scaling & fog!)

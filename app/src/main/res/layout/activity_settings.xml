@@ -370,17 +370,17 @@
 
                         <TextView
                             android:id="@+id/btnPalLagoon"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="1.05"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="(*) lagoon" />
 
                         <TextView
                             android:id="@+id/btnPalEmber"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -390,13 +390,23 @@
 
                         <TextView
                             android:id="@+id/btnPalMoss"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="0.95"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="( ) moss" />
+
+                        <TextView
+                            android:id="@+id/btnPalAmoled"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) amoled" />
                     </LinearLayout>
 
                     <TextView

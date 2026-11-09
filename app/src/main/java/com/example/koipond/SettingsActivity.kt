@@ -59,6 +59,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnPalLagoon: TextView
     private lateinit var btnPalEmber: TextView
     private lateinit var btnPalMoss: TextView
+    private lateinit var btnPalAmoled: TextView
 
     private lateinit var btnThemeSystem: TextView
     private lateinit var btnThemeLight: TextView
@@ -171,6 +172,7 @@ class SettingsActivity : AppCompatActivity() {
         btnPalLagoon = findViewById(R.id.btnPalLagoon)
         btnPalEmber = findViewById(R.id.btnPalEmber)
         btnPalMoss = findViewById(R.id.btnPalMoss)
+        btnPalAmoled = findViewById(R.id.btnPalAmoled)
 
         btnThemeSystem = findViewById(R.id.btnThemeSystem)
         btnThemeLight = findViewById(R.id.btnThemeLight)
@@ -224,6 +226,14 @@ class SettingsActivity : AppCompatActivity() {
             val cGold = ContextCompat.getColor(this, R.color.ascii_accent3)
             textHuntStatus.setTextColor(cGold)
             textHuntStatus.text = "event ... ^ " + speciesName + " leveled up to elder crown!"
+            updateTelemetryBox()
+        }
+
+        asciiPondView.simulation.onLegendarySightingListener = { legName ->
+            repository.recordLegendarySighting(legName)
+            val cGold = ContextCompat.getColor(this, R.color.ascii_accent3)
+            textHuntStatus.setTextColor(cGold)
+            textHuntStatus.text = "event ... ★ rare legendary " + legName + " appeared!"
             updateTelemetryBox()
         }
 
@@ -288,6 +298,7 @@ class SettingsActivity : AppCompatActivity() {
         btnPalLagoon.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.LAGOON)) }
         btnPalEmber.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.EMBER)) }
         btnPalMoss.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.MOSS)) }
+        btnPalAmoled.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.AMOLED)) }
 
         findViewById<LinearLayout>(R.id.rowPredatorsCheck).setOnClickListener {
             haptic(it)
@@ -447,15 +458,16 @@ class SettingsActivity : AppCompatActivity() {
         val catches = repository.getTotalCatches()
         val escapes = repository.getTotalEscapes()
         val crowns = repository.getTotalCrowns()
+        val legendaries = repository.getTotalLegendaries()
         val lastEv = repository.getLastEvent()
         val nl = 10.toChar()
         textAboutTelemetry.text =
+            "rare legendaries ... " + legendaries.toString() + " (ryujin / oarfish / coelacanth)" + nl +
             "predator catches ... " + catches.toString() + nl +
             "school escapes ..... " + escapes.toString() + nl +
             "elder crown fish ... " + crowns.toString() + nl +
-            "last hunt event .... " + lastEv + nl +
-            "feeding ............ tap (*) pellet / hold [@] wafer" + nl +
-            "quick settings ..... minamo [>°] tile enabled"
+            "last pond event .... " + lastEv + nl +
+            "amoled & 3d gyro ... active in [2 set]"
     }
 
     private fun refreshAsciiUi() {
@@ -496,6 +508,7 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnPalLagoon, currentConfig.paletteFamily == PaletteFamily.LAGOON, "lagoon")
         styleRadio(btnPalEmber, currentConfig.paletteFamily == PaletteFamily.EMBER, "ember")
         styleRadio(btnPalMoss, currentConfig.paletteFamily == PaletteFamily.MOSS, "moss")
+        styleRadio(btnPalAmoled, currentConfig.paletteFamily == PaletteFamily.AMOLED, "amoled")
 
         styleRadio(btnThemeSystem, currentConfig.themeMode == ThemeMode.SYSTEM, "system")
         styleRadio(btnThemeLight, currentConfig.themeMode == ThemeMode.LIGHT, "light")

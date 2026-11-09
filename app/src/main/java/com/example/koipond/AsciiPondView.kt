@@ -2,6 +2,10 @@ package com.example.koipond
 
 import android.content.Context
 import android.graphics.Canvas
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -12,7 +16,7 @@ import android.view.View
 class AsciiPondView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
-) : View(context, attrs) {
+) : View(context, attrs), SensorEventListener {
 
     val simulation = PondSimulation().apply {
         loadBundledFont(context)
@@ -24,6 +28,11 @@ class AsciiPondView @JvmOverloads constructor(
                 simulation.configureGrid(width, height, value.gridDensity, value.waterlinePercent)
             }
         }
+
+    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+    private val gyroSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+    private var gyroX = 0f
+    private var gyroY = 0f
 
     private var lastFrameNs = 0L
     private var isRunning = false
@@ -69,12 +78,15 @@ class AsciiPondView @JvmOverloads constructor(
         lastFrameNs = nowNs
 
         val ecoActive = config.powerSaveMode == PowerSaveMode.MAX_ECO
+        val px = if (config.enableGyro) gyroX * 0.7f else 0f
+        val py = if (config.enableGyro) gyroY * 0.7f else 0f
+
         simulation.updateAndRender(
             canvas = canvas,
             dt = dt,
             config = config,
-            parallaxX = 0f,
-            parallaxY = 0f,
+            parallaxX = px,
+            parallaxY = py,
             isBatterySaver = ecoActive,
             isWallpaperMode = false,
             batteryPercent = 85
@@ -92,6 +104,15 @@ class AsciiPondView @JvmOverloads constructor(
     }
 
     override fun performClick(): Boolean = super.performClick()
+
+    override fun onSensorChanged(event: SensorEvent) {
+        if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
+            gyroX = (gyroX * 0.94f + event.values[1] * 0.14f).coerceIn(-1.25f, 1.25f)
+            gyroY = (gyroY * 0.94f + event.values[0] * 0.14f).coerceIn(-1.25f, 1.25f)
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
     fun shuffleEcosystem() {
         simulation.randomizeEcosystemOnUnlock(System.nanoTime())
@@ -111,11 +132,15 @@ class AsciiPondView @JvmOverloads constructor(
         if (!isRunning) {
             isRunning = true
             lastFrameNs = SystemClock.elapsedRealtimeNanos()
+            if (config.enableGyro && gyroSensor != null) {
+                sensorManager?.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_GAME)
+            }
             invalidate()
         }
     }
 
     fun stopAnimation() {
         isRunning = false
+        sensorManager?.unregisterListener(this)
     }
 }

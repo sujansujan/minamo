@@ -17,7 +17,8 @@ enum class ThemeMode(val id: Int, val label: String) {
 enum class PaletteFamily(val id: Int, val label: String) {
     LAGOON(0, "lagoon"),
     EMBER(1, "ember"),
-    MOSS(2, "moss");
+    MOSS(2, "moss"),
+    AMOLED(3, "amoled");
 
     companion object {
         fun fromId(id: Int): PaletteFamily = entries.firstOrNull { it.id == id } ?: LAGOON
@@ -199,6 +200,16 @@ class WallpaperSettingsRepository(context: Context) {
         editor.apply()
     }
 
+    fun recordLegendarySighting(legendaryName: String) {
+        val count = prefs.getInt(KEY_STAT_LEGENDARIES, 0) + 1
+        prefs.edit()
+            .putInt(KEY_STAT_LEGENDARIES, count)
+            .putString(KEY_LAST_EVENT, "★ rare legendary: " + legendaryName + "!")
+            .apply()
+    }
+
+    fun getTotalLegendaries(): Int = prefs.getInt(KEY_STAT_LEGENDARIES, 0)
+
     fun getTotalCatches(): Int = prefs.getInt(KEY_STAT_CATCHES, 0)
     fun getTotalEscapes(): Int = prefs.getInt(KEY_STAT_ESCAPES, 0)
     fun getTotalCrowns(): Int = prefs.getInt(KEY_STAT_CROWNS, 0)
@@ -243,6 +254,7 @@ class WallpaperSettingsRepository(context: Context) {
         const val KEY_STAT_CATCHES = "stat_catches"
         const val KEY_STAT_ESCAPES = "stat_escapes"
         const val KEY_STAT_CROWNS = "stat_crowns"
+        const val KEY_STAT_LEGENDARIES = "stat_legendaries"
         const val KEY_LAST_EVENT = "last_event"
     }
 }
