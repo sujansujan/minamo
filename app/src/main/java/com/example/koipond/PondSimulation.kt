@@ -696,6 +696,24 @@ class PondSimulation {
     private val colorGrid = IntArray(maxCols * maxRows)
     private val rowCharScratch = CharArray(maxCols)
     private val singleCharBuf = CharArray(1)
+    private val spriteCharScratch = CharArray(32)
+    private val insectDayFrameA = charArrayOf('~', 'o', '~')
+    private val insectDayFrameB = charArrayOf('-', 'o', '-')
+    private val insectNightFrameA = charArrayOf(' ', '*', ' ')
+    private val insectNightFrameB = charArrayOf(' ', '·', ' ')
+
+    private fun drawTextZeroAlloc(canvas: Canvas, str: String, x: Float, y: Float, paint: Paint) {
+        val len = str.length.coerceAtMost(spriteCharScratch.size)
+        for (i in 0 until len) {
+            spriteCharScratch[i] = str[i]
+        }
+        canvas.drawText(spriteCharScratch, 0, len, x, y, paint)
+    }
+
+    private fun drawCharZeroAlloc(canvas: Canvas, ch: Char, x: Float, y: Float, paint: Paint) {
+        singleCharBuf[0] = ch
+        canvas.drawText(singleCharBuf, 0, 1, x, y, paint)
+    }
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.MONOSPACE
@@ -935,6 +953,9 @@ class PondSimulation {
     ) {
         val clampedDt = dt.coerceIn(0.001f, 0.05f)
         simTime += clampedDt
+        if (simTime >= 86400f) {
+            simTime -= 86400f
+        }
 
         if (config.waterlinePercent != currentWaterlinePct && canvas.width > 0 && canvas.height > 0) {
             configureGrid(canvas.width, canvas.height, config.gridDensity, config.waterlinePercent)
@@ -1155,7 +1176,7 @@ class PondSimulation {
                 drawStringAtGrid(rockCol + 1, splitRow - 1, "\\^/", pal.meniscusWaveFg)
             }
         } else {
-            shoreAmphibian.blinkPhase += clampedDt * 2.0f
+            shoreAmphibian.blinkPhase = (shoreAmphibian.blinkPhase + clampedDt * 2.0f) % 6.2831855f
             if (shoreAmphibian.tongueTimer > 0f) {
                 shoreAmphibian.tongueTimer = (shoreAmphibian.tongueTimer - clampedDt).coerceAtLeast(0f)
             }
@@ -1373,7 +1394,7 @@ class PondSimulation {
         // =========================================================================
         // 6. SURFACE-SKIMMING DRAGONFLY / NIGHT FIREFLIES
         // =========================================================================
-        surfaceInsect.phase += clampedDt * 5.5f
+        surfaceInsect.phase = (surfaceInsect.phase + clampedDt * 5.5f) % 62.831855f
         surfaceInsect.colX += surfaceInsect.vx * clampedDt
         if (surfaceInsect.colX > cols - 8) surfaceInsect.vx = -3.6f
         if (surfaceInsect.colX < 4f) surfaceInsect.vx = 3.6f
@@ -1381,13 +1402,13 @@ class PondSimulation {
 
         val insX = (surfaceInsect.colX + pShiftCols * 0.6f) * cellWidthPx
         val insY = surfaceInsect.rowY * cellHeightPx + baselineOffsetPx
-        val insectStr = if (snapshot.isNight) {
-            if (sin(surfaceInsect.phase * 2f) > 0f) " * " else " · "
+        val insectBuf = if (snapshot.isNight) {
+            if (sin(surfaceInsect.phase * 2f) > 0f) insectNightFrameA else insectNightFrameB
         } else {
-            if (sin(surfaceInsect.phase * 3f) > 0f) "~o~" else "-o-"
+            if (sin(surfaceInsect.phase * 3f) > 0f) insectDayFrameA else insectDayFrameB
         }
         textPaint.color = if (snapshot.isNight) pal.fishRose else pal.fishAqua
-        canvas.drawText(insectStr, insX, insY, textPaint)
+        canvas.drawText(insectBuf, 0, 3, insX, insY, textPaint)
 
         // =========================================================================
         // 7. NIGHTTIME BIOLUMINESCENT MOON JELLYFISH
@@ -1395,7 +1416,7 @@ class PondSimulation {
         if (snapshot.isNight) {
             for (j in nightJellies.indices) {
                 val jel = nightJellies[j]
-                jel.phase += clampedDt * 2.2f
+                jel.phase = (jel.phase + clampedDt * 2.2f) % 62.831855f
                 jel.rowY -= (0.9f + 0.5f * sin(jel.phase)) * clampedDt
                 jel.colX += cos(jel.phase * 0.6f + j) * 0.5f * clampedDt
 
@@ -1456,7 +1477,7 @@ class PondSimulation {
                     } else {
                         // Tug-of-war nibble around the algae wafer!
                         bf.pauseTimer = 0.15f
-                        bf.animPhase += clampedDt * 12f
+                        bf.animPhase = (bf.animPhase + clampedDt * 12f) % 6.2831855f
                     }
                 }
 
@@ -1465,7 +1486,7 @@ class PondSimulation {
                 } else {
                     val mult = if (attractTargetCol > 0f) 1.55f else 1.0f
                     bf.colX += bf.vxDir * bf.species.speedColsPerSec * mult * clampedDt
-                    bf.animPhase += clampedDt * 5.0f * mult
+                    bf.animPhase = (bf.animPhase + clampedDt * 5.0f * mult) % 6.2831855f
                     if (attractTargetCol < 0f && sin(simTime * 2.1f + bf.id * 3.7f) > 0.96f) {
                         bf.pauseTimer = 0.8f
                     }
@@ -1509,7 +1530,7 @@ class PondSimulation {
                 textPaint.color = bfColor
                 val bxPx = ((bf.colX + pShiftCols * 0.3f).coerceIn(1f, (cols - sprite.length - 1).toFloat())) * cellWidthPx
                 val byPx = critterRowFloat * cellHeightPx + baselineOffsetPx
-                canvas.drawText(sprite, bxPx, byPx, textPaint)
+                drawTextZeroAlloc(canvas, sprite, bxPx, byPx, textPaint)
             }
         }
 
@@ -1528,7 +1549,7 @@ class PondSimulation {
                 }
             } else {
                 predator.activeDuration += clampedDt
-                predator.animPhase += clampedDt * 7.5f
+                predator.animPhase = (predator.animPhase + clampedDt * 7.5f) % 6.2831855f
                 if (predator.chompTimer > 0f) {
                     predator.chompTimer = (predator.chompTimer - clampedDt).coerceAtLeast(0f)
                 }
@@ -1764,7 +1785,7 @@ class PondSimulation {
             f.colFrac = (f.colX / cols.toFloat()).coerceIn(0.02f, 0.94f)
 
             val actualSpd = hypot(f.vx, f.vy)
-            f.animPhase += clampedDt * (2.6f + actualSpd * 0.45f)
+            f.animPhase = (f.animPhase + clampedDt * (2.6f + actualSpd * 0.45f)) % 62.831855f
         }
 
         // =========================================================================
@@ -1817,13 +1838,13 @@ class PondSimulation {
                     val crownCol = clampedDrawCol + sw * 0.45f
                     val crownRow = f.rowY - (lines.size * 0.5f) - 0.4f
                     textPaint.color = pal.fishGold
-                    canvas.drawText("^", crownCol * cellWidthPx, crownRow * cellHeightPx + baselineOffsetPx, textPaint)
+                    drawCharZeroAlloc(canvas, '^', crownCol * cellWidthPx, crownRow * cellHeightPx + baselineOffsetPx, textPaint)
                 }
 
                 if (f.isEvading) {
                     val wakeCol = if (f.facingDir >= 0) clampedDrawCol - 1.5f else clampedDrawCol + sw + 0.5f
                     textPaint.color = pal.bubbleFg
-                    canvas.drawText("~", wakeCol * cellWidthPx, f.rowY * cellHeightPx + baselineOffsetPx, textPaint)
+                    drawCharZeroAlloc(canvas, '~', wakeCol * cellWidthPx, f.rowY * cellHeightPx + baselineOffsetPx, textPaint)
                 }
             }
         }

@@ -176,6 +176,29 @@ class WallpaperSettingsRepository(context: Context) {
             .apply()
     }
 
+    fun flushTelemetryBatch(
+        deltaCatches: Int,
+        deltaEscapes: Int,
+        deltaCrowns: Int,
+        lastEvent: String?
+    ) {
+        if (deltaCatches == 0 && deltaEscapes == 0 && deltaCrowns == 0 && lastEvent == null) return
+        val editor = prefs.edit()
+        if (deltaCatches > 0) {
+            editor.putInt(KEY_STAT_CATCHES, prefs.getInt(KEY_STAT_CATCHES, 0) + deltaCatches)
+        }
+        if (deltaEscapes > 0) {
+            editor.putInt(KEY_STAT_ESCAPES, prefs.getInt(KEY_STAT_ESCAPES, 0) + deltaEscapes)
+        }
+        if (deltaCrowns > 0) {
+            editor.putInt(KEY_STAT_CROWNS, prefs.getInt(KEY_STAT_CROWNS, 0) + deltaCrowns)
+        }
+        if (lastEvent != null) {
+            editor.putString(KEY_LAST_EVENT, lastEvent)
+        }
+        editor.apply()
+    }
+
     fun getTotalCatches(): Int = prefs.getInt(KEY_STAT_CATCHES, 0)
     fun getTotalEscapes(): Int = prefs.getInt(KEY_STAT_ESCAPES, 0)
     fun getTotalCrowns(): Int = prefs.getInt(KEY_STAT_CROWNS, 0)

@@ -19,14 +19,27 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
+/**
+ * Hardened Multi-Instance ASCII Split-View Live Wallpaper Service (`minamo`).
+ * - Each Engine instance (active wallpaper vs. concurrent system preview) runs on an isolated
+ *   uniquely named render thread (`MinamoAsciiThread-<id>`).
+ * - Synchronizes `onSurfaceDestroyed` with the render thread via `surfaceLock` and a bounded
+ *   `CountDownLatch` so `unlockCanvasAndPost` never races with native Surface destruction.
+ * - Batches telemetry writes in memory so zero `SharedPreferences` disk I/O occurs during active frames.
+ */
 class KoiPondWallpaperService : WallpaperService() {
 
-    override fun onCreateEngine(): Engine = AsciiPondEngine()
+    override fun onCreateEngine(): Engine = AsciiPondEngine(ENGINE_ID_GEN.incrementAndGet())
 
-    inner class AsciiPondEngine : Engine(),
+    inner class AsciiPondEngine(private val engineId: Int) : Engine(),
         SharedPreferences.OnSharedPreferenceChangeListener,
         SensorEventListener {
+
+        private val surfaceLock = Any()
 
         private lateinit var settingsRepo: WallpaperSettingsRepository
         @Volatile
@@ -61,14 +74,25 @@ class KoiPondWallpaperService : WallpaperService() {
 
         @Volatile
         private var isWallpaperVisible = false
+        @Volatile
         private var surfaceReady = false
+        @Volatile
+        private var isDestroyed = false
         private var lastFrameTimestampNs = 0L
         private var lastQuickTileSeq = 0
         private var touchDownTimeMs = 0L
         private var longPressTriggered = false
 
+        // In-memory telemetry batching (flushed on visibility pause or every 30s — zero per-frame disk I/O)
+        private var pendingCatches = 0
+        private var pendingEscapes = 0
+        private var pendingCrowns = 0
+        private var pendingLastEvent: String? = null
+        private var lastTelemetryFlushMs = 0L
+
         private val systemEventReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
+                if (isDestroyed) return
                 when (intent?.action) {
                     PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
                         updatePowerStates()
@@ -76,22 +100,27 @@ class KoiPondWallpaperService : WallpaperService() {
                     Intent.ACTION_SCREEN_OFF -> {
                         isDisplayInteractive = false
                         pauseRenderingImmediately()
+                        flushTelemetryIfNeeded(force = true)
                     }
                     Intent.ACTION_SCREEN_ON -> {
                         isDisplayInteractive = true
                         updatePowerStates()
-                        renderHandler?.post {
-                            simulation.randomizeEcosystemOnUnlock(System.nanoTime())
-                            lastFrameTimestampNs = SystemClock.elapsedRealtimeNanos()
-                            scheduleNextFrame()
+                        if (!isPreview) {
+                            renderHandler?.post {
+                                simulation.randomizeEcosystemOnUnlock(System.nanoTime())
+                                lastFrameTimestampNs = SystemClock.elapsedRealtimeNanos()
+                                scheduleNextFrame()
+                            }
                         }
                     }
                     Intent.ACTION_USER_PRESENT -> {
                         isDisplayInteractive = true
                         updatePowerStates()
-                        renderHandler?.post {
-                            simulation.randomizeEcosystemOnUnlock(System.nanoTime())
-                            scheduleNextFrame()
+                        if (!isPreview) {
+                            renderHandler?.post {
+                                simulation.randomizeEcosystemOnUnlock(System.nanoTime())
+                                scheduleNextFrame()
+                            }
                         }
                     }
                 }
@@ -117,38 +146,44 @@ class KoiPondWallpaperService : WallpaperService() {
                     PowerSaveMode.AUTO_SAVER -> isSystemBatterySaver
                     PowerSaveMode.OFF -> false
                 }
-                val holder = surfaceHolder
 
-                val canvas = try {
-                    holder.lockHardwareCanvas()
-                } catch (_: Throwable) {
-                    try {
-                        holder.lockCanvas()
+                // Synchronize canvas lock/unlock with surfaceLock so onSurfaceDestroyed never races mid-draw
+                synchronized(surfaceLock) {
+                    if (!surfaceReady || isDestroyed) return
+                    val holder = surfaceHolder
+                    val canvas = try {
+                        holder.lockHardwareCanvas()
                     } catch (_: Throwable) {
-                        null
+                        try {
+                            holder.lockCanvas()
+                        } catch (_: Throwable) {
+                            null
+                        }
+                    }
+
+                    if (canvas != null) {
+                        try {
+                            val px = (scrollOffsetX - 0.5f) * 1.2f + gyroTiltX * 0.6f
+                            val py = gyroTiltY * 0.6f
+                            simulation.updateAndRender(
+                                canvas = canvas,
+                                dt = dt,
+                                config = cfg,
+                                parallaxX = px,
+                                parallaxY = py,
+                                isBatterySaver = effectivePowerSaver,
+                                isWallpaperMode = true,
+                                batteryPercent = currentBatteryPct
+                            )
+                        } finally {
+                            try {
+                                holder.unlockCanvasAndPost(canvas)
+                            } catch (_: Throwable) {}
+                        }
                     }
                 }
 
-                if (canvas != null) {
-                    try {
-                        val px = (scrollOffsetX - 0.5f) * 1.2f + gyroTiltX * 0.6f
-                        val py = gyroTiltY * 0.6f
-                        simulation.updateAndRender(
-                            canvas = canvas,
-                            dt = dt,
-                            config = cfg,
-                            parallaxX = px,
-                            parallaxY = py,
-                            isBatterySaver = effectivePowerSaver,
-                            isWallpaperMode = true,
-                            batteryPercent = currentBatteryPct
-                        )
-                    } finally {
-                        try {
-                            holder.unlockCanvasAndPost(canvas)
-                        } catch (_: Throwable) {}
-                    }
-                }
+                flushTelemetryIfNeeded(force = false)
 
                 if (shouldRenderNow()) {
                     val targetFps = if (effectivePowerSaver) 15 else cfg.targetFps
@@ -161,8 +196,7 @@ class KoiPondWallpaperService : WallpaperService() {
         }
 
         private fun shouldRenderNow(): Boolean {
-            if (!surfaceReady) return false
-            if (!isWallpaperVisible) return false
+            if (isDestroyed || !surfaceReady || !isWallpaperVisible) return false
             if (currentConfig.pauseOnBackgroundAndScreenOff && !isDisplayInteractive) return false
             return true
         }
@@ -170,6 +204,26 @@ class KoiPondWallpaperService : WallpaperService() {
         private fun pauseRenderingImmediately() {
             unregisterGyro()
             renderHandler?.removeCallbacks(drawRunnable)
+        }
+
+        private fun flushTelemetryIfNeeded(force: Boolean) {
+            if (pendingCatches == 0 && pendingEscapes == 0 && pendingCrowns == 0 && pendingLastEvent == null) {
+                return
+            }
+            val nowMs = SystemClock.elapsedRealtime()
+            if (!force && nowMs - lastTelemetryFlushMs < 30_000L) {
+                return
+            }
+            lastTelemetryFlushMs = nowMs
+            val c = pendingCatches
+            val e = pendingEscapes
+            val cr = pendingCrowns
+            val ev = pendingLastEvent
+            pendingCatches = 0
+            pendingEscapes = 0
+            pendingCrowns = 0
+            pendingLastEvent = null
+            settingsRepo.flushTelemetryBatch(c, e, cr, ev)
         }
 
         override fun onCreate(surfaceHolder: SurfaceHolder) {
@@ -180,13 +234,20 @@ class KoiPondWallpaperService : WallpaperService() {
             settingsRepo = WallpaperSettingsRepository(this@KoiPondWallpaperService)
             currentConfig = settingsRepo.loadConfig()
             lastQuickTileSeq = settingsRepo.getQuickTileCommandSeq()
+            lastTelemetryFlushMs = SystemClock.elapsedRealtime()
 
             simulation.onHuntOutcomeListener = { caught, predName, preyName ->
-                if (caught) settingsRepo.recordCatchEvent(predName, preyName)
-                else settingsRepo.recordEscapeEvent(predName)
+                if (caught) {
+                    pendingCatches++
+                    pendingLastEvent = "! " + predName + " caught " + preyName
+                } else {
+                    pendingEscapes++
+                    pendingLastEvent = "ok: school evaded " + predName
+                }
             }
             simulation.onCrownLevelUpListener = { speciesName ->
-                settingsRepo.recordCrownKoiLevelUp(speciesName)
+                pendingCrowns++
+                pendingLastEvent = "* " + speciesName + " grew into elder crown!"
             }
             settingsRepo.registerListener(this)
 
@@ -215,7 +276,7 @@ class KoiPondWallpaperService : WallpaperService() {
             sensorManager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager
             gyroSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
-            val thread = HandlerThread("MinamoAsciiThread")
+            val thread = HandlerThread("MinamoAsciiThread-" + engineId.toString())
             thread.start()
             renderThread = thread
             renderHandler = Handler(thread.looper)
@@ -224,16 +285,19 @@ class KoiPondWallpaperService : WallpaperService() {
         override fun onSurfaceCreated(holder: SurfaceHolder) {
             super.onSurfaceCreated(holder)
             renderHandler?.post {
-                val frame = holder.surfaceFrame
-                surfaceWidth = frame.width().coerceAtLeast(320)
-                surfaceHeight = frame.height().coerceAtLeast(480)
-                simulation.configureGrid(
-                    surfaceWidth,
-                    surfaceHeight,
-                    currentConfig.gridDensity,
-                    currentConfig.waterlinePercent
-                )
-                surfaceReady = true
+                if (isDestroyed) return@post
+                synchronized(surfaceLock) {
+                    val frame = holder.surfaceFrame
+                    surfaceWidth = frame.width().coerceAtLeast(320)
+                    surfaceHeight = frame.height().coerceAtLeast(480)
+                    simulation.configureGrid(
+                        surfaceWidth,
+                        surfaceHeight,
+                        currentConfig.gridDensity,
+                        currentConfig.waterlinePercent
+                    )
+                    surfaceReady = true
+                }
                 lastFrameTimestampNs = 0L
                 scheduleNextFrame()
             }
@@ -242,20 +306,36 @@ class KoiPondWallpaperService : WallpaperService() {
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             super.onSurfaceChanged(holder, format, width, height)
             renderHandler?.post {
-                surfaceWidth = width.coerceAtLeast(320)
-                surfaceHeight = height.coerceAtLeast(480)
-                simulation.configureGrid(
-                    surfaceWidth,
-                    surfaceHeight,
-                    currentConfig.gridDensity,
-                    currentConfig.waterlinePercent
-                )
+                if (isDestroyed) return@post
+                synchronized(surfaceLock) {
+                    surfaceWidth = width.coerceAtLeast(320)
+                    surfaceHeight = height.coerceAtLeast(480)
+                    simulation.configureGrid(
+                        surfaceWidth,
+                        surfaceHeight,
+                        currentConfig.gridDensity,
+                        currentConfig.waterlinePercent
+                    )
+                }
             }
         }
 
         override fun onSurfaceDestroyed(holder: SurfaceHolder) {
             pauseRenderingImmediately()
-            surfaceReady = false
+            synchronized(surfaceLock) {
+                surfaceReady = false
+            }
+            // Wait up to 120ms for any queued render-thread work to drain before releasing the Surface
+            val latch = CountDownLatch(1)
+            val posted = renderHandler?.post {
+                flushTelemetryIfNeeded(force = true)
+                latch.countDown()
+            } ?: false
+            if (posted) {
+                try {
+                    latch.await(120L, TimeUnit.MILLISECONDS)
+                } catch (_: InterruptedException) {}
+            }
             super.onSurfaceDestroyed(holder)
         }
 
@@ -271,6 +351,9 @@ class KoiPondWallpaperService : WallpaperService() {
                 }
             } else {
                 pauseRenderingImmediately()
+                renderHandler?.post {
+                    flushTelemetryIfNeeded(force = true)
+                }
             }
         }
 
@@ -316,16 +399,20 @@ class KoiPondWallpaperService : WallpaperService() {
         }
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+            if (isDestroyed) return
             val newCfg = settingsRepo.loadConfig()
             currentConfig = newCfg
             val tileSeq = settingsRepo.getQuickTileCommandSeq()
             renderHandler?.post {
-                simulation.configureGrid(
-                    surfaceWidth,
-                    surfaceHeight,
-                    newCfg.gridDensity,
-                    newCfg.waterlinePercent
-                )
+                if (isDestroyed) return@post
+                synchronized(surfaceLock) {
+                    simulation.configureGrid(
+                        surfaceWidth,
+                        surfaceHeight,
+                        newCfg.gridDensity,
+                        newCfg.waterlinePercent
+                    )
+                }
                 if (tileSeq != lastQuickTileSeq) {
                     lastQuickTileSeq = tileSeq
                     if (tileSeq % 2 == 0) {
@@ -349,7 +436,11 @@ class KoiPondWallpaperService : WallpaperService() {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
         override fun onDestroy() {
+            isDestroyed = true
             pauseRenderingImmediately()
+            synchronized(surfaceLock) {
+                surfaceReady = false
+            }
             if (isReceiverRegistered) {
                 try {
                     unregisterReceiver(systemEventReceiver)
@@ -357,6 +448,7 @@ class KoiPondWallpaperService : WallpaperService() {
                 isReceiverRegistered = false
             }
             settingsRepo.unregisterListener(this)
+            flushTelemetryIfNeeded(force = true)
             renderHandler?.removeCallbacksAndMessages(null)
             renderThread?.quitSafely()
             renderThread = null
@@ -400,5 +492,9 @@ class KoiPondWallpaperService : WallpaperService() {
                 gyroTiltY = 0f
             }
         }
+    }
+
+    companion object {
+        private val ENGINE_ID_GEN = AtomicInteger(0)
     }
 }
