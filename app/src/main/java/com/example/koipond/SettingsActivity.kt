@@ -406,15 +406,12 @@ class SettingsActivity : AppCompatActivity() {
         val catches = repository.getTotalCatches()
         val escapes = repository.getTotalEscapes()
         val lastEv = repository.getLastEvent()
+        val nl = 10.toChar()
         textAboutTelemetry.text =
-            "predator catches ... $catches
-" +
-            "school escapes ..... $escapes
-" +
-            "last hunt event .... $lastEv
-" +
-            "blood plume ........ @#% -> *:~ -> ·
-" +
+            "predator catches ... " + catches.toString() + nl +
+            "school escapes ..... " + escapes.toString() + nl +
+            "last hunt event .... " + lastEv + nl +
+            "blood plume ........ @#% -> *:~ -> ." + nl +
             "font engine ........ bundled monospace ttf"
     }
 
