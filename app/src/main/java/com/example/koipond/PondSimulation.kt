@@ -298,7 +298,9 @@ enum class PredatorSpecies(
     val rightChomp: Array<String>,
     val leftFrameA: Array<String>,
     val leftFrameB: Array<String>,
-    val leftChomp: Array<String>
+    val leftChomp: Array<String>,
+    val frontChargeFrame: Array<String>, // Charging straight from the deep abyss (+Z -> -Z) toward camera!
+    val rearRetreatFrame: Array<String>  // Swimming away into the deep background (-Z -> +Z)!
 ) {
     BARRACUDA_PIKE(
         id = 0,
@@ -333,6 +335,16 @@ enum class PredatorSpecies(
             "     _.._    ",
             " }}=º===)))><",
             "     '--'    "
+        ),
+        frontChargeFrame = arrayOf(
+            "   _.--._   ",
+            " <((ºVVº))> ",
+            "   '-..-'   "
+        ),
+        rearRetreatFrame = arrayOf(
+            "    _.._    ",
+            "   (|XX|)   ",
+            "    '--'    "
         )
     ),
     REEF_SHARK(
@@ -368,6 +380,16 @@ enum class PredatorSpecies(
             "   ___|\\     ",
             "  }}==<º(((><",
             "      \\/     "
+        ),
+        frontChargeFrame = arrayOf(
+            "     /|\\     ",
+            "  /((ºVº))\\  ",
+            "    \\vvv/    "
+        ),
+        rearRetreatFrame = arrayOf(
+            "     /|\\     ",
+            "   ((|X|))   ",
+            "     \\|/     "
         )
     ),
     SWORDFISH(
@@ -403,6 +425,16 @@ enum class PredatorSpecies(
             "      __|\\    ",
             " -}}===<º(((><",
             "        \\/    "
+        ),
+        frontChargeFrame = arrayOf(
+            "     /|\\     ",
+            "  <((º+º))>  ",
+            "     \\|/     "
+        ),
+        rearRetreatFrame = arrayOf(
+            "     /|\\     ",
+            "    (|X|)    ",
+            "     \\|/     "
         )
     ),
     ELECTRIC_MORAY(
@@ -414,7 +446,16 @@ enum class PredatorSpecies(
         rightChomp  = arrayOf(" ~^~^~==º{{"),
         leftFrameA  = arrayOf(" >º==~^~^~ "),
         leftFrameB  = arrayOf(" =º==^~^~^ "),
-        leftChomp   = arrayOf("}}º==~^~^~ ")
+        leftChomp   = arrayOf("}}º==~^~^~ "),
+        frontChargeFrame = arrayOf(
+            "   .~^~.   ",
+            "  ((ºVº))  ",
+            "   '~v~'   "
+        ),
+        rearRetreatFrame = arrayOf(
+            "   .~^~.   ",
+            "   ((x))   "
+        )
     )
 }
 
@@ -427,6 +468,8 @@ enum class BottomFeederSpecies(
     val rightFrameB: String,
     val leftFrameA: String,
     val leftFrameB: String,
+    val frontCrawl: String, // Crawling down the 3D bank toward the front glass
+    val rearClimb: String,  // Climbing up the 3D bank into the deep trench
     val defensiveSnap: String
 ) {
     RIVER_CRAB(
@@ -438,6 +481,8 @@ enum class BottomFeederSpecies(
         rightFrameB = "(/)(°_°)(\\)",
         leftFrameA  = "(\\/)(°_°)(\\/)",
         leftFrameB  = "(/)(°_°)(\\)",
+        frontCrawl  = "(\\/)(º_º)(\\/)",
+        rearClimb   = "(/) (_._) (\\)",
         defensiveSnap = "\\(V)/(°^°)\\(V)/"
     ),
     CHERRY_SHRIMP(
@@ -449,6 +494,8 @@ enum class BottomFeederSpecies(
         rightFrameB = ".=/>°",
         leftFrameA  = "°<\\=,",
         leftFrameB  = "°<\\=.",
+        frontCrawl  = "/(°_°)/",
+        rearClimb   = " \\(=)/ ",
         defensiveSnap = "!/>°"
     ),
     CORY_CATFISH(
@@ -460,6 +507,8 @@ enum class BottomFeederSpecies(
         rightFrameB = "}))º>~",
         leftFrameA  = "=<º((<",
         leftFrameB  = "~<º(({",
+        frontCrawl  = "=(º_º)=",
+        rearClimb   = " (|x|) ",
         defensiveSnap = ">))º>!"
     ),
     APPLE_SNAIL(
@@ -471,6 +520,8 @@ enum class BottomFeederSpecies(
         rightFrameB = "@_'",
         leftFrameA  = "\\_@",
         leftFrameB  = "'_@",
+        frontCrawl  = "(@)",
+        rearClimb   = "(_)",
         defensiveSnap = "(@)"
     )
 }
@@ -503,8 +554,13 @@ class AsciiFishAgent(
 class PredatorAgent(
     var active: Boolean = false,
     var species: PredatorSpecies = PredatorSpecies.BARRACUDA_PIKE,
+    var ambushStyle: Int = 0, // 0 = Lateral X Sweep, 1 = Deep Abyss +Z -> -Z Charge, 2 = Diagonal 3D Dive/Ascent
     var colX: Float = -16f,
     var rowY: Float = 25f,
+    var zDepth: Float = 0.25f,
+    var vx: Float = 10f,
+    var vy: Float = 0f,
+    var vz: Float = 0f,
     var vxDir: Float = 1f,
     var vySpeed: Float = 0f,
     var animPhase: Float = 0f,
@@ -520,8 +576,10 @@ class BloodParticle(
     var isScale: Boolean = false,
     var colX: Float = 0f,
     var rowY: Float = 0f,
+    var zDepth: Float = 0.25f,
     var vx: Float = 0f,
     var vy: Float = 0f,
+    var vz: Float = 0f,
     var age: Float = 0f,
     var maxAge: Float = 2.4f
 )
@@ -531,7 +589,10 @@ class BottomFeederAgent(
     var species: BottomFeederSpecies,
     var colX: Float,
     var rowY: Float,
-    var preferredTier: Int, // 0..4 vertical tier along the sloped riverbed bank
+    var zDepth: Float = 0.35f, // Coupled to riverbed slope + active Z crawling
+    var preferredTier: Int,    // 0..4 vertical tier along the sloped riverbed bank
+    var zRoamTimer: Float = 0f,
+    var zRoamTargetTier: Float = 0f,
     var vx: Float,
     var vy: Float,
     var vxDir: Float,
@@ -543,6 +604,7 @@ class BottomFeederAgent(
 class NightJellyfish(
     var colX: Float,
     var rowY: Float,
+    var zDepth: Float = 0.45f,
     var phase: Float
 )
 
@@ -604,7 +666,8 @@ class AsciiBubble(
 class FoodPellet(
     var colX: Float = 0f,
     var rowY: Float = 0f,
-    var isHeavyAlgaeWafer: Boolean = false, // `[@]` dropped via long-press for bottom feeders!
+    var zDepth: Float = 0.30f, // 3D depth based on tap position!
+    var isHeavyAlgaeWafer: Boolean = false,
     var restTimer: Float = 0f,
     var active: Boolean = false
 )
@@ -659,9 +722,10 @@ class PondSimulation {
     }
 
     val nightJellies = arrayOf(
-        NightJellyfish(18f, 45f, 0.0f),
-        NightJellyfish(58f, 68f, 2.4f)
+        NightJellyfish(18f, 45f, 0.32f, 0.0f),
+        NightJellyfish(58f, 68f, 0.72f, 2.4f)
     )
+    private val bfDrawOrder = IntArray(maxBottomFeeders) { it }
 
     val surfaceInsect = SurfaceInsect()
     val shoreAmphibian = ShorelineAmphibian()
@@ -904,16 +968,54 @@ class PondSimulation {
         predator.willCatchThisVisit = rand.nextFloat() < catchProbability
         predator.chompTimer = 0f
 
-        val fromLeft = rand.nextBoolean()
-        predator.vxDir = if (fromLeft) 1f else -1f
-        predator.colX = if (fromLeft) -16f else (gridCols + 2).toFloat()
-        val minR = (waterlineRow + 8).coerceAtMost(gridRows - 20)
-        val maxR = (gridRows - 14).coerceAtLeast(minR + 6)
-        predator.rowY = minR + rand.nextFloat() * (maxR - minR)
-        predator.vySpeed = 0f
+        val minR = (waterlineRow + 7).coerceAtMost(gridRows - 20)
+        val maxR = (gridRows - 12).coerceAtLeast(minR + 8)
+
+        // Pick 1 of 3 3D Ambush Axes:
+        //   0 = Lateral X Sweep at a random 3D depth plane
+        //   1 = Deep Abyss (+Z -> -Z "Jaws" Charge straight out of the background canyon toward the glass!)
+        //   2 = Diagonal 3D Dive / Trench Ascent (simultaneous X + Y + Z pursuit!)
+        val style = rand.nextInt(3)
+        predator.ambushStyle = style
+
+        when (style) {
+            1 -> {
+                // Deep Abyss Charge (+Z -> -Z): Spawns inside the water column far away at zDepth = 0.94!
+                predator.colX = (gridCols * (0.24f + rand.nextFloat() * 0.52f))
+                predator.rowY = minR + rand.nextFloat() * (maxR - minR)
+                predator.zDepth = 0.94f
+                predator.vxDir = if (rand.nextBoolean()) 1f else -1f
+                predator.vx = predator.vxDir * (sp.speedColsPerSec * 0.35f)
+                predator.vy = 0f
+                predator.vz = -0.38f // Charges rapidly toward the front glass!
+            }
+            2 -> {
+                // Diagonal 3D Dive (from upper sunlit surface) or Trench Ascent (from deep floor)
+                val fromLeft = rand.nextBoolean()
+                val diveDown = rand.nextBoolean()
+                predator.vxDir = if (fromLeft) 1f else -1f
+                predator.colX = if (fromLeft) -14f else (gridCols + 2).toFloat()
+                predator.rowY = if (diveDown) minR.toFloat() else maxR.toFloat()
+                predator.zDepth = if (diveDown) 0.78f else 0.14f
+                predator.vx = predator.vxDir * sp.speedColsPerSec
+                predator.vy = if (diveDown) 4.5f else -4.5f
+                predator.vz = if (diveDown) -0.18f else 0.18f
+            }
+            else -> {
+                // Classic Lateral X Sweep at a random Z-depth plane
+                val fromLeft = rand.nextBoolean()
+                predator.vxDir = if (fromLeft) 1f else -1f
+                predator.colX = if (fromLeft) -16f else (gridCols + 2).toFloat()
+                predator.rowY = minR + rand.nextFloat() * (maxR - minR)
+                predator.zDepth = 0.12f + rand.nextFloat() * 0.65f
+                predator.vx = predator.vxDir * sp.speedColsPerSec
+                predator.vy = 0f
+                predator.vz = 0f
+            }
+        }
     }
 
-    private fun spawnBloodPlume(catchCol: Float, catchRow: Float) {
+    private fun spawnBloodPlume(catchCol: Float, catchRow: Float, catchZ: Float = 0.25f) {
         lastBloodSiteCol = catchCol
         lastBloodSiteTimer = 8.0f
 
@@ -927,8 +1029,11 @@ class PondSimulation {
 
             bp.colX = catchCol + cos(angle) * 0.8f
             bp.rowY = catchRow + sin(angle) * 0.5f
+            bp.zDepth = catchZ.coerceIn(0.08f, 0.88f)
             bp.vx = cos(angle) * speed
             bp.vy = if (bp.isScale) (2.4f + (idx % 2) * 1.1f) else (sin(angle) * speed * 0.65f - 0.35f)
+            // 3D Z-velocity: some blood/scales drift toward the front glass while others drift deeper!
+            bp.vz = ((idx % 5) - 2) * 0.08f
             bp.maxAge = if (bp.isScale) 3.4f else (1.8f + (idx % 4) * 0.35f)
         }
 
@@ -964,16 +1069,15 @@ class PondSimulation {
         val p = pellets[nextPelletIdx]
         p.colX = c
         p.rowY = r.coerceAtLeast(waterlineRow.toFloat() + 1f)
+        // Map tap vertical height to 3D Z-depth (tapping higher near the horizon drops deeper in Z)
+        val uSpan = (gridRows - waterlineRow).coerceAtLeast(20).toFloat()
+        p.zDepth = (1f - ((p.rowY - waterlineRow) / uSpan)).coerceIn(0.12f, 0.82f)
         p.isHeavyAlgaeWafer = false
         p.restTimer = 0f
         p.active = true
         nextPelletIdx = (nextPelletIdx + 1) % pellets.size
     }
 
-    /**
-     * Long-press: Drops a heavy sinking Algae Wafer (`[@]`) straight to the riverbed pebbles,
-     * drawing all bottom feeders (River Crabs, Cherry Shrimp, Cory Catfish) into a tug-of-war feast!
-     */
     fun onLongPress(screenX: Float, screenY: Float) {
         val c = (screenX / cellWidthPx).coerceIn(4f, (gridCols - 5).toFloat())
         val r = (screenY / cellHeightPx).coerceIn(2f, (gridRows - 4).toFloat())
@@ -981,8 +1085,10 @@ class PondSimulation {
         val p = pellets[nextPelletIdx]
         p.colX = c
         p.rowY = r.coerceAtLeast(waterlineRow.toFloat() + 1f)
+        val uSpan = (gridRows - waterlineRow).coerceAtLeast(20).toFloat()
+        p.zDepth = (1f - ((p.rowY - waterlineRow) / uSpan)).coerceIn(0.12f, 0.78f)
         p.isHeavyAlgaeWafer = true
-        p.restTimer = 9.0f // Sits on the riverbed for 9s while crabs & shrimp feast on it
+        p.restTimer = 9.0f
         p.active = true
         nextPelletIdx = (nextPelletIdx + 1) % pellets.size
     }
@@ -1442,13 +1548,15 @@ class PondSimulation {
         }
 
         var activeWaferCol = -1f
+        var activeWaferZ = 0.35f
         for (i in pellets.indices) {
             val pel = pellets[i]
             if (!pel.active) continue
+            val targetFloorAtZ = (floorRow - 0.6f - pel.zDepth * 4.5f)
+            val sinkScale = 1.15f - pel.zDepth * 0.45f
             if (pel.isHeavyAlgaeWafer) {
-                // Heavy algae wafer sinks fast to `floorRow - 1` and rests there for bottom feeders!
-                if (pel.rowY < floorRow - 1) {
-                    pel.rowY = (pel.rowY + 9.5f * clampedDt).coerceAtMost((floorRow - 1).toFloat())
+                if (pel.rowY < targetFloorAtZ) {
+                    pel.rowY = (pel.rowY + 9.5f * sinkScale * clampedDt).coerceAtMost(targetFloorAtZ)
                 } else {
                     pel.restTimer -= clampedDt
                     if (pel.restTimer <= 0f) {
@@ -1457,14 +1565,17 @@ class PondSimulation {
                 }
                 if (pel.active) {
                     activeWaferCol = pel.colX
-                    drawStringAtGrid(pel.colX.roundToInt() - 1, pel.rowY.roundToInt(), "[@]", pal.lilyPadFg)
+                    activeWaferZ = pel.zDepth
+                    val wCol = TimeOfDayPalette.lerpColor(pal.lilyPadFg, pal.waterBgDeep, pel.zDepth * 0.55f)
+                    drawStringAtGrid(pel.colX.roundToInt() - 1, pel.rowY.roundToInt(), "[@]", wCol)
                 }
             } else {
-                pel.rowY += 3.2f * clampedDt
-                if (pel.rowY >= floorRow - 1) {
+                pel.rowY += 3.2f * sinkScale * clampedDt
+                if (pel.rowY >= targetFloorAtZ) {
                     pel.active = false
                 } else {
-                    setCell(pel.colX.roundToInt(), pel.rowY.roundToInt(), '*', pal.fishGold)
+                    val pCol = TimeOfDayPalette.lerpColor(pal.fishGold, pal.waterBgDeep, pel.zDepth * 0.55f)
+                    setCell(pel.colX.roundToInt(), pel.rowY.roundToInt(), '*', pCol)
                 }
             }
         }
@@ -1589,6 +1700,8 @@ class PondSimulation {
                 jel.phase = (jel.phase + clampedDt * 2.2f) % 62.831855f
                 jel.rowY -= (0.9f + 0.5f * sin(jel.phase)) * clampedDt
                 jel.colX += cos(jel.phase * 0.6f + j) * 0.5f * clampedDt
+                // 3D Depth Pulsing: Jellyfish slowly drift toward and away from the front glass!
+                jel.zDepth = (0.48f + 0.36f * sin(jel.phase * 0.25f + j * 2.1f)).coerceIn(0.10f, 0.88f)
 
                 if (jel.rowY < splitRow + 6) {
                     jel.rowY = (floorRow - 6).toFloat()
@@ -1598,15 +1711,16 @@ class PondSimulation {
                 } else {
                     arrayOf("  ..  ", " (oo) ", "  ||  ")
                 }
+                val jelParallax = 0.85f - jel.zDepth * 0.65f
                 drawSubPixelSprite(
-                    colFloat = jel.colX + pShiftCols * 0.3f,
+                    colFloat = jel.colX + pShiftCols * jelParallax,
                     rowFloat = jel.rowY,
                     lines = jLines,
                     bodyColor = pal.fishAqua,
                     finColor = pal.fishRose,
                     eyeColor = pal.fishFoam,
                     isDimmedLayer = false,
-                    zDepth = 0.48f + j * 0.22f
+                    zDepth = jel.zDepth
                 )
             }
         }
@@ -1620,18 +1734,35 @@ class PondSimulation {
 
         if (config.enableBottomFeeders) {
             val activeFeeders = if (isBatterySaver) 3 else maxBottomFeeders
-            val minBedRow = (floorRow - 5).toFloat().coerceAtLeast((splitRow + 10).toFloat())
-            val maxBedRow = (floorRow - 0.4f)
+            // Gyroscope vertical tilt (`parallaxY`) subtly expands/compresses the 3D riverbed slope!
+            val tiltSlopeStretch = (1.0f + parallaxY * 0.18f).coerceIn(0.82f, 1.22f)
+            val minBedRow = (floorRow - 5.2f * tiltSlopeStretch).coerceAtLeast((splitRow + 10).toFloat())
+            val maxBedRow = (floorRow - 0.35f)
+            val bedSpan = (maxBedRow - minBedRow).coerceAtLeast(2.5f)
 
             for (b in 0 until activeFeeders) {
                 val bf = bottomFeeders[b]
                 bf.isSnappingAtPredator = false
 
-                // Each critter has its own home depth tier along the sloped riverbed bank
-                val homeTierRow = (floorRow - 0.6f - bf.preferredTier * 1.05f).coerceIn(minBedRow, maxBedRow)
+                // Periodically crawl up or down the 3D riverbed bank (changing Z-depth tier!)
+                if (bf.zRoamTimer > 0f) {
+                    bf.zRoamTimer = (bf.zRoamTimer - clampedDt).coerceAtLeast(0f)
+                } else if (sin(simTime * 0.9f + bf.id * 2.7f) > 0.96f) {
+                    bf.zRoamTimer = 2.4f
+                    bf.zRoamTargetTier = ((bf.preferredTier + 2) % 5).toFloat()
+                }
+                val activeTier = if (bf.zRoamTimer > 0f) bf.zRoamTargetTier else bf.preferredTier.toFloat()
+                val homeTierRow = (maxBedRow - (activeTier / 4.0f) * bedSpan).coerceIn(minBedRow, maxBedRow)
 
-                // Territorial Crab Standoff when predator dives near the riverbed
-                if (predator.active && predator.rowY > floorRow - 18 && abs(predator.colX + 5f - bf.colX) < 16f) {
+                // Couple zDepth directly to where the critter is on the sloped riverbed:
+                //   rowY near maxBedRow (bottom glass) -> zDepth = 0.08 (1.14x scale, bright)
+                //   rowY near minBedRow (upper terrace) -> zDepth = 0.82 (0.70x scale, deep fog)
+                bf.zDepth = (((maxBedRow - bf.rowY) / bedSpan) * 0.74f + 0.08f).coerceIn(0.06f, 0.86f)
+
+                if (predator.active && predator.rowY > floorRow - 18 &&
+                    abs(predator.colX + 5f - bf.colX) < 16f &&
+                    abs(predator.zDepth - bf.zDepth) < 0.35f
+                ) {
                     bf.isSnappingAtPredator = true
                     predator.rowY = (predator.rowY - 8.5f * clampedDt).coerceAtLeast((splitRow + 6).toFloat())
                 }
@@ -1646,35 +1777,37 @@ class PondSimulation {
                 val minC = 2.0f
                 val maxC = (cols - spriteLen - 2.0f).coerceAtLeast(minC + 4f)
 
-                val baseSpd = bf.species.speedColsPerSec
-                var desiredVx = bf.vxDir * baseSpd
-                // Shrimp & Catfish gently bob/hop along the slope; Crabs & Snails hug their terrace
+                // Perspective speed scaling: deeper critters on the upper terrace appear to move slower
+                val perspSpd = bf.species.speedColsPerSec * (1.12f - bf.zDepth * 0.45f)
+                val zCrawlDamp = if (abs(bf.vy) > 0.45f) 0.35f else 1.0f
+                var desiredVx = bf.vxDir * perspSpd * zCrawlDamp
+
                 val hopBob = if (bf.species == BottomFeederSpecies.CHERRY_SHRIMP || bf.species == BottomFeederSpecies.CORY_CATFISH) {
-                    sin(simTime * 2.8f + bf.id * 1.9f) * 0.65f
+                    sin(simTime * 2.8f + bf.id * 1.9f) * 0.55f
                 } else {
                     0f
                 }
-                var desiredVy = (homeTierRow - bf.rowY) * 2.4f + hopBob
+                var desiredVy = (homeTierRow - bf.rowY) * 2.2f + hopBob
 
                 if (attractCenterCol > 0f && !bf.isSnappingAtPredator) {
-                    // Form a non-overlapping 2D semi-circle around the algae wafer / scales
-                    // so critters never pile onto the same coordinate!
                     val ringSlotOffset = (b - 2) * 4.5f
                     val targetSlotCol = (attractCenterCol + ringSlotOffset).coerceIn(minC, maxC)
+                    val targetWaferRow = (maxBedRow - activeWaferZ * bedSpan).coerceIn(minBedRow, maxBedRow)
+                    desiredVy = (targetWaferRow - bf.rowY) * 2.5f
                     val dxSlot = targetSlotCol - bf.colX
                     if (abs(dxSlot) > 1.2f) {
                         bf.vxDir = if (dxSlot >= 0f) 1f else -1f
-                        desiredVx = bf.vxDir * baseSpd * 1.45f
+                        desiredVx = bf.vxDir * perspSpd * 1.45f
                     } else {
                         desiredVx = 0f
                         bf.animPhase = (bf.animPhase + clampedDt * 10f) % 6.2831855f
                     }
                 }
 
-                // Smooth 2D Vertical & Horizontal Passing (Critters step/hop around each other — never stuck!)
                 for (otherIdx in 0 until activeFeeders) {
                     if (b == otherIdx) continue
                     val other = bottomFeeders[otherIdx]
+                    if (abs(bf.zDepth - other.zDepth) > 0.26f) continue
                     val otherLen = other.species.rightFrameA.length
 
                     val centerA = bf.colX + spriteLen * 0.5f
@@ -1683,27 +1816,24 @@ class PondSimulation {
                     val dy = bf.rowY - other.rowY
 
                     val safeX = (spriteLen + otherLen) * 0.55f + 2.0f
-                    val safeY = 1.35f
+                    val safeY = 1.25f
 
                     if (abs(dx) < safeX && abs(dy) < safeY) {
-                        // Separate vertically into distinct riverbed tiers so they pass cleanly over/under each other!
                         val pushSignY = if (bf.preferredTier > other.preferredTier) -1f else 1f
                         val overlapY = (safeY - abs(dy)) / safeY
-                        desiredVy += pushSignY * overlapY * 4.8f
+                        desiredVy += pushSignY * overlapY * 4.5f
 
-                        // Gentle horizontal nudge without flipping vxDir back and forth
                         val pushSignX = if (dx >= 0f) 1f else -1f
                         desiredVx += pushSignX * ((safeX - abs(dx)) / safeX) * 1.6f
                     }
                 }
 
-                // Turn smoothly before left/right screen boundaries
                 if (bf.vxDir > 0f && bf.colX >= maxC - 0.8f) {
                     bf.vxDir = -1f
-                    desiredVx = -baseSpd
+                    desiredVx = -perspSpd
                 } else if (bf.vxDir < 0f && bf.colX <= minC + 0.8f) {
                     bf.vxDir = 1f
-                    desiredVx = baseSpd
+                    desiredVx = perspSpd
                 }
 
                 val smoothRate = (clampedDt * 7.0f).coerceIn(0.05f, 1.0f)
@@ -1717,14 +1847,32 @@ class PondSimulation {
 
                 val moveSpd = hypot(bf.vx, bf.vy)
                 bf.animPhase = (bf.animPhase + clampedDt * (2.2f + moveSpd * 1.6f)) % 6.2831855f
+            }
 
+            // Sort bottom feeders back-to-front by zDepth (deepest on upper terrace drawn first!)
+            for (i in 1 until activeFeeders) {
+                val key = bfDrawOrder[i]
+                val keyZ = bottomFeeders[key].zDepth
+                var j = i - 1
+                while (j >= 0 && bottomFeeders[bfDrawOrder[j]].zDepth < keyZ) {
+                    bfDrawOrder[j + 1] = bfDrawOrder[j]
+                    j--
+                }
+                bfDrawOrder[j + 1] = key
+            }
+
+            for (orderIdx in 0 until activeFeeders) {
+                val bf = bottomFeeders[bfDrawOrder[orderIdx]]
                 val frameB = sin(bf.animPhase) > 0f
+                // Display 3D foreshortened Front-Crawl or Rear-Climb sprite when moving steeply along Z!
                 val sprite = when {
                     bf.isSnappingAtPredator -> bf.species.defensiveSnap
+                    bf.vy > 0.55f -> bf.species.frontCrawl // Crawling down slope toward front glass!
+                    bf.vy < -0.55f -> bf.species.rearClimb // Climbing up slope into deep trench!
                     bf.vxDir >= 0f -> if (frameB) bf.species.rightFrameB else bf.species.rightFrameA
                     else -> if (frameB) bf.species.leftFrameB else bf.species.leftFrameA
                 }
-                val bfColor = when {
+                val rawColor = when {
                     bf.isSnappingAtPredator -> pal.fishGold
                     bf.species.colorRole == 0 -> pal.fishCoral
                     bf.species.colorRole == 1 -> pal.fishAqua
@@ -1732,11 +1880,17 @@ class PondSimulation {
                     bf.species.colorRole == 3 -> pal.fishFoam
                     else -> pal.fishRose
                 }
-                textPaint.color = bfColor
-                val bxPx = ((bf.colX + pShiftCols * 0.3f).coerceIn(1f, (cols - sprite.length - 1).toFloat())) * cellWidthPx
+                // Apply 3D Perspective Font Scale (`0.70x` on far upper terrace .. `1.14x` near front glass) + Beer-Lambert Fog!
+                val bfScale = 1.16f - bf.zDepth * 0.54f
+                textPaint.textSize = baseTextSizePx * bfScale
+                textPaint.color = TimeOfDayPalette.lerpColor(rawColor, pal.waterBgDeep, bf.zDepth * 0.62f)
+
+                val bfParallax = 0.85f - bf.zDepth * 0.60f
+                val bxPx = ((bf.colX + pShiftCols * bfParallax).coerceIn(1f, (cols - sprite.length - 1).toFloat())) * cellWidthPx
                 val byPx = bf.rowY * cellHeightPx + baselineOffsetPx
                 drawTextZeroAlloc(canvas, sprite, bxPx, byPx, textPaint)
             }
+            textPaint.textSize = baseTextSizePx
         }
 
         // =========================================================================
@@ -1760,47 +1914,82 @@ class PondSimulation {
                 }
 
                 var targetFish: AsciiFishAgent? = null
-                var minDist = 999f
+                var minDist3D = 999f
                 if (!predator.hasCaughtThisVisit) {
                     for (i in 0 until totalMaxFish) {
                         val f = fish[i]
-                        if (f.respawnTimer > 0f || f.isElderCrown) continue // Predators never attack Elder Crown fish!
+                        if (f.respawnTimer > 0f || f.isElderCrown) continue
                         if (!f.isSchooler && i >= activeHero) continue
                         if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
 
+                        // In Ambush Style 1 (+Z -> -Z charge from abyss), predator can lock onto any fish in front of it!
                         val ahead = (f.colX - predator.colX) * predator.vxDir
-                        if (ahead > -3f) {
-                            val d = hypot(f.colX - predator.colX, (f.rowY - predator.rowY) * 1.3f)
-                            if (d < minDist) {
-                                minDist = d
+                        if (predator.ambushStyle == 1 || ahead > -4f) {
+                            val d2 = hypot(f.colX - predator.colX, (f.rowY - predator.rowY) * 1.3f)
+                            val dz = abs(f.zDepth - predator.zDepth) * 24f
+                            val d3 = hypot(d2, dz)
+                            if (d3 < minDist3D) {
+                                minDist3D = d3
                                 targetFish = f
                             }
                         }
                     }
                 }
 
-                val predatorMouthX = if (predator.vxDir >= 0f) {
+                val lungeMult = if (targetFish != null && minDist3D < 14f && predator.willCatchThisVisit) 1.42f else 1.0f
+                val perspSpdScale = 1.15f - predator.zDepth * 0.45f
+
+                if (targetFish != null && !predator.hasCaughtThisVisit) {
+                    val tx = targetFish.colX
+                    val ty = targetFish.rowY
+                    val tz = targetFish.zDepth
+
+                    // If charging from the deep abyss (style 1), steer horizontally & vertically toward target while rushing forward in Z!
+                    if (predator.ambushStyle == 1 && predator.zDepth > tz + 0.14f) {
+                        val dx = (tx - predator.colX).coerceIn(-6f, 6f)
+                        val dy = (ty - predator.rowY).coerceIn(-5f, 5f)
+                        predator.vx = dx * 1.6f
+                        predator.vy = dy * 1.6f
+                        predator.vz = -0.38f * lungeMult
+                        if (dx != 0f) predator.vxDir = if (dx >= 0f) 1f else -1f
+                    } else {
+                        // Bank into 3D pursuit across X, Y, and Z!
+                        predator.vx = predator.vxDir * predator.species.speedColsPerSec * perspSpdScale * lungeMult
+                        val dy = (ty - predator.rowY).coerceIn(-5.5f, 5.5f)
+                        predator.vy = dy * (if (lungeMult > 1f) 2.5f else 1.6f)
+                        val dz = (tz - predator.zDepth).coerceIn(-0.35f, 0.35f)
+                        predator.vz = dz * 1.5f
+                    }
+                } else if (predator.hasCaughtThisVisit && predator.chompTimer <= 0f) {
+                    // After catching prey, predator can bank away into the deep abyss (+Z retreat) or cruise out!
+                    if (predator.ambushStyle == 1) {
+                        predator.vz = 0.34f
+                        predator.vx = predator.vxDir * predator.species.speedColsPerSec * 0.45f
+                    }
+                }
+
+                predator.colX += predator.vx * clampedDt
+                predator.rowY = (predator.rowY + predator.vy * clampedDt).coerceIn(minFishRow, maxFishRow)
+                predator.zDepth = (predator.zDepth + predator.vz * clampedDt).coerceIn(0.06f, 0.96f)
+
+                val predatorMouthX = if (abs(predator.vz) > 0.22f) {
+                    predator.colX + predator.species.frontChargeFrame[0].length * 0.5f
+                } else if (predator.vxDir >= 0f) {
                     predator.colX + predator.species.rightFrameA[0].length - 2f
                 } else {
                     predator.colX + 2f
                 }
 
-                val lungeMult = if (targetFish != null && minDist < 12f && predator.willCatchThisVisit) 1.42f else 1.0f
-                val targetY = targetFish?.rowY ?: predator.rowY
-                val dy = (targetY - predator.rowY).coerceIn(-5.5f, 5.5f)
-
-                predator.colX += predator.vxDir * predator.species.speedColsPerSec * lungeMult * clampedDt
-                predator.rowY = (predator.rowY + dy * (if (lungeMult > 1f) 2.6f else 1.6f) * clampedDt)
-                    .coerceIn(minFishRow, maxFishRow)
-
+                // 3D Jaw-Snap Catch Check (must match X, Y, AND Z-depth plane!)
                 if (!predator.hasCaughtThisVisit && predator.willCatchThisVisit && targetFish != null) {
                     val fishCenterX = targetFish.colX + targetFish.species.rightFrameA[0].length * 0.5f
-                    val contactDist = hypot(fishCenterX - predatorMouthX, (targetFish.rowY - predator.rowY) * 1.2f)
-                    if (contactDist < 3.6f) {
+                    val contactDist2D = hypot(fishCenterX - predatorMouthX, (targetFish.rowY - predator.rowY) * 1.2f)
+                    val zDiff = abs(targetFish.zDepth - predator.zDepth)
+                    if (contactDist2D < 3.8f && zDiff < 0.22f) {
                         predator.hasCaughtThisVisit = true
-                        predator.chompTimer = 0.55f
+                        predator.chompTimer = 0.60f
                         targetFish.respawnTimer = 14f
-                        spawnBloodPlume(fishCenterX, targetFish.rowY)
+                        spawnBloodPlume(fishCenterX, targetFish.rowY, targetFish.zDepth)
                         onHuntOutcomeListener?.invoke(
                             true,
                             predator.species.displayName,
@@ -1811,6 +2000,7 @@ class PondSimulation {
 
                 if ((predator.vxDir > 0f && predator.colX > cols + 6) ||
                     (predator.vxDir < 0f && predator.colX < -18f) ||
+                    (predator.hasCaughtThisVisit && predator.zDepth >= 0.94f) ||
                     predator.activeDuration > 11f
                 ) {
                     if (!predator.hasCaughtThisVisit) {
@@ -1908,9 +2098,12 @@ class PondSimulation {
                 val dist = hypot(dx, dy * 1.4f)
                 val threatRadius = 26f
 
-                if (dist < threatRadius) {
+                if (dist < threatRadius && abs(f.zDepth - predator.zDepth) < 0.42f) {
                     f.isEvading = true
                     val urgency = (1f - dist / threatRadius).coerceIn(0.2f, 1f)
+                    // 3D Z-Axis Evasion: fish also dives deeper or darts toward the front glass away from predator.zDepth!
+                    val zPush = if (f.zDepth >= predator.zDepth) 0.28f else -0.28f
+                    f.baseZ = (f.baseZ + zPush * urgency * clampedDt).coerceIn(0.08f, 0.90f)
 
                     val nearLeftWall = f.colX < minColBound + 8f
                     val nearRightWall = f.colX > maxColBound - 8f
@@ -2150,7 +2343,7 @@ class PondSimulation {
             }
         }
 
-        // Update & Render Multi-Stage ASCII Blood Plume & Sinking Scales
+        // Update & Render 3D Multi-Stage ASCII Blood Plume & Sinking Scales (with Z-depth scaling & fog!)
         for (idx in bloodParticles.indices) {
             val bp = bloodParticles[idx]
             if (!bp.active) continue
@@ -2166,6 +2359,7 @@ class PondSimulation {
             }
             bp.colX += (bp.vx + sin(simTime * 2.5f + idx) * 0.25f) * clampedDt
             bp.rowY = (bp.rowY + bp.vy * clampedDt).coerceIn(minFishRow - 2f, (floorRow - 1).toFloat())
+            bp.zDepth = (bp.zDepth + bp.vz * clampedDt).coerceIn(0.06f, 0.92f)
 
             val lifeFrac = (bp.age / bp.maxAge).coerceIn(0f, 1f)
             val glyph = if (bp.isScale) {
@@ -2179,41 +2373,53 @@ class PondSimulation {
                 }
             }
 
-            textPaint.color = when {
+            val rawCol = when {
                 bp.isScale -> pal.fishGold
                 lifeFrac < 0.45f -> pal.bloodCore
                 else -> pal.bloodMist
             }
-            singleCharBuf[0] = glyph
-            val bx = (bp.colX + pShiftCols * 0.5f) * cellWidthPx
-            val by = bp.rowY * cellHeightPx + baselineOffsetPx
-            canvas.drawText(singleCharBuf, 0, 1, bx, by, textPaint)
-        }
+            val bpScale = 1.16f - bp.zDepth * 0.54f
+            textPaint.textSize = baseTextSizePx * bpScale
+            textPaint.color = TimeOfDayPalette.lerpColor(rawCol, pal.waterBgDeep, bp.zDepth * 0.60f)
 
+            val bpParallax = 0.85f - bp.zDepth * 0.65f
+            val bx = (bp.colX + pShiftCols * bpParallax) * cellWidthPx
+            val by = bp.rowY * cellHeightPx + baselineOffsetPx
+            drawCharZeroAlloc(canvas, glyph, bx, by, textPaint)
+        }
+        textPaint.textSize = baseTextSizePx
+
+        // Render Active 3D Predator (Supports Lateral X, Front-Charging +Z -> -Z, Rear-Retreating -Z -> +Z, and Shadow!)
         if (predator.active) {
+            val predParallax = 0.85f - predator.zDepth * 0.65f
+            val predDrawCol = predator.colX + pShiftCols * predParallax
+
+            // Cast 3D Predator Drop-Shadow onto the riverbed slope!
+            val pDistFloor = floorRow - predator.rowY
+            if (pDistFloor in 2.0f..48.0f) {
+                val pShadowRow = (floorRow - 0.5f - predator.zDepth * 3.8f).coerceIn((floorRow - 4.5f), (floorRow - 0.4f))
+                val pShadowCol = (predDrawCol + pDistFloor * 0.14f + 3f).coerceIn(2f, (cols - 7).toFloat())
+                textPaint.color = TimeOfDayPalette.lerpColor(pal.waterBgDeep, 0xFF01060A.toInt(), (1f - predator.zDepth * 0.55f) * 0.72f)
+                canvas.drawText(shadowCharsNear, 0, shadowCharsNear.size, pShadowCol * cellWidthPx, pShadowRow * cellHeightPx + baselineOffsetPx, textPaint)
+            }
+
             val useFrameB = sin(predator.animPhase) > 0f
-            val pLines = if (predator.vxDir >= 0f) {
-                when {
-                    predator.chompTimer > 0f -> predator.species.rightChomp
-                    useFrameB -> predator.species.rightFrameB
-                    else -> predator.species.rightFrameA
-                }
-            } else {
-                when {
-                    predator.chompTimer > 0f -> predator.species.leftChomp
-                    useFrameB -> predator.species.leftFrameB
-                    else -> predator.species.leftFrameA
-                }
+            val pLines = when {
+                predator.chompTimer > 0f -> if (predator.vxDir >= 0f) predator.species.rightChomp else predator.species.leftChomp
+                predator.vz < -0.20f -> predator.species.frontChargeFrame // Charging straight out of the deep abyss toward camera!
+                predator.vz > 0.20f  -> predator.species.rearRetreatFrame // Retreating back into the deep abyss!
+                predator.vxDir >= 0f -> if (useFrameB) predator.species.rightFrameB else predator.species.rightFrameA
+                else -> if (useFrameB) predator.species.leftFrameB else predator.species.leftFrameA
             }
             drawSubPixelSprite(
-                colFloat = predator.colX + pShiftCols * 0.75f,
+                colFloat = predDrawCol,
                 rowFloat = predator.rowY,
                 lines = pLines,
                 bodyColor = if (predator.chompTimer > 0f) pal.bloodCore else pal.fishCoral,
                 finColor = pal.fishGold,
                 eyeColor = pal.fishFoam,
                 isDimmedLayer = false,
-                zDepth = 0.10f
+                zDepth = predator.zDepth
             )
         }
 
