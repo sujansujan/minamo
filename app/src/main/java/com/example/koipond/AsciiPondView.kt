@@ -162,16 +162,19 @@ class AsciiPondView @JvmOverloads constructor(
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
-    fun shuffleEcosystem() {
-        simulation.randomizeEcosystemOnUnlock(System.nanoTime(), preserveElderCrown = false)
+    fun shuffleEcosystem(): String {
+        val now = System.nanoTime()
+        simulation.randomizeEcosystemOnUnlock(now, preserveElderCrown = false)
         val snap = TimeOfDayPalette.resolve(
             mode = config.timeCycleMode,
             family = config.paletteFamily,
             themeMode = config.themeMode,
             isSystemDark = isSystemNightMode()
         )
+        val visitorName = simulation.triggerOceanVisitor(now + 17L, snap.isNight)
         onSpeciesRandomized?.invoke(simulation.activeSpeciesSummary, snap.timeLabel)
         invalidate()
+        return visitorName
     }
 
     fun summonPredatorNow(): String {

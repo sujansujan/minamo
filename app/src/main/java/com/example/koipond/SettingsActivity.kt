@@ -256,12 +256,12 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         findViewById<TextView>(R.id.btnShuffleFish).apply {
-            contentDescription = "Shuffle fish and critters"
+            contentDescription = "Shuffle ocean wildlife and summon visitor"
             setOnClickListener {
                 haptic(it)
-                asciiPondView.shuffleEcosystem()
-                textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_fg))
-                textHuntStatus.text = "event ... ok: new biome spawned (hold water for [@] wafer)"
+                val visitor = asciiPondView.shuffleEcosystem()
+                textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_accent2))
+                textHuntStatus.text = "ocean ... ~ " + visitor + " gliding past window"
             }
         }
 
