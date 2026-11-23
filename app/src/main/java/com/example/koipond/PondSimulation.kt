@@ -47,13 +47,13 @@ enum class AsciiFishSpecies(
         finAccentRole = 2,
         baseSpeedColsPerSec = 7.4f,
         turnAgilityRadPerSec = 2.6f,
-        rightFrameA = arrayOf(">-))°>"),
-        rightFrameB = arrayOf("}-))°>"),
-        rightFrameC = arrayOf("~-))°>"),
-        leftFrameA  = arrayOf("<°((-<"),
-        leftFrameB  = arrayOf("<°((-{"),
-        leftFrameC  = arrayOf("<°((-~"),
-        turnFrame   = arrayOf(" <°> ")
+        rightFrameA = arrayOf("◀─▒◉▶"),
+        rightFrameB = arrayOf("╲─▒◉▶"),
+        rightFrameC = arrayOf("╱─▒◉▶"),
+        leftFrameA  = arrayOf("◀◉▒─▶"),
+        leftFrameB  = arrayOf("◀◉▒─╱"),
+        leftFrameC  = arrayOf("◀◉▒─╲"),
+        turnFrame   = arrayOf(" ◀◉▶ ")
     ),
     SILVER_SARDINE(
         id = 1,
@@ -63,13 +63,13 @@ enum class AsciiFishSpecies(
         finAccentRole = 1,
         baseSpeedColsPerSec = 8.0f,
         turnAgilityRadPerSec = 2.8f,
-        rightFrameA = arrayOf("><>°>"),
-        rightFrameB = arrayOf("}<>°>"),
-        rightFrameC = arrayOf("=<>°>"),
-        leftFrameA  = arrayOf("<°<><"),
-        leftFrameB  = arrayOf("<°<>{ "),
-        leftFrameC  = arrayOf("<°<>= "),
-        turnFrame   = arrayOf(" <'> ")
+        rightFrameA = arrayOf("◀═░◉▶"),
+        rightFrameB = arrayOf("╲═░◉▶"),
+        rightFrameC = arrayOf("╱═░◉▶"),
+        leftFrameA  = arrayOf("◀◉░═▶"),
+        leftFrameB  = arrayOf("◀◉░═╱"),
+        leftFrameC  = arrayOf("◀◉░═╲"),
+        turnFrame   = arrayOf(" ◈◉◈ ")
     ),
     SUNSET_ANTHIAS(
         id = 2,
@@ -79,16 +79,16 @@ enum class AsciiFishSpecies(
         finAccentRole = 2,
         baseSpeedColsPerSec = 7.0f,
         turnAgilityRadPerSec = 2.5f,
-        rightFrameA = arrayOf(">~)°>"),
-        rightFrameB = arrayOf("}~)°>"),
-        rightFrameC = arrayOf("=~)°>"),
-        leftFrameA  = arrayOf("<°(~<"),
-        leftFrameB  = arrayOf("<°(~{"),
-        leftFrameC  = arrayOf("<°(~="),
-        turnFrame   = arrayOf(" <°> ")
+        rightFrameA = arrayOf("≈─▓◉▶"),
+        rightFrameB = arrayOf("╲─▓◉▶"),
+        rightFrameC = arrayOf("╱─▓◉▶"),
+        leftFrameA  = arrayOf("◀◉▓─≈"),
+        leftFrameB  = arrayOf("◀◉▓─╱"),
+        leftFrameC  = arrayOf("◀◉▓─╲"),
+        turnFrame   = arrayOf(" ◀◉▶ ")
     ),
 
-    // --- REEF & PELAGIC OCEAN LIFE ---
+    // --- SCULPTED REEF & PELAGIC OCEAN LIFE ---
     CLOWNFISH(
         id = 3,
         displayName = "clownfish",
@@ -98,39 +98,39 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 4.5f,
         turnAgilityRadPerSec = 1.9f,
         rightFrameA = arrayOf(
-            "   _.--._  ",
-            "\\ (|)|||°> ",
-            "   '-..-'  "
+            "   ╭───╮   ",
+            " ╲╭▓│▒│▓◉▶ ",
+            "   ╰───╯   "
         ),
         rightFrameB = arrayOf(
-            "   _.--._  ",
-            " |(|)|||°> ",
-            "   '-..-'  "
+            "   ╭───╮   ",
+            "  │▓│▒│▓◉▶ ",
+            "   ╰───╯   "
         ),
         rightFrameC = arrayOf(
-            "   _.--._  ",
-            "/ (|)|||°> ",
-            "   '-..-'  "
+            "   ╭───╮   ",
+            " ╱╭▓│▒│▓◉▶ ",
+            "   ╰───╯   "
         ),
         leftFrameA = arrayOf(
-            "  _.--._   ",
-            " <°|||(|) /",
-            "  '-..-'   "
+            "   ╭───╮   ",
+            " ◀◉▓│▒│▓╮╱ ",
+            "   ╰───╯   "
         ),
         leftFrameB = arrayOf(
-            "  _.--._   ",
-            " <°|||(|)| ",
-            "  '-..-'   "
+            "   ╭───╮   ",
+            " ◀◉▓│▒│▓│  ",
+            "   ╰───╯   "
         ),
         leftFrameC = arrayOf(
-            "  _.--._   ",
-            " <°|||(|) \\",
-            "  '-..-'   "
+            "   ╭───╮   ",
+            " ◀◉▓│▒│▓╮╲ ",
+            "   ╰───╯   "
         ),
         turnFrame = arrayOf(
-            "  _._  ",
-            " <|º|> ",
-            "  '-'  "
+            "  ╭─╮  ",
+            " ◀│◉│▶ ",
+            "  ╰─╯  "
         )
     ),
     BLUE_TANG(
@@ -142,39 +142,39 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 5.4f,
         turnAgilityRadPerSec = 1.8f,
         rightFrameA = arrayOf(
-            "   _.--._   ",
-            "\\==|))))°>  ",
-            "   '-..-'   "
+            "   ╭────╮   ",
+            " ╲═▒▓▓▓▒◉▶  ",
+            "   ╰────╯   "
         ),
         rightFrameB = arrayOf(
-            "   _.--._   ",
-            " }==|))))°> ",
-            "   '-..-'   "
+            "   ╭────╮   ",
+            " ◀═▒▓▓▓▒◉▶  ",
+            "   ╰────╯   "
         ),
         rightFrameC = arrayOf(
-            "   _.--._   ",
-            "/==|))))°>  ",
-            "   '-..-'   "
+            "   ╭────╮   ",
+            " ╱═▒▓▓▓▒◉▶  ",
+            "   ╰────╯   "
         ),
         leftFrameA = arrayOf(
-            "   _.--._   ",
-            "  <°((((|==/",
-            "   '-..-'   "
+            "   ╭────╮   ",
+            "  ◀◉▒▓▓▓▒═╱ ",
+            "   ╰────╯   "
         ),
         leftFrameB = arrayOf(
-            "   _.--._   ",
-            " <°((((|=={ ",
-            "   '-..-'   "
+            "   ╭────╮   ",
+            "  ◀◉▒▓▓▓▒═▶ ",
+            "   ╰────╯   "
         ),
         leftFrameC = arrayOf(
-            "   _.--._   ",
-            "  <°((((|==\\",
-            "   '-..-'   "
+            "   ╭────╮   ",
+            "  ◀◉▒▓▓▓▒═╲ ",
+            "   ╰────╯   "
         ),
         turnFrame = arrayOf(
-            "  .-.  ",
-            " (|º|) ",
-            "  '-'  "
+            "  ╭─╮  ",
+            " (▓◉▓) ",
+            "  ╰─╯  "
         )
     ),
     MOORISH_IDOL(
@@ -186,46 +186,46 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 4.3f,
         turnAgilityRadPerSec = 1.7f,
         rightFrameA = arrayOf(
-            " ~---._/|   ",
-            "     /|#|\\  ",
-            "   >|#|#|°> ",
-            "     \\|#|/  "
+            " ≈───╮╱│   ",
+            "    ╱│▓│╲  ",
+            "  ◀│▓█▓█◉▶ ",
+            "    ╲│▓│╱  "
         ),
         rightFrameB = arrayOf(
-            "  ~--._/|   ",
-            "     /|#|\\  ",
-            "   }|#|#|°> ",
-            "     \\|#|/  "
+            "  ≈──╮╱│   ",
+            "    ╱│▓│╲  ",
+            "  ╲│▓█▓█◉▶ ",
+            "    ╲│▓│╱  "
         ),
         rightFrameC = arrayOf(
-            "  --~._/|   ",
-            "     /|#|\\  ",
-            "   =|#|#|°> ",
-            "     \\|#|/  "
+            "  ──≈╮╱│   ",
+            "    ╱│▓│╲  ",
+            "  ╱│▓█▓█◉▶ ",
+            "    ╲│▓│╱  "
         ),
         leftFrameA = arrayOf(
-            "   |\\_.---~ ",
-            "  /|#|\\     ",
-            " <°|#|#|<   ",
-            "  \\|#|/     "
+            "   │╲╭───≈ ",
+            "  ╱│▓│╲    ",
+            " ◀◉█▓█▓│▶  ",
+            "  ╲│▓│╱    "
         ),
         leftFrameB = arrayOf(
-            "   |\\_.--~  ",
-            "  /|#|\\     ",
-            " <°|#|#|{   ",
-            "  \\|#|/     "
+            "   │╲╭──≈  ",
+            "  ╱│▓│╲    ",
+            " ◀◉█▓█▓│╱  ",
+            "  ╲│▓│╱    "
         ),
         leftFrameC = arrayOf(
-            "   |\\_.~--  ",
-            "  /|#|\\     ",
-            " <°|#|#|=   ",
-            "  \\|#|/     "
+            "   │╲╭≈──  ",
+            "  ╱│▓│╲    ",
+            " ◀◉█▓█▓│╲  ",
+            "  ╲│▓│╱    "
         ),
         turnFrame = arrayOf(
-            "   ||   ",
-            "  /|#|  ",
-            "  |º#|  ",
-            "   ||   "
+            "   ││   ",
+            "  ╱│▓│  ",
+            "  │◉▓│  ",
+            "   ││   "
         )
     ),
     YELLOWFIN_TUNA(
@@ -237,39 +237,39 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 7.2f,
         turnAgilityRadPerSec = 1.35f,
         rightFrameA = arrayOf(
-            " \\    _.-~-._  ",
-            "  >==((((((º=> ",
-            " /    '-._.-'  "
+            " ╲   ╭─══─╮   ",
+            "  ▶══▓▓▒▒░◉▶  ",
+            " ╱   ╰────╯   "
         ),
         rightFrameB = arrayOf(
-            "  \\   _.-~-._  ",
-            "  }==((((((º=> ",
-            "  /   '-._.-'  "
+            "  ╲  ╭─══─╮   ",
+            "  ▶══▓▓▒▒░◉▶  ",
+            "  ╱  ╰────╯   "
         ),
         rightFrameC = arrayOf(
-            " |    _.-~-._  ",
-            "  >==((((((º=> ",
-            " |    '-._.-'  "
+            " │   ╭─══─╮   ",
+            "  ▶══▓▓▒▒░◉▶  ",
+            " │   ╰────╯   "
         ),
         leftFrameA = arrayOf(
-            "  _.-~-._    / ",
-            " <=º))))))==<  ",
-            "  '-._.-'    \\ "
+            "   ╭─══─╮   ╱ ",
+            "  ◀◉░▒▒▓▓══◀  ",
+            "   ╰────╯   ╲ "
         ),
         leftFrameB = arrayOf(
-            "  _.-~-._   /  ",
-            " <=º))))))=={  ",
-            "  '-._.-'   \\  "
+            "   ╭─══─╮  ╱  ",
+            "  ◀◉░▒▒▓▓══◀  ",
+            "   ╰────╯  ╲  "
         ),
         leftFrameC = arrayOf(
-            "  _.-~-._    | ",
-            " <=º))))))==<  ",
-            "  '-._.-'    | "
+            "   ╭─══─╮   │ ",
+            "  ◀◉░▒▒▓▓══◀  ",
+            "   ╰────╯   │ "
         ),
         turnFrame = arrayOf(
-            "  _._  ",
-            " <(º)> ",
-            "  '-'  "
+            "  ╭─╮  ",
+            " ◀(◉)▶ ",
+            "  ╰─╯  "
         )
     ),
     PUFFERFISH(
@@ -281,39 +281,39 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 3.2f,
         turnAgilityRadPerSec = 2.0f,
         rightFrameA = arrayOf(
-            "   .----.  ",
-            " =( :.: °> ",
-            "   '----'  "
+            "   ╭────╮  ",
+            " ≈(░·░·░◉▶ ",
+            "   ╰────╯  "
         ),
         rightFrameB = arrayOf(
-            "   .----.  ",
-            " ~{ :.: °> ",
-            "   '----'  "
+            "   ╭────╮  ",
+            " ◀(░·░·░◉▶ ",
+            "   ╰────╯  "
         ),
         rightFrameC = arrayOf(
-            "   .----.  ",
-            " -( :.: °> ",
-            "   '----'  "
+            "   ╭────╮  ",
+            " ─(░·░·░◉▶ ",
+            "   ╰────╯  "
         ),
         leftFrameA = arrayOf(
-            "  .----.   ",
-            " <° :.: )= ",
-            "  '----'   "
+            "  ╭────╮   ",
+            " ◀◉░·░·░)≈ ",
+            "  ╰────╯   "
         ),
         leftFrameB = arrayOf(
-            "  .----.   ",
-            " <° :.: }~ ",
-            "  '----'   "
+            "  ╭────╮   ",
+            " ◀◉░·░·░)▶ ",
+            "  ╰────╯   "
         ),
         leftFrameC = arrayOf(
-            "  .----.   ",
-            " <° :.: )- ",
-            "  '----'   "
+            "  ╭────╮   ",
+            " ◀◉░·░·░)─ ",
+            "  ╰────╯   "
         ),
         turnFrame = arrayOf(
-            "  .---.  ",
-            " ( °.° ) ",
-            "  '---'  "
+            "  ╭───╮  ",
+            " (◉░·░◉) ",
+            "  ╰───╯  "
         )
     ),
     EMPEROR_ANGEL(
@@ -325,46 +325,46 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 4.2f,
         turnAgilityRadPerSec = 1.6f,
         rightFrameA = arrayOf(
-            "    .-^^-.  ",
-            " \\ /|=||=)\\ ",
-            "  >|=||=|°> ",
-            " / \\|=||=)/ "
+            "    ╭─▲▲─╮  ",
+            " ╲ ╱▓═▒▒═╲  ",
+            "  ▶│▓═▒▒═◉▶ ",
+            " ╱ ╲▓═▒▒═╱  "
         ),
         rightFrameB = arrayOf(
-            "    .-^^-.  ",
-            "  |/|=||=)\\ ",
-            "  }|=||=|°> ",
-            "  |\\|=||=)/ "
+            "    ╭─▲▲─╮  ",
+            "  │╱▓═▒▒═╲  ",
+            "  ▶│▓═▒▒═◉▶ ",
+            "  │╲▓═▒▒═╱  "
         ),
         rightFrameC = arrayOf(
-            "    .-^^-.  ",
-            " / /|=||=)\\ ",
-            "  =|=||=|°> ",
-            " \\ \\|=||=)/ "
+            "    ╭─▲▲─╮  ",
+            " ╱ ╱▓═▒▒═╲  ",
+            "  ▶│▓═▒▒═◉▶ ",
+            " ╲ ╲▓═▒▒═╱  "
         ),
         leftFrameA = arrayOf(
-            "  .-^^-.    ",
-            " /(=||=|\\ / ",
-            " <°|=||=|<  ",
-            " \\(=||=|/ \\ "
+            "  ╭─▲▲─╮    ",
+            "  ╱═▒▒═▓╲ ╱ ",
+            " ◀◉═▒▒═▓│◀  ",
+            "  ╲═▒▒═▓╱ ╲ "
         ),
         leftFrameB = arrayOf(
-            "  .-^^-.    ",
-            " /(=||=|\\|  ",
-            " <°|=||=|{  ",
-            " \\(=||=|/|  "
+            "  ╭─▲▲─╮    ",
+            "  ╱═▒▒═▓╲│  ",
+            " ◀◉═▒▒═▓│◀  ",
+            "  ╲═▒▒═▓╱│  "
         ),
         leftFrameC = arrayOf(
-            "  .-^^-.    ",
-            " /(=||=|\\ \\ ",
-            " <°|=||=|=  ",
-            " \\(=||=|/ / "
+            "  ╭─▲▲─╮    ",
+            "  ╱═▒▒═▓╲ ╲ ",
+            " ◀◉═▒▒═▓│◀  ",
+            "  ╲═▒▒═▓╱ ╱ "
         ),
         turnFrame = arrayOf(
-            "  .^^.  ",
-            " (|==|) ",
-            " (|º#|) ",
-            "  '--'  "
+            "  ╭▲▲╮  ",
+            " (▓══▓) ",
+            " (▓◉▒▓) ",
+            "  ╰──╯  "
         )
     ),
     LIONFISH(
@@ -376,45 +376,45 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 3.4f,
         turnAgilityRadPerSec = 1.5f,
         rightFrameA = arrayOf(
-            "  \\ | / /_  ",
-            " ~\\|#|#|°>  ",
-            "  /|#|#|/   ",
-            "  / | \\ \\   "
+            "  ╲ │ ╱ ╱╮  ",
+            " ≈╲│▓│▒│▓◉▶ ",
+            "  ╱│▓│▒│▓╱  ",
+            "  ╱ │ ╲ ╲╯  "
         ),
         rightFrameB = arrayOf(
-            "   \\| / /_  ",
-            " -\\|#|#|°>  ",
-            "   |#|#|/   ",
-            "   /| \\ \\   "
+            "   ╲│ ╱ ╱╮  ",
+            " ─╲│▓│▒│▓◉▶ ",
+            "   │▓│▒│▓╱  ",
+            "   ╱│ ╲ ╲╯  "
         ),
         rightFrameC = arrayOf(
-            "  / | / /_  ",
-            " ~}|#|#|°>  ",
-            "  \\|#|#|/   ",
-            "  \\ | \\ \\   "
+            "  ╱ │ ╱ ╱╮  ",
+            " ≈◀│▓│▒│▓◉▶ ",
+            "  ╲│▓│▒│▓╱  ",
+            "  ╲ │ ╲ ╲╯  "
         ),
         leftFrameA = arrayOf(
-            "  _\\ \\ | /  ",
-            "  <°|#|#|/~ ",
-            "   \\|#|#|\\  ",
-            "   / / | \\  "
+            "  ╭╲ ╲ │ ╱  ",
+            " ◀◉▓│▒│▓│╱≈ ",
+            "  ╲▓│▒│▓│╲  ",
+            "  ╰╱ ╱ │ ╲  "
         ),
         leftFrameB = arrayOf(
-            "  _\\ \\ |/   ",
-            "  <°|#|#|/- ",
-            "   \\|#|#|   ",
-            "   / / |\\   "
+            "  ╭╲ ╲ │╱   ",
+            " ◀◉▓│▒│▓│╱─ ",
+            "  ╲▓│▒│▓│   ",
+            "  ╰╱ ╱ │╲   "
         ),
         leftFrameC = arrayOf(
-            "  _\\ \\ | \\  ",
-            "  <°|#|#|{~ ",
-            "   \\|#|#|/  ",
-            "   / / | /  "
+            "  ╭╲ ╲ │ ╲  ",
+            " ◀◉▓│▒│▓│▶≈ ",
+            "  ╲▓│▒│▓│╱  ",
+            "  ╰╱ ╱ │ ╱  "
         ),
         turnFrame = arrayOf(
-            " \\\\|// ",
-            " {|º|} ",
-            " //|\\\\ "
+            " ╲╲│╱╱ ",
+            " ◈│◉│◈ ",
+            " ╱╱│╲╲ "
         )
     ),
     SEA_TURTLE(
@@ -426,46 +426,46 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 3.5f,
         turnAgilityRadPerSec = 1.0f,
         rightFrameA = arrayOf(
-            "   _/\\ _.--._    ",
-            "  '   /######\\__ ",
-            "     |########|°>",
-            "      '------'   "
+            "   ╱╲  ╭────╮    ",
+            "  ╱  ╭▓▓▒▒▓▓╮──╮ ",
+            "     ╰▓▓▒▒▓▓╯◉▶│ ",
+            "       ╰────╯  ╯ "
         ),
         rightFrameB = arrayOf(
-            "       _.--._    ",
-            "  ~~  /######\\__ ",
-            "     |########|°>",
-            "    \\ '------'   "
+            "       ╭────╮    ",
+            "  ≈≈ ╭▓▓▒▒▓▓╮──╮ ",
+            "     ╰▓▓▒▒▓▓╯◉▶│ ",
+            "    ╲  ╰────╯  ╯ "
         ),
         rightFrameC = arrayOf(
-            "       _.--._    ",
-            "      /######\\__ ",
-            "     |########|°>",
-            "   \\/_'------'   "
+            "       ╭────╮    ",
+            "     ╭▓▓▒▒▓▓╮──╮ ",
+            "     ╰▓▓▒▒▓▓╯◉▶│ ",
+            "   ╲╱  ╰────╯  ╯ "
         ),
         leftFrameA = arrayOf(
-            "    _.--._ /\\_   ",
-            " __/######\\   '  ",
-            "<°|########|     ",
-            "   '------'      "
+            "    ╭────╮  ╱╲   ",
+            " ╭──╭▓▓▒▒▓▓╮  ╲  ",
+            " │◀◉╰▓▓▒▒▓▓╯     ",
+            " ╰  ╰────╯       "
         ),
         leftFrameB = arrayOf(
-            "    _.--._       ",
-            " __/######\\  ~~  ",
-            "<°|########|     ",
-            "   '------' /    "
+            "    ╭────╮       ",
+            " ╭──╭▓▓▒▒▓▓╮ ≈≈  ",
+            " │◀◉╰▓▓▒▒▓▓╯     ",
+            " ╰  ╰────╯  ╱    "
         ),
         leftFrameC = arrayOf(
-            "    _.--._       ",
-            " __/######\\      ",
-            "<°|########|     ",
-            "   '------'_\\/   "
+            "    ╭────╮       ",
+            " ╭──╭▓▓▒▒▓▓╮     ",
+            " │◀◉╰▓▓▒▒▓▓╯     ",
+            " ╰  ╰────╯  ╲╱   "
         ),
         turnFrame = arrayOf(
-            "  _.--._  ",
-            " /######\\ ",
-            " \\(°__°)/ ",
-            "  '----'  "
+            "  ╭────╮  ",
+            " ╱▓▓▒▒▓▓╲ ",
+            " ╲(◉__◉)╱ ",
+            "  ╰────╯  "
         )
     ),
     EAGLE_RAY(
@@ -477,45 +477,45 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 4.8f,
         turnAgilityRadPerSec = 1.15f,
         rightFrameA = arrayOf(
-            "        _/\\      ",
-            "       /###\\     ",
-            " ~~~~~<#####|°>  ",
-            "        \\--/     "
+            "        ╭╱╲      ",
+            "       ╱▒▓▒╲     ",
+            " ≈≈≈≈≈◀▒▓▓▓▒◉▶   ",
+            "        ╰──╯     "
         ),
         rightFrameB = arrayOf(
             "                 ",
-            "        .--.     ",
-            " ~~~~~<######|°> ",
-            "        '--'     "
+            "        ╭──╮     ",
+            " ≈≈≈≈≈◀▒▓▓▓▓▒◉▶  ",
+            "        ╰──╯     "
         ),
         rightFrameC = arrayOf(
-            "        /--\\     ",
-            " ~~~~~<#####|°>  ",
-            "       \\###/     ",
-            "        '\\/      "
+            "        ╭──╮     ",
+            " ≈≈≈≈≈◀▒▓▓▓▒◉▶   ",
+            "       ╲▒▓▒╱     ",
+            "        ╰╲╱      "
         ),
         leftFrameA = arrayOf(
-            "      /\\_        ",
-            "     /###\\       ",
-            "  <°|#####>~~~~~ ",
-            "     \\--/        "
+            "      ╱╲╮        ",
+            "     ╱▒▓▒╲       ",
+            "   ◀◉▒▓▓▓▒▶≈≈≈≈≈ ",
+            "     ╰──╯        "
         ),
         leftFrameB = arrayOf(
             "                 ",
-            "     .--.        ",
-            " <°|######>~~~~~ ",
-            "     '--'        "
+            "     ╭──╮        ",
+            "  ◀◉▒▓▓▓▓▒▶≈≈≈≈≈ ",
+            "     ╰──╯        "
         ),
         leftFrameC = arrayOf(
-            "     /--\\        ",
-            "  <°|#####>~~~~~ ",
-            "     \\###/       ",
-            "      \\/'        "
+            "     ╭──╮        ",
+            "   ◀◉▒▓▓▓▒▶≈≈≈≈≈ ",
+            "     ╲▒▓▒╱       ",
+            "      ╲╱╯        "
         ),
         turnFrame = arrayOf(
-            "  .-^^-.  ",
-            " /##ºº##\\ ",
-            " '--__--' "
+            "  ╭─▲▲─╮  ",
+            " ╱▒▓◉◉▓▒╲ ",
+            " ╰──══──╯ "
         )
     ),
     MANDARIN(
@@ -527,39 +527,39 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 4.1f,
         turnAgilityRadPerSec = 1.8f,
         rightFrameA = arrayOf(
-            "   _/\\_   ",
-            " >~{#))°> ",
-            "   '\\/    "
+            "   ╭╱╲╮   ",
+            " ≈◀▒◈▓▒◉▶ ",
+            "   ╰╲╱╯   "
         ),
         rightFrameB = arrayOf(
-            "   _/\\_   ",
-            " }~{#))°> ",
-            "   '\\/    "
+            "   ╭╱╲╮   ",
+            " ╲◀▒◈▓▒◉▶ ",
+            "   ╰╲╱╯   "
         ),
         rightFrameC = arrayOf(
-            "   _/\\~   ",
-            " =~{#))°> ",
-            "   '\\/    "
+            "   ╭╱╲╮   ",
+            " ╱◀▒◈▓▒◉▶ ",
+            "   ╰╲╱╯   "
         ),
         leftFrameA = arrayOf(
-            "   _/\\_   ",
-            " <°((#~<  ",
-            "    \\/'   "
+            "   ╭╱╲╮   ",
+            " ◀◉▒▓◈▒▶≈ ",
+            "   ╰╲╱╯   "
         ),
         leftFrameB = arrayOf(
-            "   _/\\_   ",
-            " <°((#~{  ",
-            "    \\/'   "
+            "   ╭╱╲╮   ",
+            " ◀◉▒▓◈▒▶╱ ",
+            "   ╰╲╱╯   "
         ),
         leftFrameC = arrayOf(
-            "   ~/\\_   ",
-            " <°((#~=  ",
-            "    \\/'   "
+            "   ╭╱╲╮   ",
+            " ◀◉▒▓◈▒▶╲ ",
+            "   ╰╲╱╯   "
         ),
         turnFrame = arrayOf(
-            "  /\\  ",
-            " {º#} ",
-            "  \\/  "
+            "  ╱╲  ",
+            " ◈◉▓◈ ",
+            "  ╲╱  "
         )
     ),
     KOHAKU_KOI(
@@ -571,39 +571,39 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 4.2f,
         turnAgilityRadPerSec = 1.45f,
         rightFrameA = arrayOf(
-            "    _.--._  ",
-            " \\<((({(º>  ",
-            "    '-..-'  "
+            "    ╭────╮  ",
+            " ╲◀░░▓▓░▓◉▶ ",
+            "    ╰────╯  "
         ),
         rightFrameB = arrayOf(
-            "    _.--._  ",
-            "  }<((({(º> ",
-            "    '-..-'  "
+            "    ╭────╮  ",
+            "  ≈◀░▓▓░▓◉▶ ",
+            "    ╰────╯  "
         ),
         rightFrameC = arrayOf(
-            "    _.--._  ",
-            " /<((({(º>  ",
-            "    '-..-'  "
+            "    ╭────╮  ",
+            " ╱◀░░▓▓░▓◉▶ ",
+            "    ╰────╯  "
         ),
         leftFrameA = arrayOf(
-            "  _.--._    ",
-            "  <º)})))>/ ",
-            "  '-..-'    "
+            "  ╭────╮    ",
+            " ◀◉▓░▓▓░░▶╱ ",
+            "  ╰────╯    "
         ),
         leftFrameB = arrayOf(
-            "  _.--._    ",
-            " <º)})))>{  ",
-            "  '-..-'    "
+            "  ╭────╮    ",
+            " ◀◉▓░▓▓░▶≈  ",
+            "  ╰────╯    "
         ),
         leftFrameC = arrayOf(
-            "  _.--._    ",
-            "  <º)})))>\\ ",
-            "  '-..-'    "
+            "  ╭────╮    ",
+            " ◀◉▓░▓▓░░▶╲ ",
+            "  ╰────╯    "
         ),
         turnFrame = arrayOf(
-            "  _.--._  ",
-            " <((º))>  ",
-            "  '-..-'  "
+            "  ╭────╮  ",
+            " ◀(░◉▓)▶  ",
+            "  ╰────╯  "
         )
     ),
     MAHI_MAHI(
@@ -615,39 +615,39 @@ enum class AsciiFishSpecies(
         baseSpeedColsPerSec = 6.2f,
         turnAgilityRadPerSec = 1.5f,
         rightFrameA = arrayOf(
-            " \\  .======._ ",
-            "  >==)))))º|  ",
-            " /   '-.__.-' "
+            " ╲  ╭▀▀▀▀▀▀╮ ",
+            "  ▶═▒▓▓▒▒▓◉│ ",
+            " ╱   ╰────╯  "
         ),
         rightFrameB = arrayOf(
-            "  \\ .======._ ",
-            "  }==)))))º|  ",
-            "  /  '-.__.-' "
+            "  ╲ ╭▀▀▀▀▀▀╮ ",
+            "  ▶═▒▓▓▒▒▓◉│ ",
+            "  ╱  ╰────╯  "
         ),
         rightFrameC = arrayOf(
-            " |  .======._ ",
-            "  >==)))))º|  ",
-            " |   '-.__.-' "
+            " │  ╭▀▀▀▀▀▀╮ ",
+            "  ▶═▒▓▓▒▒▓◉│ ",
+            " │   ╰────╯  "
         ),
         leftFrameA = arrayOf(
-            " _.======.  / ",
-            "  |º(((((==<  ",
-            " '-.__.-'   \\ "
+            " ╭▀▀▀▀▀▀╮  ╱ ",
+            " │◉▓▒▒▓▓▒═◀  ",
+            "  ╰────╯   ╲ "
         ),
         leftFrameB = arrayOf(
-            " _.======. /  ",
-            "  |º(((((=={  ",
-            " '-.__.-'  \\  "
+            " ╭▀▀▀▀▀▀╮ ╱  ",
+            " │◉▓▒▒▓▓▒═◀  ",
+            "  ╰────╯  ╲  "
         ),
         leftFrameC = arrayOf(
-            " _.======.  | ",
-            "  |º(((((==<  ",
-            " '-.__.-'   | "
+            " ╭▀▀▀▀▀▀╮  │ ",
+            " │◉▓▒▒▓▓▒═◀  ",
+            "  ╰────╯   │ "
         ),
         turnFrame = arrayOf(
-            "  .==.  ",
-            " (|º|)  ",
-            "  '--'  "
+            "  ╭▀▀╮  ",
+            " (▓◉▓)  ",
+            "  ╰──╯  "
         )
     );
 
@@ -693,36 +693,36 @@ enum class OceanVisitorSpecies(
         canSpout = true,
         podSize = 1,
         rightFrameA = arrayOf(
-            "\\__            _.---\"\"\"\"---._   ",
-            "   \\__    _.--'              `\\ ",
-            "      `--'     ===    ===   °  \\",
-            "        \\____________________.-'",
-            "            \\__  '---'          ",
-            "               `\\               "
+            "╲╮            ╭───▀▀▀▀───╮    ",
+            " ╰╲╮     ╭───╯▓▓▓▓▒▒▒▒░░░░╲   ",
+            "   ╰──╮ ╱▓▓▓▒▒  ═══  ═══  ◉╲  ",
+            "      ╰─╲░░░░░░░░░░░░░░░░──╯  ",
+            "         ╰╲╮  ╰───╯           ",
+            "           ╰╲                 "
         ),
         rightFrameB = arrayOf(
-            "               _.---\"\"\"\"---._   ",
-            "      ___ _.--'              `\\ ",
-            "  __/'   '     ===    ===   °  \\",
-            " /      \\____________________.-'",
-            "            \\__  '---'          ",
-            "               `\\               "
+            "              ╭───▀▀▀▀───╮    ",
+            "       ╭╮╭───╯▓▓▓▓▒▒▒▒░░░░╲   ",
+            "   ╭──╯ ╱▓▓▓▒▒  ═══  ═══  ◉╲  ",
+            "  ╱   ╰─╲░░░░░░░░░░░░░░░░──╯  ",
+            "         ╰╲╮  ╰───╯           ",
+            "           ╰╲                 "
         ),
         leftFrameA = arrayOf(
-            "   _.---\"\"\"\"---._            __/",
-            " /`              '--._    __/   ",
-            "/  °   ===    ===     '--`      ",
-            "'-.____________________/        ",
-            "          '---'  __/            ",
-            "               /'               "
+            "    ╭───▀▀▀▀───╮            ╭╱",
+            "   ╱░░░░▒▒▒▒▓▓▓▓╰───╮     ╭╱╯ ",
+            "  ╱◉  ═══  ═══  ▒▒▓▓▓╲ ╭──╯   ",
+            "  ╰──░░░░░░░░░░░░░░░░╱─╯      ",
+            "           ╰───╯  ╭╱╯         ",
+            "                 ╱╯           "
         ),
         leftFrameB = arrayOf(
-            "   _.---\"\"\"\"---._               ",
-            " /`              '--._ ___      ",
-            "/  °   ===    ===     '   '\\__  ",
-            "'-.____________________/      \\ ",
-            "          '---'  __/            ",
-            "               /'               "
+            "    ╭───▀▀▀▀───╮              ",
+            "   ╱░░░░▒▒▒▒▓▓▓▓╰───╮╭╮       ",
+            "  ╱◉  ═══  ═══  ▒▒▓▓▓╲ ╰──╮   ",
+            "  ╰──░░░░░░░░░░░░░░░░╱─╯   ╲  ",
+            "           ╰───╯  ╭╱╯         ",
+            "                 ╱╯           "
         )
     ),
     ORCA(
@@ -737,32 +737,32 @@ enum class OceanVisitorSpecies(
         canSpout = true,
         podSize = 1,
         rightFrameA = arrayOf(
-            "           /|             ",
-            " \\__   _.-' |----._       ",
-            "    `-'  [===]  (O) \\     ",
-            "      \\______________`->  ",
-            "          \\__             "
+            "          ╱│             ",
+            " ╲╮   ╭──╯█│────╮        ",
+            "  ╰─╮╱███░░░█ (◉)╲       ",
+            "    ╰╲████████████╰▶     ",
+            "        ╰╲               "
         ),
         rightFrameB = arrayOf(
-            "           /|             ",
-            "       _.-' |----._       ",
-            "  __.-'  [===]  (O) \\     ",
-            " /    \\______________`->  ",
-            "          \\__             "
+            "          ╱│             ",
+            "      ╭──╯█│────╮        ",
+            " ╭──╯╱███░░░█ (◉)╲       ",
+            " ╱  ╰╲████████████╰▶     ",
+            "        ╰╲               "
         ),
         leftFrameA = arrayOf(
-            "             |\\           ",
-            "       _.----| '-._   __/ ",
-            "     / (O)  [===]  '-`    ",
-            "  <-`______________/      ",
-            "             __/          "
+            "             │╲          ",
+            "        ╭────│█╰──╮   ╭╱ ",
+            "       ╱(◉) █░░░███╲╭─╯  ",
+            "     ◀╯████████████╱╯    ",
+            "               ╱╯        "
         ),
         leftFrameB = arrayOf(
-            "             |\\           ",
-            "       _.----| '-._       ",
-            "     / (O)  [===]  '-.__  ",
-            "  <-`______________/    \\ ",
-            "             __/          "
+            "             │╲          ",
+            "        ╭────│█╰──╮      ",
+            "       ╱(◉) █░░░███╲╰──╮ ",
+            "     ◀╯████████████╱╯  ╲ ",
+            "               ╱╯        "
         )
     ),
     DOLPHIN_POD(
@@ -777,24 +777,24 @@ enum class OceanVisitorSpecies(
         canSpout = false,
         podSize = 3,
         rightFrameA = arrayOf(
-            "       /|        ",
-            " \\_ .-~  ~-.     ",
-            "   `---====º==>  "
+            "       ╱│        ",
+            " ╲╮ ╭─╯▓▓╰─╮     ",
+            "  ╰─══▒▒▒▒◉══▶   "
         ),
         rightFrameB = arrayOf(
-            "       /|        ",
-            "   .-~  ~-.      ",
-            " /`----====º==>  "
+            "       ╱│        ",
+            "    ╭─╯▓▓╰─╮     ",
+            " ╱╰─══▒▒▒▒◉══▶   "
         ),
         leftFrameA = arrayOf(
-            "        |\\       ",
-            "     .-~  ~-. _/ ",
-            "  <==º====---`   "
+            "        │╲       ",
+            "     ╭─╯▓▓╰─╮ ╭╱ ",
+            "   ◀══◉▒▒▒▒══─╯  "
         ),
         leftFrameB = arrayOf(
-            "        |\\       ",
-            "      .-~  ~-.   ",
-            "  <==º====----`\\ "
+            "        │╲       ",
+            "     ╭─╯▓▓╰─╮    ",
+            "   ◀══◉▒▒▒▒══─╯╲ "
         )
     ),
     WHALE_SHARK(
@@ -809,32 +809,32 @@ enum class OceanVisitorSpecies(
         canSpout = false,
         podSize = 1,
         rightFrameA = arrayOf(
-            " \\         /|               ",
-            "  \\   _.--' |---..____      ",
-            "   >=( : . : . : . : º|===  ",
-            "  /   '-..______..----'     ",
-            " /         \\|               "
+            " ╲        ╱│               ",
+            "  ╲  ╭───╯▓│───╮____       ",
+            "   ▶═(░·░·░·░·░·◉│═══      ",
+            "  ╱  ╰───▓▓▓───────╯       ",
+            " ╱        ╲│               "
         ),
         rightFrameB = arrayOf(
-            "  \\        /|               ",
-            "   \\  _.--' |---..____      ",
-            "   }=( : . : . : . : º|===  ",
-            "   /  '-..______..----'     ",
-            "  /        \\|               "
+            "  ╲       ╱│               ",
+            "   ╲ ╭───╯▓│───╮____       ",
+            "   ▶═(░·░·░·░·░·◉│═══      ",
+            "   ╱ ╰───▓▓▓───────╯       ",
+            "  ╱       ╲│               "
         ),
         leftFrameA = arrayOf(
-            "               |\\         / ",
-            "      ____..---| '--._   /  ",
-            "  ===|º : . : . : . : )=<   ",
-            "     '----..______..-'   \\  ",
-            "               |/         \\ "
+            "               │╲        ╱ ",
+            "       ____╭───│▓╰───╮  ╱  ",
+            "      ═══│◉·░·░·░·░·░)═◀   ",
+            "       ╰───────▓▓▓───╯  ╲  ",
+            "               │╱        ╲ "
         ),
         leftFrameB = arrayOf(
-            "               |\\        /  ",
-            "      ____..---| '--._  /   ",
-            "  ===|º : . : . : . : )={   ",
-            "     '----..______..-'  \\   ",
-            "               |/        \\  "
+            "               │╲       ╱  ",
+            "       ____╭───│▓╰───╮ ╱   ",
+            "      ═══│◉·░·░·░·░·░)═◀   ",
+            "       ╰───────▓▓▓───╯ ╲   ",
+            "               │╱       ╲  "
         )
     ),
     GIANT_MANTA(
@@ -849,32 +849,32 @@ enum class OceanVisitorSpecies(
         canSpout = false,
         podSize = 2,
         rightFrameA = arrayOf(
-            "         __/\\          ",
-            "       _/####\\         ",
-            " ~~~~~<#######|º>      ",
-            "        \\####/         ",
-            "         '--'          "
+            "         ╭╱╲          ",
+            "       ╭╱▓▓▓╲         ",
+            " ≈≈≈≈≈◀▒▓▓▓▓▓▒◉▶      ",
+            "        ╲▓▓▓╱         ",
+            "         ╰──╯         "
         ),
         rightFrameB = arrayOf(
-            "         .--.          ",
-            "       _/####\\         ",
-            " ~~~~~<#######|º>      ",
-            "        \\####/         ",
-            "         ''\\/          "
+            "         ╭──╮         ",
+            "       ╭╱▓▓▓╲         ",
+            " ≈≈≈≈≈◀▒▓▓▓▓▓▒◉▶      ",
+            "        ╲▓▓▓╱         ",
+            "         ╰╲╱          "
         ),
         leftFrameA = arrayOf(
-            "          /\\__         ",
-            "         /####\\_       ",
-            "      <º|#######>~~~~~ ",
-            "         \\####/        ",
-            "          '--'         "
+            "          ╱╲╮         ",
+            "         ╱▓▓▓╲╮       ",
+            "      ◀◉▒▓▓▓▓▓▒▶≈≈≈≈≈ ",
+            "         ╲▓▓▓╱        ",
+            "         ╰──╯         "
         ),
         leftFrameB = arrayOf(
-            "          .--.         ",
-            "         /####\\_       ",
-            "      <º|#######>~~~~~ ",
-            "         \\####/        ",
-            "          \\/''         "
+            "         ╭──╮         ",
+            "         ╱▓▓▓╲╮       ",
+            "      ◀◉▒▓▓▓▓▓▒▶≈≈≈≈≈ ",
+            "         ╲▓▓▓╱        ",
+            "          ╲╱╯         "
         )
     ),
     DEEP_SQUID(
@@ -889,24 +889,24 @@ enum class OceanVisitorSpecies(
         canSpout = false,
         podSize = 1,
         rightFrameA = arrayOf(
-            "  ~-~-._  _.--.  ",
-            " ~~~~==(º|#####> ",
-            "  ~-~-'  ''--'   "
+            "  ≈─≈─╮  ╭──╮   ",
+            " ≈≈≈≈═(◉│▓▓▓▒▶  ",
+            "  ≈─≈─╯  ╰──╯   "
         ),
         rightFrameB = arrayOf(
-            "   -~-~._ _.--.  ",
-            "  ~~~==(º|#####> ",
-            "   -~-~' ''--'   "
+            "   ─≈─≈╮ ╭──╮   ",
+            "  ≈≈≈═(◉│▓▓▓▒▶  ",
+            "   ─≈─≈╯ ╰──╯   "
         ),
         leftFrameA = arrayOf(
-            "  .--._  _.-~-~  ",
-            " <#####|º)==~~~~ ",
-            "   '--''  '-~-~  "
+            "   ╭──╮  ╭─≈─≈  ",
+            "  ◀▒▓▓▓│◉)═≈≈≈≈ ",
+            "   ╰──╯  ╰─≈─≈  "
         ),
         leftFrameB = arrayOf(
-            "  .--._ _.~-~-   ",
-            " <#####|º)==~~~  ",
-            "   '--'' '~-~-   "
+            "   ╭──╮ ╭≈─≈─   ",
+            "  ◀▒▓▓▓│◉)═≈≈≈  ",
+            "   ╰──╯ ╰≈─≈─   "
         )
     )
 }
@@ -1632,6 +1632,7 @@ class PondSimulation {
         isSubpixelText = true
     }
     private val bgPaint = Paint()
+    private val bodyHaloPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     private var cellWidthPx = 13f
     private var cellHeightPx = 22f
@@ -2831,7 +2832,7 @@ class PondSimulation {
             }
         }
 
-        // Flush static background grid to Canvas
+        // Flush static background grid to Canvas (trims trailing spaces for leaner Skia glyph layout)
         for (r in 0 until rows) {
             if (r < topCalmRow && isWallpaperMode && r % 2 == 1) continue
             val yPx = r * cellHeightPx + baselineOffsetPx
@@ -2847,11 +2848,13 @@ class PondSimulation {
                 val runColor = colorGrid[rowOffset + c]
                 val runStart = c
                 var runLen = 0
+                var lastNonSpaceLen = 0
                 while (c < cols) {
                     val curCh = charGrid[rowOffset + c]
                     val curCol = colorGrid[rowOffset + c]
                     if (curCh != ' ' && curCol == runColor) {
                         rowCharScratch[runLen++] = curCh
+                        lastNonSpaceLen = runLen
                         c++
                     } else if (curCh == ' ') {
                         rowCharScratch[runLen++] = ' '
@@ -2860,19 +2863,21 @@ class PondSimulation {
                         break
                     }
                 }
-                textPaint.color = runColor
-                canvas.drawText(rowCharScratch, 0, runLen, runStart * cellWidthPx, yPx, textPaint)
+                if (lastNonSpaceLen > 0) {
+                    textPaint.color = runColor
+                    canvas.drawText(rowCharScratch, 0, lastNonSpaceLen, runStart * cellWidthPx, yPx, textPaint)
+                }
             }
         }
 
         val baseTextSizePx = textPaint.textSize
 
         /**
-         * Renders any multi-line ASCII creature with:
-         * - Smooth 3D perspective scale from `zDepth` (zero pulsing!)
-         * - Smooth horizontal foreshortening (`scaleX`) during curved 3D yaw turns
-         * - Gentle organic vertical pitch rotation (`pitchDeg`) when climbing, diving, or breaching!
-         * - Polarity-aware Beer-Lambert underwater fog (reduced when breaching into open sky!)
+         * Sculpted Monospace Creature Renderer:
+         * - Early frustum cull skips off-screen creatures before any color/matrix math
+         * - Translucent soft-body silhouette halo fills micro-gaps behind crisp Unicode+ASCII glyphs
+         * - Continuous traveling sine-wave spine undulation ripples tail/fins organically in real time
+         * - Smooth 3D foreshortening (`scaleX`), gentle pitch banking (`pitchDeg`), and Beer-Lambert fog
          */
         fun drawSubPixelSprite(
             colFloat: Float,
@@ -2885,18 +2890,33 @@ class PondSimulation {
             inSunbeamShaft: Boolean = false,
             scaleX: Float = 1.0f,
             pitchDeg: Float = 0.0f,
-            allowAboveWater: Boolean = false
+            allowAboveWater: Boolean = false,
+            wavePhase: Float = 0f,
+            facingRight: Boolean = true,
+            spineWaveAmp: Float = 0f,
+            softBodyAlpha: Int = 26
         ) {
             val zClamped = zDepth.coerceIn(0.0f, 1.0f)
             val perspScale = 1.15f - zClamped * 0.52f
             val scaledCellW = cellWidthPx * perspScale
             val scaledCellH = cellHeightPx * perspScale
+
+            val spriteCols = lines[0].length
+            val pivotX = (colFloat + spriteCols * 0.5f) * cellWidthPx
+            val pivotY = rowFloat * cellHeightPx + baselineOffsetPx * 0.5f
+            val halfWidthPx = spriteCols * 0.5f * scaledCellW
+
+            // Early horizontal frustum cull (zero work for off-window creatures!)
+            if (pivotX + halfWidthPx < -cellWidthPx * 2f || pivotX - halfWidthPx > canvas.width + cellWidthPx * 2f) {
+                return
+            }
+
             textPaint.textSize = baseTextSizePx * perspScale
 
             val vertFrac = ((rowFloat - splitRow) / underwaterRows.toFloat()).coerceIn(0f, 1f)
             val localWaterBg = if (rowFloat < splitRow) pal.skyBg else TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.waterBgDeep, vertFrac)
             val fogFactor = if (rowFloat < splitRow) {
-                (zClamped * 0.24f).coerceIn(0f, 0.30f) // Clear open air when leaping out of water!
+                (zClamped * 0.24f).coerceIn(0f, 0.30f)
             } else {
                 (zClamped * 0.66f + vertFrac * 0.16f).coerceIn(0f, 0.78f)
             }
@@ -2906,11 +2926,6 @@ class PondSimulation {
             val foggedBody = TimeOfDayPalette.lerpColor(litBody, localWaterBg, fogFactor)
             val foggedFin  = TimeOfDayPalette.lerpColor(litFin, localWaterBg, fogFactor)
             val foggedEye  = TimeOfDayPalette.lerpColor(eyeColor, localWaterBg, fogFactor * 0.72f)
-
-            val spriteCols = lines[0].length
-            val pivotX = (colFloat + spriteCols * 0.5f) * cellWidthPx
-            val pivotY = rowFloat * cellHeightPx + baselineOffsetPx * 0.5f
-            val halfWidthPx = spriteCols * 0.5f * scaledCellW
 
             val needTransform = abs(pitchDeg) > 0.35f || abs(scaleX - 1.0f) > 0.015f
             if (needTransform) {
@@ -2927,12 +2942,27 @@ class PondSimulation {
             val minClipY = if (allowAboveWater) 1.5f * cellHeightPx else (splitRow + 0.9f) * cellHeightPx
             val maxClipY = (floorRow - 0.3f) * cellHeightPx
 
+            // Whisper-soft translucent body silhouette backplate (disabled on true-black AMOLED to keep OLED pixels off)
+            if (!isTrueBlackOled && softBodyAlpha > 0 && lines.size >= 3 && pivotY in minClipY..maxClipY) {
+                val effAlpha = (softBodyAlpha * (1f - fogFactor * 0.45f)).toInt().coerceIn(8, 48)
+                bodyHaloPaint.color = (foggedBody and 0x00FFFFFF) or (effAlpha shl 24)
+                val rx = halfWidthPx * 0.78f
+                val ry = lines.size * scaledCellH * 0.34f
+                val cx = if (needTransform) 0f else pivotX
+                val cy = if (needTransform) 0f else pivotY
+                canvas.drawOval(cx - rx, cy - ry, cx + rx, cy + ry, bodyHaloPaint)
+            }
+
+            val useWave = spineWaveAmp > 0.01f && spriteCols > 3 && !isBatterySaver
+            val wavePx = spineWaveAmp * scaledCellH
+            val invCols = 1f / (spriteCols - 1).coerceAtLeast(1).toFloat()
+
             for (lineIdx in lines.indices) {
                 val lineOffset = (lineIdx - (lines.size - 1) * 0.5f) * scaledCellH
                 val worldLineY = pivotY + lineOffset + baselineOffsetPx * 0.5f
                 if (worldLineY < minClipY || worldLineY > maxClipY) continue
 
-                val drawY = if (needTransform) (lineOffset + baselineOffsetPx * 0.5f) else worldLineY
+                val baseDrawY = if (needTransform) (lineOffset + baselineOffsetPx * 0.5f) else worldLineY
                 val startX = if (needTransform) (-halfWidthPx) else (pivotX - halfWidthPx)
 
                 val str = lines[lineIdx]
@@ -2941,13 +2971,19 @@ class PondSimulation {
                     if (ch == ' ') continue
 
                     textPaint.color = when {
-                        ch == '°' || ch == 'º' || ch == 'O' -> foggedEye
+                        ch == '°' || ch == 'º' || ch == '◉' || ch == 'O' -> foggedEye
                         lines.size >= 3 && (lineIdx == 0 || lineIdx == lines.size - 1) -> foggedFin
-                        ch == '|' || ch == '{' || ch == '}' || ch == '#' || ch == '=' -> foggedFin
+                        ch == '|' || ch == '│' || ch == '{' || ch == '}' || ch == '#' || ch == '▓' || ch == '█' || ch == '◈' || ch == '=' || ch == '═' -> foggedFin
                         else -> foggedBody
                     }
+                    val spineY = if (useWave) {
+                        val headToTail = if (facingRight) (1f - chIdx * invCols) else (chIdx * invCols)
+                        sin(wavePhase - headToTail * 3.8f) * (headToTail * headToTail) * wavePx
+                    } else {
+                        0f
+                    }
                     singleCharBuf[0] = ch
-                    canvas.drawText(singleCharBuf, 0, 1, startX + chIdx * scaledCellW, drawY, textPaint)
+                    canvas.drawText(singleCharBuf, 0, 1, startX + chIdx * scaledCellW, baseDrawY + spineY, textPaint)
                 }
             }
 
@@ -3005,7 +3041,8 @@ class PondSimulation {
                     bodyColor = pal.fishAqua,
                     finColor = pal.fishRose,
                     eyeColor = pal.fishFoam,
-                    zDepth = jel.zDepth
+                    zDepth = jel.zDepth,
+                    softBodyAlpha = 36
                 )
             }
         }
@@ -3132,7 +3169,11 @@ class PondSimulation {
                         eyeColor = pal.fishFoam,
                         zDepth = mem.zDepth,
                         pitchDeg = mem.pitchDeg,
-                        allowAboveWater = sp.canBreach
+                        allowAboveWater = sp.canBreach,
+                        wavePhase = mem.animPhase,
+                        facingRight = oceanVisitor.vxDir >= 0f,
+                        spineWaveAmp = if (sp.canBreach) 0.24f else 0.34f,
+                        softBodyAlpha = 32
                     )
                 }
             }
@@ -3305,7 +3346,7 @@ class PondSimulation {
         // =========================================================================
         // 9. PREDATOR STALK, LUNGE, ELDER CROWN INTIMIDATION & JAW-SNAP CATCH
         // =========================================================================
-        if (config.enablePredators) {
+        if (config.huntMode.isEnabled) {
             if (!predator.active) {
                 predator.cooldownTimer -= clampedDt
                 if (predator.cooldownTimer <= 0f) {
@@ -3831,7 +3872,11 @@ class PondSimulation {
                                 eyeColor = pal.fishFoam,
                                 zDepth = mem.zDepth,
                                 pitchDeg = mem.pitchDeg,
-                                allowAboveWater = sp.canBreach
+                                allowAboveWater = sp.canBreach,
+                                wavePhase = mem.animPhase,
+                                facingRight = oceanVisitor.vxDir >= 0f,
+                                spineWaveAmp = if (sp.canBreach) 0.24f else 0.34f,
+                                softBodyAlpha = 32
                             )
                         }
                     }
@@ -3937,6 +3982,12 @@ class PondSimulation {
                 }
             }
 
+            val fishWaveAmp = when {
+                isHeadOnOrTailOn -> 0f
+                f.species == AsciiFishSpecies.SEA_TURTLE || f.species == AsciiFishSpecies.PUFFERFISH -> 0.08f
+                f.isSchooler -> 0.16f
+                else -> 0.24f
+            }
             drawSubPixelSprite(
                 colFloat = drawCol,
                 rowFloat = parallaxDrawRow,
@@ -3947,7 +3998,11 @@ class PondSimulation {
                 zDepth = effectiveZ,
                 inSunbeamShaft = inBeam,
                 scaleX = foreshortenX,
-                pitchDeg = if (isHeadOnOrTailOn) 0f else f.pitchDeg
+                pitchDeg = if (isHeadOnOrTailOn) 0f else f.pitchDeg,
+                wavePhase = f.animPhase,
+                facingRight = cosYaw >= 0f,
+                spineWaveAmp = fishWaveAmp,
+                softBodyAlpha = if (f.isSchooler) 0 else 24
             )
 
             if (f.isElderCrown) {
@@ -3987,7 +4042,11 @@ class PondSimulation {
                         eyeColor = pal.fishFoam,
                         zDepth = mem.zDepth,
                         pitchDeg = mem.pitchDeg,
-                        allowAboveWater = sp.canBreach
+                        allowAboveWater = sp.canBreach,
+                        wavePhase = mem.animPhase,
+                        facingRight = oceanVisitor.vxDir >= 0f,
+                        spineWaveAmp = if (sp.canBreach) 0.24f else 0.34f,
+                        softBodyAlpha = 32
                     )
                 }
             }
@@ -4116,7 +4175,11 @@ class PondSimulation {
                 finColor = pal.fishGold,
                 eyeColor = pal.fishFoam,
                 zDepth = predator.zDepth,
-                pitchDeg = if (abs(predator.vz) > 0.20f) 0f else predator.pitchDeg
+                pitchDeg = if (abs(predator.vz) > 0.20f) 0f else predator.pitchDeg,
+                wavePhase = predator.animPhase,
+                facingRight = predator.vxDir >= 0f,
+                spineWaveAmp = if (abs(predator.vz) > 0.20f) 0f else 0.28f,
+                softBodyAlpha = 26
             )
         }
 

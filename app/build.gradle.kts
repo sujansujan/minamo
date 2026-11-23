@@ -3,6 +3,20 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+val computedVersionCode = if (ciRunNumber != null) 10 + ciRunNumber else 4
+
+val releaseKeystorePath = System.getenv("MINAMO_KEYSTORE_PATH")
+val releaseKeystorePassword = System.getenv("MINAMO_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("MINAMO_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("MINAMO_KEY_PASSWORD")
+val hasPersistentReleaseKey =
+    !releaseKeystorePath.isNullOrBlank() &&
+        !releaseKeystorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank() &&
+        file(releaseKeystorePath).exists()
+
 android {
     namespace = "com.example.koipond"
     compileSdk = 35
@@ -11,15 +25,30 @@ android {
         applicationId = "com.example.koipond"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "2.4.0"
+        versionCode = computedVersionCode
+        versionName = "2.5.0"
+    }
+
+    signingConfigs {
+        if (hasPersistentReleaseKey) {
+            create("release") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasPersistentReleaseKey) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

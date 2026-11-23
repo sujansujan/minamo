@@ -60,9 +60,12 @@ enum class WeatherMode(val id: Int, val label: String) {
 }
 
 enum class HuntMode(val id: Int, val label: String, val catchChance: Float) {
+    OFF(3, "off", 0.0f),
+    HARMLESS(2, "harmless", 0.0f),
     NATURAL(0, "natural", 0.42f),
-    FIERCE(1, "fierce", 0.78f),
-    HARMLESS(2, "harmless", 0.0f);
+    FIERCE(1, "fierce", 0.78f);
+
+    val isEnabled: Boolean get() = this != OFF
 
     companion object {
         fun fromId(id: Int): HuntMode = entries.firstOrNull { it.id == id } ?: NATURAL
@@ -79,13 +82,19 @@ enum class GridDensity(val id: Int, val label: String, val targetCols: Int) {
     }
 }
 
-enum class PowerSaveMode(val id: Int, val label: String) {
-    AUTO_SAVER(0, "auto"),
-    MAX_ECO(1, "eco"),
-    OFF(2, "off");
+/**
+ * Unified performance & battery profile (replaces overlapping PowerSaveMode + TargetFps toggles):
+ * - ECO: 15fps cap, reduced ambient particles, tilt sensor off
+ * - BALANCED: adaptive 20fps calm / 30fps active, auto-drops to 15fps under Battery Saver / <15% / thermal warm
+ * - SMOOTH: adaptive 30fps calm / 60fps active, still safely throttles under thermal/low-battery
+ */
+enum class PerformanceMode(val id: Int, val label: String, val maxFps: Int) {
+    ECO(1, "eco", 15),
+    BALANCED(0, "balanced", 30),
+    SMOOTH(2, "smooth", 60);
 
     companion object {
-        fun fromId(id: Int): PowerSaveMode = entries.firstOrNull { it.id == id } ?: AUTO_SAVER
+        fun fromId(id: Int): PerformanceMode = entries.firstOrNull { it.id == id } ?: BALANCED
     }
 }
 
@@ -95,16 +104,13 @@ data class WallpaperConfig(
     val paletteFamily: PaletteFamily = PaletteFamily.LAGOON,
     val timeCycleMode: TimeCycleMode = TimeCycleMode.AUTO_REALTIME,
     val weatherMode: WeatherMode = WeatherMode.AUTO,
-    val waterlinePercent: Int = 36, // 25% .. 65% of screen height from top
+    val waterlinePercent: Int = 36,
     val heroFishCount: Int = 6,
     val waterClarity: Float = 0.85f,
-    val targetFps: Int = 30,
     val gridDensity: GridDensity = GridDensity.BALANCED,
+    val performanceMode: PerformanceMode = PerformanceMode.BALANCED,
     val enableGyro: Boolean = true,
-    val powerSaveMode: PowerSaveMode = PowerSaveMode.AUTO_SAVER,
-    val pauseOnBackgroundAndScreenOff: Boolean = true,
     val enableBatteryLantern: Boolean = true,
-    val enablePredators: Boolean = true,
     val huntMode: HuntMode = HuntMode.NATURAL,
     val enableBottomFeeders: Boolean = true,
     val calmIconMode: Boolean = false
@@ -116,6 +122,28 @@ class WallpaperSettingsRepository(context: Context) {
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun loadConfig(): WallpaperConfig {
+        val rawHunt = HuntMode.fromId(prefs.getInt(KEY_HUNT_MODE, HuntMode.NATURAL.id))
+        val migratedHunt = if (prefs.contains(KEY_LEGACY_ENABLE_PREDATORS) &&
+            !prefs.getBoolean(KEY_LEGACY_ENABLE_PREDATORS, true) &&
+            rawHunt != HuntMode.OFF
+        ) {
+            HuntMode.OFF
+        } else {
+            rawHunt
+        }
+
+        val perfMode = if (prefs.contains(KEY_PERFORMANCE_MODE)) {
+            PerformanceMode.fromId(prefs.getInt(KEY_PERFORMANCE_MODE, PerformanceMode.BALANCED.id))
+        } else {
+            val legacyEco = prefs.getInt(KEY_LEGACY_POWER_SAVE_MODE, 0) == 1
+            val legacyFps = prefs.getInt(KEY_LEGACY_TARGET_FPS, 30)
+            when {
+                legacyEco -> PerformanceMode.ECO
+                legacyFps >= 60 -> PerformanceMode.SMOOTH
+                else -> PerformanceMode.BALANCED
+            }
+        }
+
         return WallpaperConfig(
             sceneBiome = SceneBiome.fromId(prefs.getInt(KEY_SCENE_BIOME, SceneBiome.OCEAN.id)),
             themeMode = ThemeMode.fromId(prefs.getInt(KEY_THEME_MODE, ThemeMode.SOLAR.id)),
@@ -125,14 +153,11 @@ class WallpaperSettingsRepository(context: Context) {
             waterlinePercent = prefs.getInt(KEY_WATERLINE_PCT, 36).coerceIn(25, 65),
             heroFishCount = prefs.getInt(KEY_FISH_COUNT, 6).coerceIn(2, 9),
             waterClarity = prefs.getFloat(KEY_WATER_CLARITY, 0.85f).coerceIn(0.35f, 1.0f),
-            targetFps = if (prefs.getInt(KEY_TARGET_FPS, 30) == 60) 60 else 30,
             gridDensity = GridDensity.fromId(prefs.getInt(KEY_GRID_DENSITY, GridDensity.BALANCED.id)),
+            performanceMode = perfMode,
             enableGyro = prefs.getBoolean(KEY_ENABLE_GYRO, true),
-            powerSaveMode = PowerSaveMode.fromId(prefs.getInt(KEY_POWER_SAVE_MODE, PowerSaveMode.AUTO_SAVER.id)),
-            pauseOnBackgroundAndScreenOff = prefs.getBoolean(KEY_PAUSE_BG, true),
             enableBatteryLantern = prefs.getBoolean(KEY_BATTERY_LANTERN, true),
-            enablePredators = prefs.getBoolean(KEY_ENABLE_PREDATORS, true),
-            huntMode = HuntMode.fromId(prefs.getInt(KEY_HUNT_MODE, HuntMode.NATURAL.id)),
+            huntMode = migratedHunt,
             enableBottomFeeders = prefs.getBoolean(KEY_ENABLE_BOTTOM_FEEDERS, true),
             calmIconMode = prefs.getBoolean(KEY_CALM_ICON_MODE, false)
         )
@@ -148,16 +173,14 @@ class WallpaperSettingsRepository(context: Context) {
             .putInt(KEY_WATERLINE_PCT, config.waterlinePercent.coerceIn(25, 65))
             .putInt(KEY_FISH_COUNT, config.heroFishCount.coerceIn(2, 9))
             .putFloat(KEY_WATER_CLARITY, config.waterClarity.coerceIn(0.35f, 1.0f))
-            .putInt(KEY_TARGET_FPS, config.targetFps)
             .putInt(KEY_GRID_DENSITY, config.gridDensity.id)
+            .putInt(KEY_PERFORMANCE_MODE, config.performanceMode.id)
             .putBoolean(KEY_ENABLE_GYRO, config.enableGyro)
-            .putInt(KEY_POWER_SAVE_MODE, config.powerSaveMode.id)
-            .putBoolean(KEY_PAUSE_BG, config.pauseOnBackgroundAndScreenOff)
             .putBoolean(KEY_BATTERY_LANTERN, config.enableBatteryLantern)
-            .putBoolean(KEY_ENABLE_PREDATORS, config.enablePredators)
             .putInt(KEY_HUNT_MODE, config.huntMode.id)
             .putBoolean(KEY_ENABLE_BOTTOM_FEEDERS, config.enableBottomFeeders)
             .putBoolean(KEY_CALM_ICON_MODE, config.calmIconMode)
+            .remove(KEY_LEGACY_ENABLE_PREDATORS)
             .apply()
     }
 
@@ -170,27 +193,15 @@ class WallpaperSettingsRepository(context: Context) {
     fun getQuickTileCommandSeq(): Int = prefs.getInt(KEY_QUICK_TILE_SEQ, 0)
 
     fun recordCatchEvent(predatorName: String, preyName: String) {
-        val catches = prefs.getInt(KEY_STAT_CATCHES, 0) + 1
-        prefs.edit()
-            .putInt(KEY_STAT_CATCHES, catches)
-            .putString(KEY_LAST_EVENT, "! " + predatorName + " caught " + preyName)
-            .apply()
+        flushTelemetryBatch(1, 0, 0, "! " + predatorName + " caught " + preyName)
     }
 
     fun recordEscapeEvent(predatorName: String) {
-        val escapes = prefs.getInt(KEY_STAT_ESCAPES, 0) + 1
-        prefs.edit()
-            .putInt(KEY_STAT_ESCAPES, escapes)
-            .putString(KEY_LAST_EVENT, "ok: school evaded " + predatorName)
-            .apply()
+        flushTelemetryBatch(0, 1, 0, "ok: school evaded " + predatorName)
     }
 
     fun recordCrownKoiLevelUp(speciesName: String) {
-        val crowns = prefs.getInt(KEY_STAT_CROWNS, 0) + 1
-        prefs.edit()
-            .putInt(KEY_STAT_CROWNS, crowns)
-            .putString(KEY_LAST_EVENT, "* " + speciesName + " grew into elder crown!")
-            .apply()
+        flushTelemetryBatch(0, 0, 1, "* " + speciesName + " grew into elder crown!")
     }
 
     fun flushTelemetryBatch(
@@ -225,7 +236,6 @@ class WallpaperSettingsRepository(context: Context) {
     }
 
     fun getTotalLegendaries(): Int = prefs.getInt(KEY_STAT_LEGENDARIES, 0)
-
     fun getTotalCatches(): Int = prefs.getInt(KEY_STAT_CATCHES, 0)
     fun getTotalEscapes(): Int = prefs.getInt(KEY_STAT_ESCAPES, 0)
     fun getTotalCrowns(): Int = prefs.getInt(KEY_STAT_CROWNS, 0)
@@ -268,13 +278,10 @@ class WallpaperSettingsRepository(context: Context) {
         const val KEY_WATERLINE_PCT = "waterline_pct"
         const val KEY_FISH_COUNT = "koi_count"
         const val KEY_WATER_CLARITY = "water_clarity"
-        const val KEY_TARGET_FPS = "target_fps"
         const val KEY_GRID_DENSITY = "grid_density"
+        const val KEY_PERFORMANCE_MODE = "performance_mode"
         const val KEY_ENABLE_GYRO = "enable_gyro"
-        const val KEY_POWER_SAVE_MODE = "power_save_mode"
-        const val KEY_PAUSE_BG = "pause_on_bg"
         const val KEY_BATTERY_LANTERN = "battery_lantern"
-        const val KEY_ENABLE_PREDATORS = "enable_predators"
         const val KEY_HUNT_MODE = "hunt_mode"
         const val KEY_ENABLE_BOTTOM_FEEDERS = "enable_bottom_feeders"
         const val KEY_QUICK_TILE_SEQ = "quick_tile_seq"
@@ -283,5 +290,9 @@ class WallpaperSettingsRepository(context: Context) {
         const val KEY_STAT_CROWNS = "stat_crowns"
         const val KEY_STAT_LEGENDARIES = "stat_legendaries"
         const val KEY_LAST_EVENT = "last_event"
+        // Legacy keys for seamless preference migration
+        private const val KEY_LEGACY_ENABLE_PREDATORS = "enable_predators"
+        private const val KEY_LEGACY_POWER_SAVE_MODE = "power_save_mode"
+        private const val KEY_LEGACY_TARGET_FPS = "target_fps"
     }
 }

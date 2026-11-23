@@ -1,12 +1,7 @@
 package com.example.koipond
 
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.Canvas
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.Choreographer
@@ -18,7 +13,7 @@ import android.view.View
 class AsciiPondView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
-) : View(context, attrs), SensorEventListener {
+) : View(context, attrs) {
 
     val simulation = PondSimulation().apply {
         loadBundledFont(context)
@@ -35,17 +30,7 @@ class AsciiPondView @JvmOverloads constructor(
             }
         }
 
-    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-    private val rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
-    private val gyroFallbackSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-    private var isSensorRegistered = false
-    private val rotationMatrix = FloatArray(9)
-    private val orientationAngles = FloatArray(3)
-    private var hasNeutralBaseline = false
-    private var neutralPitch = 0f
-    private var neutralRoll = 0f
-    private var tiltX = 0f
-    private var tiltY = 0f
+    private val tiltSensor = TiltParallaxSensor(context)
 
     private var lastFrameNs = 0L
     private var lastDrawNs = 0L
@@ -59,8 +44,7 @@ class AsciiPondView @JvmOverloads constructor(
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (!isRunning) return
-            val ecoActive = config.powerSaveMode == PowerSaveMode.MAX_ECO
-            val targetFps = if (ecoActive) 15 else config.targetFps
+            val targetFps = config.performanceMode.maxFps
             val minIntervalNs = 1_000_000_000L / targetFps
             if (frameTimeNanos - lastDrawNs >= minIntervalNs - 2_000_000L) {
                 lastDrawNs = frameTimeNanos
@@ -91,11 +75,6 @@ class AsciiPondView @JvmOverloads constructor(
         }
     )
 
-    private fun isSystemNightMode(): Boolean {
-        val uiMask = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        return uiMask == Configuration.UI_MODE_NIGHT_YES
-    }
-
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w > 0 && h > 0) {
@@ -113,9 +92,9 @@ class AsciiPondView @JvmOverloads constructor(
         }
         lastFrameNs = nowNs
 
-        val ecoActive = config.powerSaveMode == PowerSaveMode.MAX_ECO
-        val px = if (config.enableGyro) tiltX * 0.7f else 0f
-        val py = if (config.enableGyro) tiltY * 0.7f else 0f
+        val ecoActive = config.performanceMode == PerformanceMode.ECO
+        val px = if (config.enableGyro && !ecoActive) tiltSensor.tiltX * 0.7f else 0f
+        val py = if (config.enableGyro && !ecoActive) tiltSensor.tiltY * 0.7f else 0f
 
         simulation.updateAndRender(
             canvas = canvas,
@@ -126,7 +105,7 @@ class AsciiPondView @JvmOverloads constructor(
             isBatterySaver = ecoActive,
             isWallpaperMode = false,
             batteryPercent = 85,
-            isSystemDark = isSystemNightMode(),
+            isSystemDark = context.isSystemNightMode(),
             previewHourOverride = previewHourOverride
         )
     }
@@ -151,35 +130,6 @@ class AsciiPondView @JvmOverloads constructor(
 
     override fun performClick(): Boolean = super.performClick()
 
-    override fun onSensorChanged(event: SensorEvent) {
-        when (event.sensor.type) {
-            Sensor.TYPE_GAME_ROTATION_VECTOR -> {
-                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-                SensorManager.getOrientation(rotationMatrix, orientationAngles)
-                val pitch = orientationAngles[1]
-                val roll = orientationAngles[2]
-                if (!hasNeutralBaseline) {
-                    neutralPitch = pitch
-                    neutralRoll = roll
-                    hasNeutralBaseline = true
-                } else {
-                    neutralPitch += (pitch - neutralPitch) * 0.012f
-                    neutralRoll += (roll - neutralRoll) * 0.012f
-                }
-                val targetX = ((roll - neutralRoll) * 2.1f).coerceIn(-1.25f, 1.25f)
-                val targetY = ((pitch - neutralPitch) * 2.1f).coerceIn(-1.25f, 1.25f)
-                tiltX += (targetX - tiltX) * 0.22f
-                tiltY += (targetY - tiltY) * 0.22f
-            }
-            Sensor.TYPE_GYROSCOPE -> {
-                tiltX = (tiltX * 0.92f + event.values[1] * 0.16f).coerceIn(-1.25f, 1.25f)
-                tiltY = (tiltY * 0.92f + event.values[0] * 0.16f).coerceIn(-1.25f, 1.25f)
-            }
-        }
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-
     fun shuffleEcosystem(): String {
         val now = System.nanoTime()
         simulation.randomizeEcosystemOnUnlock(now, preserveElderCrown = false)
@@ -187,7 +137,8 @@ class AsciiPondView @JvmOverloads constructor(
             mode = config.timeCycleMode,
             family = config.paletteFamily,
             themeMode = config.themeMode,
-            isSystemDark = isSystemNightMode()
+            isSystemDark = context.isSystemNightMode(),
+            overrideHour = previewHourOverride
         )
         val visitorName = simulation.triggerOceanVisitor(now + 17L, snap.isNight)
         onSpeciesRandomized?.invoke(simulation.activeSpeciesSummary, snap.timeLabel)
@@ -215,29 +166,11 @@ class AsciiPondView @JvmOverloads constructor(
     fun stopAnimation() {
         isRunning = false
         Choreographer.getInstance().removeFrameCallback(frameCallback)
-        unregisterSensor()
+        tiltSensor.unregister()
     }
 
     private fun syncSensorRegistration() {
-        val ecoActive = config.powerSaveMode == PowerSaveMode.MAX_ECO
-        val shouldUse = isRunning && config.enableGyro && !ecoActive
-        val chosen = rotationSensor ?: gyroFallbackSensor
-        if (shouldUse && !isSensorRegistered && chosen != null) {
-            hasNeutralBaseline = false
-            sensorManager?.registerListener(this, chosen, SensorManager.SENSOR_DELAY_UI, 40_000)
-            isSensorRegistered = true
-        } else if (!shouldUse && isSensorRegistered) {
-            unregisterSensor()
-        }
-    }
-
-    private fun unregisterSensor() {
-        if (isSensorRegistered) {
-            sensorManager?.unregisterListener(this)
-            isSensorRegistered = false
-            hasNeutralBaseline = false
-            tiltX = 0f
-            tiltY = 0f
-        }
+        val ecoActive = config.performanceMode == PerformanceMode.ECO
+        tiltSensor.setActive(isRunning && config.enableGyro && !ecoActive)
     }
 }

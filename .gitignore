@@ -1,0 +1,35 @@
+# Android / Gradle build outputs
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+build/
+app/build/
+.gradle/
+captures/
+
+# Local & IDE configuration
+local.properties
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+.externalNativeBuild/
+.cxx/
+
+# Secrets, Signing Keystores & Credentials (NEVER commit these!)
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+signing.properties
+.env
+.env.*
+google-services.json

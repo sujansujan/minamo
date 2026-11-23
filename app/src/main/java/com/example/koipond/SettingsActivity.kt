@@ -5,7 +5,6 @@ import android.app.WallpaperManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
-import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -20,6 +19,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import java.util.Calendar
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -79,25 +79,21 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var textWaterlineBar: TextView
     private lateinit var textClarityBar: TextView
 
-    private lateinit var textPredatorsCheck: TextView
+    private lateinit var btnHuntOff: TextView
+    private lateinit var btnHuntHarmless: TextView
     private lateinit var btnHuntNatural: TextView
     private lateinit var btnHuntFierce: TextView
-    private lateinit var btnHuntHarmless: TextView
     private lateinit var textBottomFeedersCheck: TextView
-    private lateinit var textPauseBgSwitch: TextView
     private lateinit var textBatteryLanternSwitch: TextView
 
-    private lateinit var btnPowerAuto: TextView
-    private lateinit var btnPowerEco: TextView
-    private lateinit var btnPowerOff: TextView
+    private lateinit var btnPerfEco: TextView
+    private lateinit var btnPerfBalanced: TextView
+    private lateinit var btnPerfSmooth: TextView
 
     private lateinit var btnGridCozy: TextView
     private lateinit var btnGridBalanced: TextView
     private lateinit var btnGridDense: TextView
     private lateinit var textCalmIconsSwitch: TextView
-
-    private lateinit var btnFps30: TextView
-    private lateinit var btnFps60: TextView
     private lateinit var textGyroSwitch: TextView
 
     private var activeTab = 1
@@ -199,26 +195,22 @@ class SettingsActivity : AppCompatActivity() {
         textWaterlineBar = findViewById(R.id.textWaterlineBar)
         textClarityBar = findViewById(R.id.textClarityBar)
 
-        textPredatorsCheck = findViewById(R.id.textPredatorsCheck)
+        btnHuntOff = findViewById(R.id.btnHuntOff)
+        btnHuntHarmless = findViewById(R.id.btnHuntHarmless)
         btnHuntNatural = findViewById(R.id.btnHuntNatural)
         btnHuntFierce = findViewById(R.id.btnHuntFierce)
-        btnHuntHarmless = findViewById(R.id.btnHuntHarmless)
 
         textBottomFeedersCheck = findViewById(R.id.textBottomFeedersCheck)
-        textPauseBgSwitch = findViewById(R.id.textPauseBgSwitch)
         textBatteryLanternSwitch = findViewById(R.id.textBatteryLanternSwitch)
 
-        btnPowerAuto = findViewById(R.id.btnPowerAuto)
-        btnPowerEco = findViewById(R.id.btnPowerEco)
-        btnPowerOff = findViewById(R.id.btnPowerOff)
+        btnPerfEco = findViewById(R.id.btnPerfEco)
+        btnPerfBalanced = findViewById(R.id.btnPerfBalanced)
+        btnPerfSmooth = findViewById(R.id.btnPerfSmooth)
 
         btnGridCozy = findViewById(R.id.btnGridCozy)
         btnGridBalanced = findViewById(R.id.btnGridBalanced)
         btnGridDense = findViewById(R.id.btnGridDense)
         textCalmIconsSwitch = findViewById(R.id.textCalmIconsSwitch)
-
-        btnFps30 = findViewById(R.id.btnFps30)
-        btnFps60 = findViewById(R.id.btnFps60)
         textGyroSwitch = findViewById(R.id.textGyroSwitch)
     }
 
@@ -230,7 +222,7 @@ class SettingsActivity : AppCompatActivity() {
 
         asciiPondView.onSpeciesRandomized = { speciesStr, timeLabel ->
             textBiomeStatus.text = "biome ... " + speciesStr
-            textBiomeStatus.contentDescription = "Active fish biome: " + speciesStr
+            textBiomeStatus.contentDescription = "Active ocean biome: " + speciesStr
             textHeaderClockTag.text = "[" + timeLabel + "]"
         }
 
@@ -285,8 +277,8 @@ class SettingsActivity : AppCompatActivity() {
             contentDescription = "Summon a random predator fish now"
             setOnClickListener {
                 haptic(it)
-                if (!currentConfig.enablePredators) {
-                    updateConfig(currentConfig.copy(enablePredators = true))
+                if (!currentConfig.huntMode.isEnabled) {
+                    updateConfig(currentConfig.copy(huntMode = HuntMode.NATURAL))
                 }
                 val predName = asciiPondView.summonPredatorNow()
                 textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_warn))
@@ -308,8 +300,7 @@ class SettingsActivity : AppCompatActivity() {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
                     val w = v.width.coerceAtLeast(1).toFloat()
                     val frac = (event.x / w).coerceIn(0f, 0.999f)
-                    val scrubHour = frac * 24.0f
-                    asciiPondView.previewHourOverride = scrubHour
+                    asciiPondView.previewHourOverride = frac * 24.0f
                     updateSolarScrubberUi()
                     asciiPondView.invalidate()
                     true
@@ -355,52 +346,32 @@ class SettingsActivity : AppCompatActivity() {
         btnPalMoss.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.MOSS)) }
         btnPalAmoled.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.AMOLED)) }
 
-        findViewById<LinearLayout>(R.id.rowPredatorsCheck).setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(enablePredators = !currentConfig.enablePredators))
-        }
+        btnHuntOff.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.OFF)) }
+        btnHuntHarmless.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.HARMLESS)) }
         btnHuntNatural.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.NATURAL)) }
         btnHuntFierce.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.FIERCE)) }
-        btnHuntHarmless.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.HARMLESS)) }
 
         findViewById<LinearLayout>(R.id.rowBottomFeedersCheck).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(enableBottomFeeders = !currentConfig.enableBottomFeeders))
-        }
-
-        findViewById<LinearLayout>(R.id.rowPauseBgSwitch).setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(pauseOnBackgroundAndScreenOff = !currentConfig.pauseOnBackgroundAndScreenOff))
         }
         findViewById<LinearLayout>(R.id.rowBatteryLanternSwitch).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(enableBatteryLantern = !currentConfig.enableBatteryLantern))
         }
 
-        btnPowerAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.AUTO_SAVER)) }
-        btnPowerEco.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.MAX_ECO)) }
-        btnPowerOff.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.OFF)) }
+        btnPerfEco.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.ECO)) }
+        btnPerfBalanced.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.BALANCED)) }
+        btnPerfSmooth.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.SMOOTH)) }
 
-        btnThemeSolar.setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(themeMode = ThemeMode.SOLAR))
-            repository.applyAppNightMode(ThemeMode.SOLAR, currentConfig.timeCycleMode)
+        fun selectThemeMode(mode: ThemeMode) {
+            updateConfig(currentConfig.copy(themeMode = mode))
+            repository.applyAppNightMode(mode, currentConfig.timeCycleMode)
         }
-        btnThemeSystem.setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(themeMode = ThemeMode.SYSTEM))
-            repository.applyAppNightMode(ThemeMode.SYSTEM, currentConfig.timeCycleMode)
-        }
-        btnThemeLight.setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(themeMode = ThemeMode.LIGHT))
-            repository.applyAppNightMode(ThemeMode.LIGHT, currentConfig.timeCycleMode)
-        }
-        btnThemeDark.setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(themeMode = ThemeMode.DARK))
-            repository.applyAppNightMode(ThemeMode.DARK, currentConfig.timeCycleMode)
-        }
+        btnThemeSolar.setOnClickListener { haptic(it); selectThemeMode(ThemeMode.SOLAR) }
+        btnThemeSystem.setOnClickListener { haptic(it); selectThemeMode(ThemeMode.SYSTEM) }
+        btnThemeLight.setOnClickListener { haptic(it); selectThemeMode(ThemeMode.LIGHT) }
+        btnThemeDark.setOnClickListener { haptic(it); selectThemeMode(ThemeMode.DARK) }
 
         findViewById<TextView>(R.id.btnFishMinus).apply {
             contentDescription = "Decrease fish count"
@@ -454,10 +425,6 @@ class SettingsActivity : AppCompatActivity() {
             haptic(it)
             updateConfig(currentConfig.copy(calmIconMode = !currentConfig.calmIconMode))
         }
-
-        btnFps30.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(targetFps = 30)) }
-        btnFps60.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(targetFps = 60)) }
-
         findViewById<LinearLayout>(R.id.rowGyroSwitch).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(enableGyro = !currentConfig.enableGyro))
@@ -531,12 +498,7 @@ class SettingsActivity : AppCompatActivity() {
             "school escapes ..... " + escapes.toString() + nl +
             "elder crown fish ... " + crowns.toString() + nl +
             "last pond event .... " + lastEv + nl +
-            "solar light/dark ... eco vsync + adaptive fps"
-    }
-
-    private fun isSystemNightMode(): Boolean {
-        val uiMask = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        return uiMask == Configuration.UI_MODE_NIGHT_YES
+            "engine ............. solar lab + spine wave + eco vsync"
     }
 
     private fun updateSolarScrubberUi() {
@@ -552,8 +514,8 @@ class SettingsActivity : AppCompatActivity() {
 
         val slots = 14
         if (overrideH == null) {
-            val cal = java.util.Calendar.getInstance()
-            val curH = cal.get(java.util.Calendar.HOUR_OF_DAY) + cal.get(java.util.Calendar.MINUTE) / 60f
+            val cal = Calendar.getInstance()
+            val curH = cal.get(Calendar.HOUR_OF_DAY) + cal.get(Calendar.MINUTE) / 60f
             val pos = ((curH / 24f) * (slots - 1)).roundToInt().coerceIn(0, slots - 1)
             val bar = "-".repeat(pos) + "|" + "-".repeat(slots - 1 - pos)
             textSolarBar.text = "sun: [" + bar + "] live"
@@ -616,27 +578,16 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnThemeLight, currentConfig.themeMode == ThemeMode.LIGHT, "light")
         styleRadio(btnThemeDark, currentConfig.themeMode == ThemeMode.DARK, "dark")
 
-        styleSwitch(
-            textPredatorsCheck,
-            findViewById(R.id.rowPredatorsCheck),
-            currentConfig.enablePredators,
-            "Predator ambushes"
-        )
+        styleRadio(btnHuntOff, currentConfig.huntMode == HuntMode.OFF, "off")
+        styleRadio(btnHuntHarmless, currentConfig.huntMode == HuntMode.HARMLESS, "harmless")
         styleRadio(btnHuntNatural, currentConfig.huntMode == HuntMode.NATURAL, "natural")
         styleRadio(btnHuntFierce, currentConfig.huntMode == HuntMode.FIERCE, "fierce")
-        styleRadio(btnHuntHarmless, currentConfig.huntMode == HuntMode.HARMLESS, "harmless")
 
         styleSwitch(
             textBottomFeedersCheck,
             findViewById(R.id.rowBottomFeedersCheck),
             currentConfig.enableBottomFeeders,
             "Bottom-feeder critters"
-        )
-        styleSwitch(
-            textPauseBgSwitch,
-            findViewById(R.id.rowPauseBgSwitch),
-            currentConfig.pauseOnBackgroundAndScreenOff,
-            "Pause when in background or screen is off"
         )
         styleSwitch(
             textBatteryLanternSwitch,
@@ -648,12 +599,12 @@ class SettingsActivity : AppCompatActivity() {
             textGyroSwitch,
             findViewById(R.id.rowGyroSwitch),
             currentConfig.enableGyro,
-            "Gyroscope tilt parallax"
+            "3D tilt window parallax"
         )
 
-        styleRadio(btnPowerAuto, currentConfig.powerSaveMode == PowerSaveMode.AUTO_SAVER, "auto")
-        styleRadio(btnPowerEco, currentConfig.powerSaveMode == PowerSaveMode.MAX_ECO, "eco")
-        styleRadio(btnPowerOff, currentConfig.powerSaveMode == PowerSaveMode.OFF, "off")
+        styleRadio(btnPerfEco, currentConfig.performanceMode == PerformanceMode.ECO, "eco")
+        styleRadio(btnPerfBalanced, currentConfig.performanceMode == PerformanceMode.BALANCED, "balanced")
+        styleRadio(btnPerfSmooth, currentConfig.performanceMode == PerformanceMode.SMOOTH, "smooth")
 
         val fishCells = currentConfig.heroFishCount.coerceIn(2, 9)
         val fishBarStr = "[" + "#".repeat(fishCells) + "-".repeat(9 - fishCells) + "] " + fishCells.toString()
@@ -681,9 +632,6 @@ class SettingsActivity : AppCompatActivity() {
             currentConfig.calmIconMode,
             "Calm home-screen icon scrim"
         )
-
-        styleRadio(btnFps30, currentConfig.targetFps == 30, "30fps")
-        styleRadio(btnFps60, currentConfig.targetFps == 60, "60fps")
     }
 
     private fun updateConfig(newConfig: WallpaperConfig) {

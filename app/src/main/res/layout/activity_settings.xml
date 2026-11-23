@@ -595,36 +595,12 @@
                             android:text="[ + ]" />
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:id="@+id/rowPredatorsCheck"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="predator ambushes" />
-
-                        <TextView
-                            android:id="@+id/textPredatorsCheck"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="[ on]"
-                            android:textColor="@color/ascii_accent" />
-                    </LinearLayout>
-
                     <TextView
                         style="@style/AsciiText.Small"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="predator catch rate (blood plume):"
+                        android:layout_marginTop="4dp"
+                        android:text="predator behavior:"
                         android:textColor="@color/ascii_dim" />
 
                     <LinearLayout
@@ -633,34 +609,44 @@
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/btnHuntNatural"
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnHuntOff"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="0.85"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) off" />
+
+                        <TextView
+                            android:id="@+id/btnHuntHarmless"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.15"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) harmless" />
+
+                        <TextView
+                            android:id="@+id/btnHuntNatural"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.05"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="(*) natural" />
 
                         <TextView
                             android:id="@+id/btnHuntFierce"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="0.95"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="( ) fierce" />
-
-                        <TextView
-                            android:id="@+id/btnHuntHarmless"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) harmless" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -886,30 +872,6 @@
                     android:paddingBottom="10dp">
 
                     <LinearLayout
-                        android:id="@+id/rowPauseBgSwitch"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="pause on bg / screen off" />
-
-                        <TextView
-                            android:id="@+id/textPauseBgSwitch"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="[ on]"
-                            android:textColor="@color/ascii_accent" />
-                    </LinearLayout>
-
-                    <LinearLayout
                         android:id="@+id/rowBatteryLanternSwitch"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -946,7 +908,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="gyroscope tilt parallax" />
+                            android:text="3d tilt window parallax" />
 
                         <TextView
                             android:id="@+id/textGyroSwitch"
@@ -962,7 +924,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="battery saver policy:"
+                        android:text="performance &amp; battery (auto-pauses when hidden):"
                         android:textColor="@color/ascii_dim" />
 
                     <LinearLayout
@@ -971,68 +933,34 @@
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/btnPowerAuto"
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnPerfEco"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) auto" />
-
-                        <TextView
-                            android:id="@+id/btnPowerEco"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="0.9"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="( ) eco" />
 
                         <TextView
-                            android:id="@+id/btnPowerOff"
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnPerfBalanced"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="1.15"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="( ) off" />
-                    </LinearLayout>
-
-                    <TextView
-                        style="@style/AsciiText.Small"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="target frame rate:"
-                        android:textColor="@color/ascii_dim" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                            android:text="(*) balanced" />
 
                         <TextView
-                            android:id="@+id/btnFps30"
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnPerfSmooth"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="(*) 30fps" />
-
-                        <TextView
-                            android:id="@+id/btnFps60"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) 60fps" />
+                            android:text="( ) smooth" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -1098,7 +1026,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.4.0"
+                        android:text="minamo v2.5.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView
@@ -1193,18 +1121,18 @@ jaw snap ........ &gt;&lt;(((===º={{" />
                         style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="humpback whale .. _.---&quot;&quot;&quot;&quot;---._
-orca whale ...... _.-' |----._ (O)
-dolphin pod ..... /| `---====º==&gt; (breaches!)
-whale shark ..... &gt;=( : . : . º|===
-giant manta ..... ~~~~~&lt;#######|º&gt;
-sea turtle ...... /######\\__|°&gt;
-eagle ray ....... ~~~~~&lt;#####|°&gt;
-moorish idol .... ~--._/| &gt;|#|#|°&gt;
-yellowfin tuna .. &gt;==((((((º=&gt;
-spotted puffer .. =( :.: °&gt;
-reef lionfish ... ~\\|#|#|°&gt;
-emperor angel ... &gt;|=||=|°&gt;
+                        android:text="humpback whale .. ╭───▀▀▀▀───╮ ▓▓▒░◉
+orca whale ...... ╱│ ███░░░█ (◉)
+dolphin pod ..... ╱│ ╰─══▒▒▒▒◉══▶ (breaches!)
+whale shark ..... ▶═(░·░·░·░·◉│═══
+giant manta ..... ≈≈≈≈≈◀▒▓▓▓▓▓▒◉▶
+sea turtle ...... ╭▓▓▒▒▓▓╮◉▶
+eagle ray ....... ≈≈≈≈≈◀▒▓▓▓▒◉▶
+moorish idol .... ≈──╮╱│ ◀│▓█▓█◉▶
+yellowfin tuna .. ▶══▓▓▒▒░◉▶
+spotted puffer .. ≈(░·░·░◉▶
+reef lionfish ... ≈╲│▓│▒│▓◉▶
+emperor angel ... ▶│▓═▒▒═◉▶
 reef crab ....... (\\/)(°_°)(\\/)
 moon jellyfish .. ( °° ) /||\\" />
                 </LinearLayout>
