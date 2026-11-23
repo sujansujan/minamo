@@ -4,10 +4,11 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 
 /**
- * Android Quick Settings Tile (`minamo pond`):
- * Tapping the tile in the notification shade cycles between:
- *   1. Shuffling the pond biome & dropping a feast of pellets + algae wafer
- *   2. Summoning a Predator Ambush
+ * Android Quick Settings Tile (`minamo`):
+ * Tapping the tile in the notification shade cycles through:
+ *   1. Shuffling the biome & dropping a feast wafer (`minamo [*feast]`)
+ *   2. Summoning a majestic Ocean Giant — whale, dolphin pod, orca, or manta (`minamo [~giant]`)
+ *   3. Triggering a Predator Ambush (`minamo [!hunt]`)
  */
 class MinamoQuickTileService : TileService() {
 
@@ -16,7 +17,7 @@ class MinamoQuickTileService : TileService() {
         qsTile?.let { tile ->
             tile.state = Tile.STATE_ACTIVE
             tile.label = "minamo [>°]"
-            tile.contentDescription = "Tap to shuffle minamo pond or trigger predator ambush"
+            tile.contentDescription = "Tap to feast, summon an ocean giant, or trigger predator ambush"
             tile.updateTile()
         }
     }
@@ -27,7 +28,11 @@ class MinamoQuickTileService : TileService() {
         val actionSeq = repo.triggerQuickTileCommand()
         qsTile?.let { tile ->
             tile.state = Tile.STATE_ACTIVE
-            tile.label = if (actionSeq % 2 == 0) "minamo [!hunt]" else "minamo [*feast]"
+            tile.label = when (actionSeq % 3) {
+                1 -> "minamo [*feast]"
+                2 -> "minamo [~giant]"
+                else -> "minamo [!hunt]"
+            }
             tile.updateTile()
         }
     }

@@ -102,6 +102,11 @@ class KoiPondWallpaperService : WallpaperService() {
         private var lastUnlockShuffleMs = 0L
         private var lastQuickTileSeq = 0
         private var touchDownTimeMs = 0L
+        private var touchDownX = 0f
+        private var touchDownY = 0f
+        private var lastDragX = 0f
+        private var lastDragEventMs = 0L
+        private var hasDraggedFar = false
         private var longPressTriggered = false
 
         // WallpaperColors change throttling (only notifies SystemUI on polarity flip or >=20m sky shift)
@@ -519,20 +524,37 @@ class KoiPondWallpaperService : WallpaperService() {
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     touchDownTimeMs = event.downTime
+                    touchDownX = event.x
+                    touchDownY = event.y
+                    lastDragX = event.x
+                    hasDraggedFar = false
                     longPressTriggered = false
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (!longPressTriggered && event.eventTime - touchDownTimeMs > 480L) {
+                    val moveDist = kotlin.math.hypot(event.x - touchDownX, event.y - touchDownY)
+                    if (moveDist > 28f) {
+                        hasDraggedFar = true
+                    }
+                    if (!hasDraggedFar && !longPressTriggered && event.eventTime - touchDownTimeMs > 480L) {
                         longPressTriggered = true
                         val tx = event.x
                         val ty = event.y
                         renderHandler?.post {
                             simulation.onLongPress(tx, ty)
                         }
+                    } else if (hasDraggedFar && event.eventTime - lastDragEventMs >= 28L) {
+                        lastDragEventMs = event.eventTime
+                        val tx = event.x
+                        val ty = event.y
+                        val dx = tx - lastDragX
+                        lastDragX = tx
+                        renderHandler?.post {
+                            simulation.onDrag(tx, ty, dx)
+                        }
                     }
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!longPressTriggered && event.eventTime - touchDownTimeMs <= 480L) {
+                    if (!longPressTriggered && !hasDraggedFar && event.eventTime - touchDownTimeMs <= 480L) {
                         val tx = event.x
                         val ty = event.y
                         renderHandler?.post {
@@ -563,11 +585,18 @@ class KoiPondWallpaperService : WallpaperService() {
                 if (tileSeq != lastQuickTileSeq) {
                     lastQuickTileSeq = tileSeq
                     lastInteractionMs = SystemClock.elapsedRealtime()
-                    if (tileSeq % 2 == 0) {
-                        simulation.triggerPredatorVisit(System.nanoTime(), 0.70f)
-                    } else {
-                        simulation.randomizeEcosystemOnUnlock(System.nanoTime(), preserveElderCrown = false)
-                        simulation.onLongPress(surfaceWidth * 0.5f, surfaceHeight * 0.6f)
+                    when (tileSeq % 3) {
+                        1 -> {
+                            simulation.randomizeEcosystemOnUnlock(System.nanoTime(), preserveElderCrown = false)
+                            simulation.onLongPress(surfaceWidth * 0.5f, surfaceHeight * 0.6f)
+                        }
+                        2 -> {
+                            val isNightNow = simulation.lastResolvedSnapshot?.isNight == true
+                            simulation.triggerOceanVisitor(System.nanoTime(), isNightNow)
+                        }
+                        else -> {
+                            simulation.triggerPredatorVisit(System.nanoTime(), 0.70f)
+                        }
                     }
                 }
                 if (shouldRenderNow()) {

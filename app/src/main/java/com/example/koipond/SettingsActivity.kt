@@ -1,5 +1,6 @@
 package com.example.koipond
 
+import android.annotation.SuppressLint
 import android.app.WallpaperManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
@@ -9,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -18,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import java.util.Locale
 import kotlin.math.roundToInt
 
 class SettingsActivity : AppCompatActivity() {
@@ -41,9 +44,14 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var navAbout: TextView
 
     private lateinit var asciiPondView: AsciiPondView
+    private lateinit var textSolarBar: TextView
+    private lateinit var btnSolarLive: TextView
     private lateinit var textBiomeStatus: TextView
     private lateinit var textHuntStatus: TextView
     private lateinit var textAboutTelemetry: TextView
+
+    private lateinit var btnBiomeOcean: TextView
+    private lateinit var btnBiomePond: TextView
 
     private lateinit var btnCycleAuto: TextView
     private lateinit var btnCycleDawn: TextView
@@ -86,6 +94,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnGridCozy: TextView
     private lateinit var btnGridBalanced: TextView
     private lateinit var btnGridDense: TextView
+    private lateinit var textCalmIconsSwitch: TextView
 
     private lateinit var btnFps30: TextView
     private lateinit var btnFps60: TextView
@@ -155,9 +164,14 @@ class SettingsActivity : AppCompatActivity() {
         navAbout = findViewById(R.id.navAbout)
 
         asciiPondView = findViewById(R.id.asciiPondView)
+        textSolarBar = findViewById(R.id.textSolarBar)
+        btnSolarLive = findViewById(R.id.btnSolarLive)
         textBiomeStatus = findViewById(R.id.textBiomeStatus)
         textHuntStatus = findViewById(R.id.textHuntStatus)
         textAboutTelemetry = findViewById(R.id.textAboutTelemetry)
+
+        btnBiomeOcean = findViewById(R.id.btnBiomeOcean)
+        btnBiomePond = findViewById(R.id.btnBiomePond)
 
         btnCycleAuto = findViewById(R.id.btnCycleAuto)
         btnCycleDawn = findViewById(R.id.btnCycleDawn)
@@ -201,12 +215,14 @@ class SettingsActivity : AppCompatActivity() {
         btnGridCozy = findViewById(R.id.btnGridCozy)
         btnGridBalanced = findViewById(R.id.btnGridBalanced)
         btnGridDense = findViewById(R.id.btnGridDense)
+        textCalmIconsSwitch = findViewById(R.id.textCalmIconsSwitch)
 
         btnFps30 = findViewById(R.id.btnFps30)
         btnFps60 = findViewById(R.id.btnFps60)
         textGyroSwitch = findViewById(R.id.textGyroSwitch)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupListeners() {
         navPond.setOnClickListener { haptic(it); switchTab(1) }
         navSet.setOnClickListener { haptic(it); switchTab(2) }
@@ -285,6 +301,36 @@ class SettingsActivity : AppCompatActivity() {
                 launchWallpaperPicker()
             }
         }
+
+        // 24-Hour Solar Preview Scrubber: drag across the ASCII bar to preview any hour live!
+        textSolarBar.setOnTouchListener { v, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                    val w = v.width.coerceAtLeast(1).toFloat()
+                    val frac = (event.x / w).coerceIn(0f, 0.999f)
+                    val scrubHour = frac * 24.0f
+                    asciiPondView.previewHourOverride = scrubHour
+                    updateSolarScrubberUi()
+                    asciiPondView.invalidate()
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    v.performClick()
+                    true
+                }
+                else -> false
+            }
+        }
+        btnSolarLive.contentDescription = "Return preview to live clock time"
+        btnSolarLive.setOnClickListener {
+            haptic(it)
+            asciiPondView.previewHourOverride = null
+            updateSolarScrubberUi()
+            asciiPondView.invalidate()
+        }
+
+        btnBiomeOcean.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.OCEAN)) }
+        btnBiomePond.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.ZEN_POND)) }
 
         fun selectTimeCycle(mode: TimeCycleMode) {
             updateConfig(currentConfig.copy(timeCycleMode = mode))
@@ -404,6 +450,10 @@ class SettingsActivity : AppCompatActivity() {
         btnGridCozy.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.COZY)) }
         btnGridBalanced.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.BALANCED)) }
         btnGridDense.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.DENSE)) }
+        findViewById<LinearLayout>(R.id.rowCalmIconsSwitch).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(calmIconMode = !currentConfig.calmIconMode))
+        }
 
         btnFps30.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(targetFps = 30)) }
         btnFps60.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(targetFps = 60)) }
@@ -489,15 +539,39 @@ class SettingsActivity : AppCompatActivity() {
         return uiMask == Configuration.UI_MODE_NIGHT_YES
     }
 
-    private fun refreshAsciiUi() {
-        asciiPondView.config = currentConfig
+    private fun updateSolarScrubberUi() {
+        val overrideH = asciiPondView.previewHourOverride
         val snap = TimeOfDayPalette.resolve(
             mode = currentConfig.timeCycleMode,
             family = currentConfig.paletteFamily,
             themeMode = currentConfig.themeMode,
-            isSystemDark = isSystemNightMode()
+            isSystemDark = isSystemNightMode(),
+            overrideHour = overrideH
         )
         textHeaderClockTag.text = "[" + snap.timeLabel + "]"
+
+        val slots = 14
+        if (overrideH == null) {
+            val cal = java.util.Calendar.getInstance()
+            val curH = cal.get(java.util.Calendar.HOUR_OF_DAY) + cal.get(java.util.Calendar.MINUTE) / 60f
+            val pos = ((curH / 24f) * (slots - 1)).roundToInt().coerceIn(0, slots - 1)
+            val bar = "-".repeat(pos) + "|" + "-".repeat(slots - 1 - pos)
+            textSolarBar.text = "sun: [" + bar + "] live"
+            btnSolarLive.setTextColor(ContextCompat.getColor(this, R.color.ascii_dim))
+        } else {
+            val pos = ((overrideH / 24f) * (slots - 1)).roundToInt().coerceIn(0, slots - 1)
+            val bar = "=".repeat(pos) + "|" + "-".repeat(slots - 1 - pos)
+            val hInt = overrideH.toInt().coerceIn(0, 23)
+            val mInt = (((overrideH - hInt) * 60f).toInt()).coerceIn(0, 59)
+            val tStr = String.format(Locale.US, "%02d:%02d", hInt, mInt)
+            textSolarBar.text = "sun: [" + bar + "] " + tStr
+            btnSolarLive.setTextColor(ContextCompat.getColor(this, R.color.ascii_accent))
+        }
+    }
+
+    private fun refreshAsciiUi() {
+        asciiPondView.config = currentConfig
+        updateSolarScrubberUi()
         textBiomeStatus.text = "biome ... " + asciiPondView.simulation.activeSpeciesSummary
         updateTelemetryBox()
 
@@ -516,6 +590,9 @@ class SettingsActivity : AppCompatActivity() {
             tv.setTextColor(if (enabled) cAccent else cDim)
             row.contentDescription = spokenName + ", " + (if (enabled) "on" else "off")
         }
+
+        styleRadio(btnBiomeOcean, currentConfig.sceneBiome == SceneBiome.OCEAN, "ocean window")
+        styleRadio(btnBiomePond, currentConfig.sceneBiome == SceneBiome.ZEN_POND, "zen pond")
 
         styleRadio(btnCycleAuto, currentConfig.timeCycleMode == TimeCycleMode.AUTO_REALTIME, "clock")
         styleRadio(btnCycleDawn, currentConfig.timeCycleMode == TimeCycleMode.DAWN, "dawn")
@@ -598,6 +675,12 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnGridCozy, currentConfig.gridDensity == GridDensity.COZY, "68c")
         styleRadio(btnGridBalanced, currentConfig.gridDensity == GridDensity.BALANCED, "82c")
         styleRadio(btnGridDense, currentConfig.gridDensity == GridDensity.DENSE, "96c")
+        styleSwitch(
+            textCalmIconsSwitch,
+            findViewById(R.id.rowCalmIconsSwitch),
+            currentConfig.calmIconMode,
+            "Calm home-screen icon scrim"
+        )
 
         styleRadio(btnFps30, currentConfig.targetFps == 30, "30fps")
         styleRadio(btnFps60, currentConfig.targetFps == 60, "60fps")

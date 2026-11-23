@@ -49,7 +49,10 @@ class AsciiPondView @JvmOverloads constructor(
 
     private var lastFrameNs = 0L
     private var lastDrawNs = 0L
+    private var lastDragX = 0f
+    private var lastDragEventMs = 0L
     private var isRunning = false
+    var previewHourOverride: Float? = null
     var onSpeciesRandomized: ((String, String) -> Unit)? = null
     var onWaferDroppedListener: (() -> Unit)? = null
 
@@ -123,11 +126,26 @@ class AsciiPondView @JvmOverloads constructor(
             isBatterySaver = ecoActive,
             isWallpaperMode = false,
             batteryPercent = 85,
-            isSystemDark = isSystemNightMode()
+            isSystemDark = isSystemNightMode(),
+            previewHourOverride = previewHourOverride
         )
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                lastDragX = event.x
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (event.eventTime - lastDragEventMs >= 28L) {
+                    lastDragEventMs = event.eventTime
+                    val dx = event.x - lastDragX
+                    lastDragX = event.x
+                    simulation.onDrag(event.x, event.y, dx)
+                    invalidate()
+                }
+            }
+        }
         return gestureDetector.onTouchEvent(event) || super.onTouchEvent(event)
     }
 

@@ -13,6 +13,7 @@ data class AsciiStageColors(
     val phaseName: String,
     val isLightSurface: Boolean,
     val skyBg: Int,
+    val skyHorizonBg: Int,
     val waterBgTop: Int,
     val waterBgDeep: Int,
     val celestialGlyph: Int,
@@ -46,6 +47,7 @@ object TimeOfDayPalette {
         phaseName = "dawn",
         isLightSurface = false,
         skyBg = 0xFF1F161D.toInt(),
+        skyHorizonBg = 0xFF4A252E.toInt(),
         waterBgTop = 0xFF0E2930.toInt(),
         waterBgDeep = 0xFF081B22.toInt(),
         celestialGlyph = 0xFFFFB38A.toInt(),
@@ -71,6 +73,7 @@ object TimeOfDayPalette {
         phaseName = "noon",
         isLightSurface = false,
         skyBg = 0xFF102C38.toInt(),
+        skyHorizonBg = 0xFF1A4352.toInt(),
         waterBgTop = 0xFF0D2530.toInt(),
         waterBgDeep = 0xFF0A1D26.toInt(),
         celestialGlyph = 0xFFFFD166.toInt(),
@@ -96,6 +99,7 @@ object TimeOfDayPalette {
         phaseName = "dusk",
         isLightSurface = false,
         skyBg = 0xFF241514.toInt(),
+        skyHorizonBg = 0xFF592821.toInt(),
         waterBgTop = 0xFF13222A.toInt(),
         waterBgDeep = 0xFF0A161E.toInt(),
         celestialGlyph = 0xFFFF8A3D.toInt(),
@@ -121,6 +125,7 @@ object TimeOfDayPalette {
         phaseName = "night",
         isLightSurface = false,
         skyBg = 0xFF081520.toInt(),
+        skyHorizonBg = 0xFF11283B.toInt(),
         waterBgTop = 0xFF0A1D28.toInt(),
         waterBgDeep = 0xFF06121A.toInt(),
         celestialGlyph = 0xFFFFD166.toInt(),
@@ -150,6 +155,7 @@ object TimeOfDayPalette {
         phaseName = "morning",
         isLightSurface = true,
         skyBg = 0xFFFFF3EB.toInt(),
+        skyHorizonBg = 0xFFFFDFC7.toInt(),
         waterBgTop = 0xFFE2F4F0.toInt(),
         waterBgDeep = 0xFFC1E3E2.toInt(),
         celestialGlyph = 0xFFD45218.toInt(),
@@ -177,6 +183,7 @@ object TimeOfDayPalette {
         phaseName = "day",
         isLightSurface = true,
         skyBg = 0xFFEEF9F5.toInt(),
+        skyHorizonBg = 0xFFDCF2F2.toInt(),
         waterBgTop = 0xFFD9F2EE.toInt(),
         waterBgDeep = 0xFFB2DDE2.toInt(),
         celestialGlyph = 0xFFC47A00.toInt(),
@@ -204,6 +211,7 @@ object TimeOfDayPalette {
         phaseName = "golden",
         isLightSurface = true,
         skyBg = 0xFFFFEFE0.toInt(),
+        skyHorizonBg = 0xFFFFCFA8.toInt(),
         waterBgTop = 0xFFEBE2D8.toInt(),
         waterBgDeep = 0xFFCCBFC4.toInt(),
         celestialGlyph = 0xFFC44200.toInt(),
@@ -231,6 +239,7 @@ object TimeOfDayPalette {
         phaseName = "moonlit",
         isLightSurface = true,
         skyBg = 0xFFE3ECF4.toInt(),
+        skyHorizonBg = 0xFFD2E1EE.toInt(),
         waterBgTop = 0xFFD4E2EE.toInt(),
         waterBgDeep = 0xFFB7C9DA.toInt(),
         celestialGlyph = 0xFF8A5D00.toInt(),
@@ -261,7 +270,8 @@ object TimeOfDayPalette {
         val isNight: Boolean,
         val isLightSurface: Boolean,
         val lunarPhaseIndex: Int, // 0=Waxing Crescent, 1=Half Moon, 2=Full Moon, 3=Waning Crescent
-        val timeLabel: String
+        val timeLabel: String,
+        val autoWeatherSlot: Int = 0 // Seeded per 30-min clock block for organic calm AUTO weather
     )
 
     // Snapshot cache: eliminates per-frame Calendar/String allocations (recomputed every 15s or on config change)
@@ -301,8 +311,13 @@ object TimeOfDayPalette {
         mode: TimeCycleMode,
         family: PaletteFamily = PaletteFamily.LAGOON,
         themeMode: ThemeMode = ThemeMode.SOLAR,
-        isSystemDark: Boolean = true
+        isSystemDark: Boolean = true,
+        overrideHour: Float? = null
     ): TimeSnapshot {
+        // When scrubbing 24h solar preview, evaluate live immediately without polluting the 15s wallpaper cache
+        if (overrideHour != null) {
+            return computeFreshSnapshot(TimeCycleMode.AUTO_REALTIME, family, themeMode, isSystemDark, overrideHour)
+        }
         val nowMs = SystemClock.elapsedRealtime()
         synchronized(cacheLock) {
             val existing = cachedSnapshot
@@ -317,7 +332,7 @@ object TimeOfDayPalette {
             }
         }
 
-        val computed = computeFreshSnapshot(mode, family, themeMode, isSystemDark)
+        val computed = computeFreshSnapshot(mode, family, themeMode, isSystemDark, null)
         synchronized(cacheLock) {
             cachedSnapshot = computed
             cachedMode = mode
@@ -333,16 +348,23 @@ object TimeOfDayPalette {
         mode: TimeCycleMode,
         family: PaletteFamily,
         themeMode: ThemeMode,
-        isSystemDark: Boolean
+        isSystemDark: Boolean,
+        overrideHour: Float? = null
     ): TimeSnapshot {
         val cal = Calendar.getInstance()
-        val hour = cal.get(Calendar.HOUR_OF_DAY)
-        val minute = cal.get(Calendar.MINUTE)
-        val fractionalHour = hour + minute / 60.0f
+        val fractionalHour = if (overrideHour != null) {
+            ((overrideHour % 24f) + 24f) % 24f
+        } else {
+            cal.get(Calendar.HOUR_OF_DAY) + cal.get(Calendar.MINUTE) / 60.0f
+        }
+        val hour = fractionalHour.toInt().coerceIn(0, 23)
+        val minute = (((fractionalHour - hour) * 60f).toInt()).coerceIn(0, 59)
         val clockStr = String.format(Locale.US, "%02d:%02d", hour, minute)
 
         val year = cal.get(Calendar.YEAR)
         val dayOfYear = cal.get(Calendar.DAY_OF_YEAR)
+        val weatherBlock = (dayOfYear * 48 + hour * 2 + (minute / 30))
+        val weatherSlot = ((weatherBlock * 2654435761L ushr 24) % 12L).toInt().let { if (it < 0) it + 12 else it }
         val approxDaysSince2000 = (year - 2000) * 365.25 + dayOfYear
         val moonAge = ((approxDaysSince2000 - 6.0) % 29.530588 + 29.530588) % 29.530588
         val lunarIdx = when {
@@ -363,19 +385,19 @@ object TimeOfDayPalette {
         val baseSnap = when (mode) {
             TimeCycleMode.DAWN -> {
                 val pal = if (forceLight ?: true) DAWN_LIGHT else DAWN
-                TimeSnapshot(pal, 0.22f, 0.35f, false, pal.isLightSurface, lunarIdx, "dawn")
+                TimeSnapshot(pal, 0.22f, 0.35f, false, pal.isLightSurface, lunarIdx, "dawn", weatherSlot)
             }
             TimeCycleMode.NOON -> {
                 val pal = if (forceLight ?: true) NOON_LIGHT else NOON
-                TimeSnapshot(pal, 0.48f, 0.85f, false, pal.isLightSurface, lunarIdx, "noon")
+                TimeSnapshot(pal, 0.48f, 0.85f, false, pal.isLightSurface, lunarIdx, "noon", weatherSlot)
             }
             TimeCycleMode.DUSK -> {
                 val pal = if (forceLight ?: false) DUSK_LIGHT else DUSK
-                TimeSnapshot(pal, 0.78f, 0.32f, false, pal.isLightSurface, lunarIdx, "dusk")
+                TimeSnapshot(pal, 0.78f, 0.32f, false, pal.isLightSurface, lunarIdx, "dusk", weatherSlot)
             }
             TimeCycleMode.NIGHT -> {
                 val pal = if (forceLight ?: false) NIGHT_LIGHT else NIGHT
-                TimeSnapshot(pal, 0.62f, 0.72f, true, pal.isLightSurface, lunarIdx, "night")
+                TimeSnapshot(pal, 0.62f, 0.72f, true, pal.isLightSurface, lunarIdx, "night", weatherSlot)
             }
             TimeCycleMode.AUTO_REALTIME -> {
                 val (sunrise, sunset) = computeSolarWindow(dayOfYear)
@@ -391,7 +413,8 @@ object TimeOfDayPalette {
         val guardedColors = enforceContrastGuard(familyAdjusted)
         return baseSnap.copy(
             colors = guardedColors,
-            isLightSurface = guardedColors.isLightSurface
+            isLightSurface = guardedColors.isLightSurface,
+            autoWeatherSlot = weatherSlot
         )
     }
 
@@ -564,6 +587,7 @@ object TimeOfDayPalette {
             PaletteFamily.EMBER -> if (c.isLightSurface) {
                 c.copy(
                     skyBg = lerpColor(c.skyBg, 0xFFFCF1E6.toInt(), 0.58f),
+                    skyHorizonBg = lerpColor(c.skyHorizonBg, 0xFFFFD8B8.toInt(), 0.58f),
                     waterBgTop = lerpColor(c.waterBgTop, 0xFFF5E3D2.toInt(), 0.50f),
                     waterBgDeep = lerpColor(c.waterBgDeep, 0xFFE3C8B2.toInt(), 0.55f),
                     meniscusWaveFg = 0xFFB8460C.toInt(),
@@ -577,6 +601,7 @@ object TimeOfDayPalette {
             } else {
                 c.copy(
                     skyBg = lerpColor(c.skyBg, 0xFF1B1411.toInt(), 0.55f),
+                    skyHorizonBg = lerpColor(c.skyHorizonBg, 0xFF422218.toInt(), 0.55f),
                     waterBgTop = lerpColor(c.waterBgTop, 0xFF2A1F1A.toInt(), 0.42f),
                     waterBgDeep = lerpColor(c.waterBgDeep, 0xFF1B1411.toInt(), 0.50f),
                     meniscusWaveFg = 0xFFFF8A3D.toInt(),
@@ -590,6 +615,7 @@ object TimeOfDayPalette {
             PaletteFamily.MOSS -> if (c.isLightSurface) {
                 c.copy(
                     skyBg = lerpColor(c.skyBg, 0xFFEEF7ED.toInt(), 0.58f),
+                    skyHorizonBg = lerpColor(c.skyHorizonBg, 0xFFD9EED9.toInt(), 0.58f),
                     waterBgTop = lerpColor(c.waterBgTop, 0xFFDCF0DE.toInt(), 0.52f),
                     waterBgDeep = lerpColor(c.waterBgDeep, 0xFFBDDAC1.toInt(), 0.56f),
                     meniscusWaveFg = 0xFF1E703C.toInt(),
@@ -603,6 +629,7 @@ object TimeOfDayPalette {
             } else {
                 c.copy(
                     skyBg = lerpColor(c.skyBg, 0xFF0E1912.toInt(), 0.55f),
+                    skyHorizonBg = lerpColor(c.skyHorizonBg, 0xFF1D3325.toInt(), 0.55f),
                     waterBgTop = lerpColor(c.waterBgTop, 0xFF16271C.toInt(), 0.45f),
                     waterBgDeep = lerpColor(c.waterBgDeep, 0xFF0E1912.toInt(), 0.55f),
                     meniscusWaveFg = 0xFFC6F36B.toInt(),
@@ -614,11 +641,10 @@ object TimeOfDayPalette {
                 )
             }
             PaletteFamily.AMOLED -> {
-                // In SOLAR mode, daytime stays sunlit Lagoon Light while night switches to true #000000 OLED!
-                // When user explicitly pins LIGHT + AMOLED, use crisp pure paper-white; otherwise true #000000 OLED.
                 if (c.isLightSurface && (themeMode == ThemeMode.SOLAR || themeMode == ThemeMode.LIGHT)) {
                     c.copy(
                         skyBg = 0xFFFFFFFF.toInt(),
+                        skyHorizonBg = 0xFFF2FAF8.toInt(),
                         waterBgTop = 0xFFF2FAF8.toInt(),
                         waterBgDeep = 0xFFDCEEEB.toInt()
                     )
@@ -626,6 +652,7 @@ object TimeOfDayPalette {
                     c.copy(
                         isLightSurface = false,
                         skyBg = 0xFF000000.toInt(),
+                        skyHorizonBg = 0xFF000000.toInt(),
                         waterBgTop = 0xFF000000.toInt(),
                         waterBgDeep = 0xFF000000.toInt(),
                         fishDimBg = 0xFF1E3E48.toInt(),
@@ -717,6 +744,7 @@ object TimeOfDayPalette {
             phaseName = name,
             isLightSurface = isLight,
             skyBg = blendColorLab(a.skyBg, b.skyBg, bf),
+            skyHorizonBg = blendColorLab(a.skyHorizonBg, b.skyHorizonBg, bf),
             waterBgTop = blendColorLab(a.waterBgTop, b.waterBgTop, bf),
             waterBgDeep = blendColorLab(a.waterBgDeep, b.waterBgDeep, bf),
             celestialGlyph = blendColorLab(a.celestialGlyph, b.celestialGlyph, ff),

@@ -120,16 +120,49 @@
                 android:textColor="@color/ascii_accent2" />
         </FrameLayout>
 
+        <!-- 24h Solar Preview Scrubber (drag bar to preview dawn/noon/dusk/night) -->
+        <LinearLayout
+            android:id="@+id/rowSolarScrubber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textSolarBar"
+                style="@style/AsciiText.Small"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="40dp"
+                android:gravity="center_vertical"
+                android:text="sun: [------|-----] live"
+                android:textColor="@color/ascii_accent3" />
+
+            <TextView
+                android:id="@+id/btnSolarLive"
+                style="@style/AsciiText.Small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="40dp"
+                android:gravity="center"
+                android:paddingStart="6dp"
+                android:paddingEnd="4dp"
+                android:text="[live]"
+                android:textColor="@color/ascii_accent2" />
+        </LinearLayout>
+
         <!-- Standardized status ticker -->
         <TextView
             android:id="@+id/textBiomeStatus"
             style="@style/AsciiText.Small"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="2dp"
             android:singleLine="true"
             android:ellipsize="end"
-            android:text="biome ... clownfish, kohaku koi, neon tetra"
+            android:text="biome ... sea turtle, moorish idol, eagle ray"
             android:textColor="@color/ascii_dim" />
 
         <TextView
@@ -232,6 +265,40 @@
                         style="@style/AsciiText.Small"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:text="window biome:"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnBiomeOcean"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="(*) ocean window" />
+
+                        <TextView
+                            android:id="@+id/btnBiomePond"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) zen pond" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
                         android:text="time cycle:"
                         android:textColor="@color/ascii_dim" />
 
@@ -763,6 +830,30 @@
                             android:gravity="center_vertical"
                             android:text="( ) 96c" />
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowCalmIconsSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/AsciiText.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="calm home-screen icon scrim" />
+
+                        <TextView
+                            android:id="@+id/textCalmIconsSwitch"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[off]"
+                            android:textColor="@color/ascii_dim" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <TextView
@@ -1007,7 +1098,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.3.0"
+                        android:text="minamo v2.4.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView

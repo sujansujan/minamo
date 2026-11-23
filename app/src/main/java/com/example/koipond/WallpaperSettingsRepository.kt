@@ -15,6 +15,15 @@ enum class ThemeMode(val id: Int, val label: String) {
     }
 }
 
+enum class SceneBiome(val id: Int, val label: String) {
+    OCEAN(0, "ocean"),
+    ZEN_POND(1, "pond");
+
+    companion object {
+        fun fromId(id: Int): SceneBiome = entries.firstOrNull { it.id == id } ?: OCEAN
+    }
+}
+
 enum class PaletteFamily(val id: Int, val label: String) {
     LAGOON(0, "lagoon"),
     EMBER(1, "ember"),
@@ -81,6 +90,7 @@ enum class PowerSaveMode(val id: Int, val label: String) {
 }
 
 data class WallpaperConfig(
+    val sceneBiome: SceneBiome = SceneBiome.OCEAN,
     val themeMode: ThemeMode = ThemeMode.SOLAR,
     val paletteFamily: PaletteFamily = PaletteFamily.LAGOON,
     val timeCycleMode: TimeCycleMode = TimeCycleMode.AUTO_REALTIME,
@@ -96,7 +106,8 @@ data class WallpaperConfig(
     val enableBatteryLantern: Boolean = true,
     val enablePredators: Boolean = true,
     val huntMode: HuntMode = HuntMode.NATURAL,
-    val enableBottomFeeders: Boolean = true
+    val enableBottomFeeders: Boolean = true,
+    val calmIconMode: Boolean = false
 )
 
 class WallpaperSettingsRepository(context: Context) {
@@ -106,6 +117,7 @@ class WallpaperSettingsRepository(context: Context) {
 
     fun loadConfig(): WallpaperConfig {
         return WallpaperConfig(
+            sceneBiome = SceneBiome.fromId(prefs.getInt(KEY_SCENE_BIOME, SceneBiome.OCEAN.id)),
             themeMode = ThemeMode.fromId(prefs.getInt(KEY_THEME_MODE, ThemeMode.SOLAR.id)),
             paletteFamily = PaletteFamily.fromId(prefs.getInt(KEY_PALETTE_FAMILY, PaletteFamily.LAGOON.id)),
             timeCycleMode = TimeCycleMode.fromId(prefs.getInt(KEY_TIME_CYCLE, TimeCycleMode.AUTO_REALTIME.id)),
@@ -121,12 +133,14 @@ class WallpaperSettingsRepository(context: Context) {
             enableBatteryLantern = prefs.getBoolean(KEY_BATTERY_LANTERN, true),
             enablePredators = prefs.getBoolean(KEY_ENABLE_PREDATORS, true),
             huntMode = HuntMode.fromId(prefs.getInt(KEY_HUNT_MODE, HuntMode.NATURAL.id)),
-            enableBottomFeeders = prefs.getBoolean(KEY_ENABLE_BOTTOM_FEEDERS, true)
+            enableBottomFeeders = prefs.getBoolean(KEY_ENABLE_BOTTOM_FEEDERS, true),
+            calmIconMode = prefs.getBoolean(KEY_CALM_ICON_MODE, false)
         )
     }
 
     fun saveConfig(config: WallpaperConfig) {
         prefs.edit()
+            .putInt(KEY_SCENE_BIOME, config.sceneBiome.id)
             .putInt(KEY_THEME_MODE, config.themeMode.id)
             .putInt(KEY_PALETTE_FAMILY, config.paletteFamily.id)
             .putInt(KEY_TIME_CYCLE, config.timeCycleMode.id)
@@ -143,6 +157,7 @@ class WallpaperSettingsRepository(context: Context) {
             .putBoolean(KEY_ENABLE_PREDATORS, config.enablePredators)
             .putInt(KEY_HUNT_MODE, config.huntMode.id)
             .putBoolean(KEY_ENABLE_BOTTOM_FEEDERS, config.enableBottomFeeders)
+            .putBoolean(KEY_CALM_ICON_MODE, config.calmIconMode)
             .apply()
     }
 
@@ -244,7 +259,9 @@ class WallpaperSettingsRepository(context: Context) {
 
     companion object {
         const val PREFS_NAME = "minamo_ascii_prefs"
+        const val KEY_SCENE_BIOME = "scene_biome"
         const val KEY_THEME_MODE = "theme_mode"
+        const val KEY_CALM_ICON_MODE = "calm_icon_mode"
         const val KEY_PALETTE_FAMILY = "palette_family"
         const val KEY_TIME_CYCLE = "time_cycle"
         const val KEY_WEATHER_MODE = "weather_mode"
