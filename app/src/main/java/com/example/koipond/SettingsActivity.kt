@@ -4,6 +4,7 @@ import android.app.WallpaperManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -61,6 +62,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnPalMoss: TextView
     private lateinit var btnPalAmoled: TextView
 
+    private lateinit var btnThemeSolar: TextView
     private lateinit var btnThemeSystem: TextView
     private lateinit var btnThemeLight: TextView
     private lateinit var btnThemeDark: TextView
@@ -98,7 +100,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         repository = WallpaperSettingsRepository(this)
         currentConfig = repository.loadConfig()
-        repository.applyAppNightMode(currentConfig.themeMode)
+        repository.applyAppNightMode(currentConfig.themeMode, currentConfig.timeCycleMode)
 
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -174,6 +176,7 @@ class SettingsActivity : AppCompatActivity() {
         btnPalMoss = findViewById(R.id.btnPalMoss)
         btnPalAmoled = findViewById(R.id.btnPalAmoled)
 
+        btnThemeSolar = findViewById(R.id.btnThemeSolar)
         btnThemeSystem = findViewById(R.id.btnThemeSystem)
         btnThemeLight = findViewById(R.id.btnThemeLight)
         btnThemeDark = findViewById(R.id.btnThemeDark)
@@ -283,11 +286,17 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        btnCycleAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.AUTO_REALTIME)) }
-        btnCycleDawn.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.DAWN)) }
-        btnCycleNoon.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.NOON)) }
-        btnCycleDusk.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.DUSK)) }
-        btnCycleNight.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(timeCycleMode = TimeCycleMode.NIGHT)) }
+        fun selectTimeCycle(mode: TimeCycleMode) {
+            updateConfig(currentConfig.copy(timeCycleMode = mode))
+            if (currentConfig.themeMode == ThemeMode.SOLAR) {
+                repository.applyAppNightMode(ThemeMode.SOLAR, mode)
+            }
+        }
+        btnCycleAuto.setOnClickListener { haptic(it); selectTimeCycle(TimeCycleMode.AUTO_REALTIME) }
+        btnCycleDawn.setOnClickListener { haptic(it); selectTimeCycle(TimeCycleMode.DAWN) }
+        btnCycleNoon.setOnClickListener { haptic(it); selectTimeCycle(TimeCycleMode.NOON) }
+        btnCycleDusk.setOnClickListener { haptic(it); selectTimeCycle(TimeCycleMode.DUSK) }
+        btnCycleNight.setOnClickListener { haptic(it); selectTimeCycle(TimeCycleMode.NIGHT) }
 
         btnWeatherAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.AUTO)) }
         btnWeatherClear.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.CLEAR)) }
@@ -326,20 +335,25 @@ class SettingsActivity : AppCompatActivity() {
         btnPowerEco.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.MAX_ECO)) }
         btnPowerOff.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(powerSaveMode = PowerSaveMode.OFF)) }
 
+        btnThemeSolar.setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(themeMode = ThemeMode.SOLAR))
+            repository.applyAppNightMode(ThemeMode.SOLAR, currentConfig.timeCycleMode)
+        }
         btnThemeSystem.setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(themeMode = ThemeMode.SYSTEM))
-            repository.applyAppNightMode(ThemeMode.SYSTEM)
+            repository.applyAppNightMode(ThemeMode.SYSTEM, currentConfig.timeCycleMode)
         }
         btnThemeLight.setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(themeMode = ThemeMode.LIGHT))
-            repository.applyAppNightMode(ThemeMode.LIGHT)
+            repository.applyAppNightMode(ThemeMode.LIGHT, currentConfig.timeCycleMode)
         }
         btnThemeDark.setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(themeMode = ThemeMode.DARK))
-            repository.applyAppNightMode(ThemeMode.DARK)
+            repository.applyAppNightMode(ThemeMode.DARK, currentConfig.timeCycleMode)
         }
 
         findViewById<TextView>(R.id.btnFishMinus).apply {
@@ -406,7 +420,7 @@ class SettingsActivity : AppCompatActivity() {
                 previousConfigForUndo = currentConfig
                 val defaults = WallpaperConfig()
                 updateConfig(defaults)
-                repository.applyAppNightMode(defaults.themeMode)
+                repository.applyAppNightMode(defaults.themeMode, defaults.timeCycleMode)
                 showUndoBanner("ok: reset to defaults.")
             }
         }
@@ -416,7 +430,7 @@ class SettingsActivity : AppCompatActivity() {
             haptic(it)
             previousConfigForUndo?.let { prev ->
                 updateConfig(prev)
-                repository.applyAppNightMode(prev.themeMode)
+                repository.applyAppNightMode(prev.themeMode, prev.timeCycleMode)
             }
             bannerUndo.visibility = View.GONE
         }
@@ -467,12 +481,22 @@ class SettingsActivity : AppCompatActivity() {
             "school escapes ..... " + escapes.toString() + nl +
             "elder crown fish ... " + crowns.toString() + nl +
             "last pond event .... " + lastEv + nl +
-            "amoled & 3d gyro ... active in [2 set]"
+            "solar light/dark ... eco vsync + adaptive fps"
+    }
+
+    private fun isSystemNightMode(): Boolean {
+        val uiMask = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        return uiMask == Configuration.UI_MODE_NIGHT_YES
     }
 
     private fun refreshAsciiUi() {
         asciiPondView.config = currentConfig
-        val snap = TimeOfDayPalette.resolve(currentConfig.timeCycleMode, currentConfig.paletteFamily)
+        val snap = TimeOfDayPalette.resolve(
+            mode = currentConfig.timeCycleMode,
+            family = currentConfig.paletteFamily,
+            themeMode = currentConfig.themeMode,
+            isSystemDark = isSystemNightMode()
+        )
         textHeaderClockTag.text = "[" + snap.timeLabel + "]"
         textBiomeStatus.text = "biome ... " + asciiPondView.simulation.activeSpeciesSummary
         updateTelemetryBox()
@@ -510,6 +534,7 @@ class SettingsActivity : AppCompatActivity() {
         styleRadio(btnPalMoss, currentConfig.paletteFamily == PaletteFamily.MOSS, "moss")
         styleRadio(btnPalAmoled, currentConfig.paletteFamily == PaletteFamily.AMOLED, "amoled")
 
+        styleRadio(btnThemeSolar, currentConfig.themeMode == ThemeMode.SOLAR, "solar")
         styleRadio(btnThemeSystem, currentConfig.themeMode == ThemeMode.SYSTEM, "system")
         styleRadio(btnThemeLight, currentConfig.themeMode == ThemeMode.LIGHT, "light")
         styleRadio(btnThemeDark, currentConfig.themeMode == ThemeMode.DARK, "dark")

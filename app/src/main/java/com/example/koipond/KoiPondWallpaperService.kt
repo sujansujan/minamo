@@ -1,35 +1,43 @@
 package com.example.koipond
 
+import android.app.WallpaperColors
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.res.Configuration
+import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.BatteryManager
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.PowerManager
 import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
 import android.util.Log
+import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.SurfaceHolder
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Hardened Multi-Instance ASCII Split-View Live Wallpaper Service (`minamo`).
- * - Each Engine instance (active wallpaper vs. concurrent system preview) runs on an isolated
- *   uniquely named render thread (`MinamoAsciiThread-<id>`).
- * - Synchronizes `onSurfaceDestroyed` with the render thread via `surfaceLock` and a bounded
- *   `CountDownLatch` so `unlockCanvasAndPost` never races with native Surface destruction.
- * - Batches telemetry writes in memory so zero `SharedPreferences` disk I/O occurs during active frames.
+ * Battery-Hardened Multi-Instance ASCII Split-View Live Wallpaper Service (`minamo`).
+ * - VSYNC-aligned rendering via thread-local `Choreographer` with deep CPU sleep between calm frames.
+ * - Adaptive FPS: drops to calm 20fps when serene, boosts to 30/60fps on touch/predator/feeding,
+ *   and drops to 15fps + disables sensors under Battery Saver, low battery (<15%), or thermal warmth.
+ * - Low-power `TYPE_GAME_ROTATION_VECTOR` (no magnetometer draw, `SENSOR_DELAY_UI` + hardware batching)
+ *   with adaptive neutral baseline so holding your phone tilted maintains a true 3D window view.
+ * - Native `WallpaperColors` reporting (API 27+ / API 31+ `HINT_SUPPORTS_DARK_TEXT`) so Android's
+ *   launcher & lock screen automatically switch text/clock contrast between Solar Light and Dark modes.
  */
 class KoiPondWallpaperService : WallpaperService() {
 
@@ -50,23 +58,34 @@ class KoiPondWallpaperService : WallpaperService() {
         @Volatile
         private var isSystemBatterySaver = false
         @Volatile
+        private var isThermalWarm = false
+        @Volatile
         private var isDisplayInteractive = true
+        @Volatile
+        private var isDreaming = false
         @Volatile
         private var currentBatteryPct = 85
 
         private var sensorManager: SensorManager? = null
-        private var gyroSensor: Sensor? = null
-        private var isGyroRegistered = false
+        private var rotationSensor: Sensor? = null
+        private var gyroFallbackSensor: Sensor? = null
+        private var isSensorRegistered = false
+        private val rotationMatrix = FloatArray(9)
+        private val orientationAngles = FloatArray(3)
+        private var hasNeutralBaseline = false
+        private var neutralPitch = 0f
+        private var neutralRoll = 0f
 
         @Volatile
         private var scrollOffsetX = 0.5f
         @Volatile
-        private var gyroTiltX = 0f
+        private var tiltX = 0f
         @Volatile
-        private var gyroTiltY = 0f
+        private var tiltY = 0f
 
         private var renderThread: HandlerThread? = null
         private var renderHandler: Handler? = null
+        private var renderChoreographer: Choreographer? = null
 
         private val simulation = PondSimulation()
         private var surfaceWidth = 1080
@@ -79,9 +98,16 @@ class KoiPondWallpaperService : WallpaperService() {
         @Volatile
         private var isDestroyed = false
         private var lastFrameTimestampNs = 0L
+        private var lastInteractionMs = 0L
+        private var lastUnlockShuffleMs = 0L
         private var lastQuickTileSeq = 0
         private var touchDownTimeMs = 0L
         private var longPressTriggered = false
+
+        // WallpaperColors change throttling (only notifies SystemUI on polarity flip or >=20m sky shift)
+        private var lastReportedLightSurface: Boolean? = null
+        private var lastReportedSkyBg: Int = 0
+        private var lastColorNotifyMs: Long = 0L
 
         // In-memory telemetry batching (flushed on visibility pause or every 30s — zero per-frame disk I/O)
         private var pendingCatches = 0
@@ -94,33 +120,58 @@ class KoiPondWallpaperService : WallpaperService() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (isDestroyed) return
                 when (intent?.action) {
-                    PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
+                    PowerManager.ACTION_POWER_SAVE_MODE_CHANGED,
+                    Intent.ACTION_BATTERY_LOW,
+                    Intent.ACTION_BATTERY_OKAY -> {
                         updatePowerStates()
+                        updateSensorRegistration()
                     }
-                    Intent.ACTION_SCREEN_OFF -> {
-                        isDisplayInteractive = false
+                    Intent.ACTION_SCREEN_OFF,
+                    Intent.ACTION_DREAMING_STARTED -> {
+                        if (intent.action == Intent.ACTION_SCREEN_OFF) isDisplayInteractive = false
+                        if (intent.action == Intent.ACTION_DREAMING_STARTED) isDreaming = true
                         pauseRenderingImmediately()
                         flushTelemetryIfNeeded(force = true)
                     }
+                    Intent.ACTION_DREAMING_STOPPED -> {
+                        isDreaming = false
+                        updatePowerStates()
+                        if (shouldRenderNow()) {
+                            updateSensorRegistration()
+                            scheduleNextFrame(0L)
+                        }
+                    }
                     Intent.ACTION_SCREEN_ON -> {
                         isDisplayInteractive = true
+                        isDreaming = false
                         updatePowerStates()
-                        if (!isPreview) {
+                        updateSensorRegistration()
+                        if (shouldRenderNow()) {
                             renderHandler?.post {
-                                simulation.randomizeEcosystemOnUnlock(System.nanoTime())
                                 lastFrameTimestampNs = SystemClock.elapsedRealtimeNanos()
-                                scheduleNextFrame()
+                                scheduleNextFrame(0L)
                             }
                         }
                     }
                     Intent.ACTION_USER_PRESENT -> {
+                        // Shuffle only on actual unlock (with 30s debounce) and preserve user's Elder Crown fish!
                         isDisplayInteractive = true
+                        isDreaming = false
                         updatePowerStates()
-                        if (!isPreview) {
+                        updateSensorRegistration()
+                        val nowMs = SystemClock.elapsedRealtime()
+                        if (!isPreview && nowMs - lastUnlockShuffleMs > 30_000L) {
+                            lastUnlockShuffleMs = nowMs
                             renderHandler?.post {
-                                simulation.randomizeEcosystemOnUnlock(System.nanoTime())
-                                scheduleNextFrame()
+                                simulation.randomizeEcosystemOnUnlock(
+                                    seed = System.nanoTime(),
+                                    preserveElderCrown = true
+                                )
+                                lastFrameTimestampNs = SystemClock.elapsedRealtimeNanos()
+                                scheduleNextFrame(0L)
                             }
+                        } else if (shouldRenderNow()) {
+                            scheduleNextFrame(0L)
                         }
                     }
                 }
@@ -128,82 +179,159 @@ class KoiPondWallpaperService : WallpaperService() {
         }
         private var isReceiverRegistered = false
 
-        private val drawRunnable = object : Runnable {
-            override fun run() {
-                if (!shouldRenderNow()) return
+        private val vsyncArmRunnable = Runnable {
+            if (!shouldRenderNow()) {
+                return@Runnable
+            }
+            val ch = renderChoreographer
+            if (ch != null) {
+                ch.postFrameCallback(frameCallback)
+            } else {
+                drawOneFrame(SystemClock.elapsedRealtimeNanos())
+            }
+        }
 
-                val frameStartNs = SystemClock.elapsedRealtimeNanos()
-                val dt = if (lastFrameTimestampNs == 0L) {
-                    1f / 30f
-                } else {
-                    ((frameStartNs - lastFrameTimestampNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.05f)
-                }
-                lastFrameTimestampNs = frameStartNs
+        private val frameCallback = Choreographer.FrameCallback { frameTimeNanos ->
+            drawOneFrame(frameTimeNanos)
+        }
 
-                val cfg = currentConfig
-                val effectivePowerSaver = when (cfg.powerSaveMode) {
-                    PowerSaveMode.MAX_ECO -> true
-                    PowerSaveMode.AUTO_SAVER -> isSystemBatterySaver
-                    PowerSaveMode.OFF -> false
-                }
+        private fun isSystemNightMode(): Boolean {
+            val uiMask = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            return uiMask == Configuration.UI_MODE_NIGHT_YES
+        }
 
-                // Synchronize canvas lock/unlock with surfaceLock so onSurfaceDestroyed never races mid-draw
-                synchronized(surfaceLock) {
-                    if (!surfaceReady || isDestroyed) return
-                    val holder = surfaceHolder
-                    val canvas = try {
-                        holder.lockHardwareCanvas()
+        private fun isEcoActive(cfg: WallpaperConfig): Boolean {
+            return when (cfg.powerSaveMode) {
+                PowerSaveMode.MAX_ECO -> true
+                PowerSaveMode.AUTO_SAVER -> isSystemBatterySaver || currentBatteryPct < 15 || isThermalWarm
+                PowerSaveMode.OFF -> isThermalWarm
+            }
+        }
+
+        private fun drawOneFrame(frameTimeNanos: Long) {
+            if (!shouldRenderNow()) return
+
+            val dt = if (lastFrameTimestampNs == 0L) {
+                1f / 30f
+            } else {
+                ((frameTimeNanos - lastFrameTimestampNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.05f)
+            }
+            lastFrameTimestampNs = frameTimeNanos
+
+            val cfg = currentConfig
+            val effectivePowerSaver = isEcoActive(cfg)
+            val systemDark = isSystemNightMode()
+
+            // Synchronize canvas lock/unlock with surfaceLock so onSurfaceDestroyed never races mid-draw
+            synchronized(surfaceLock) {
+                if (!surfaceReady || isDestroyed) return
+                val holder = surfaceHolder
+                val canvas = try {
+                    holder.lockHardwareCanvas()
+                } catch (_: Throwable) {
+                    try {
+                        holder.lockCanvas()
                     } catch (_: Throwable) {
-                        try {
-                            holder.lockCanvas()
-                        } catch (_: Throwable) {
-                            null
-                        }
-                    }
-
-                    if (canvas != null) {
-                        try {
-                            val px = (scrollOffsetX - 0.5f) * 1.2f + gyroTiltX * 0.6f
-                            val py = gyroTiltY * 0.6f
-                            simulation.updateAndRender(
-                                canvas = canvas,
-                                dt = dt,
-                                config = cfg,
-                                parallaxX = px,
-                                parallaxY = py,
-                                isBatterySaver = effectivePowerSaver,
-                                isWallpaperMode = true,
-                                batteryPercent = currentBatteryPct
-                            )
-                        } finally {
-                            try {
-                                holder.unlockCanvasAndPost(canvas)
-                            } catch (_: Throwable) {}
-                        }
+                        null
                     }
                 }
 
-                flushTelemetryIfNeeded(force = false)
-
-                if (shouldRenderNow()) {
-                    val targetFps = if (effectivePowerSaver) 15 else cfg.targetFps
-                    val targetIntervalMs = 1000L / targetFps
-                    val workDurationMs = (SystemClock.elapsedRealtimeNanos() - frameStartNs) / 1_000_000L
-                    val delayMs = (targetIntervalMs - workDurationMs).coerceAtLeast(5L)
-                    renderHandler?.postDelayed(this, delayMs)
+                if (canvas != null) {
+                    try {
+                        val px = (scrollOffsetX - 0.5f) * 1.2f + tiltX * 0.65f
+                        val py = tiltY * 0.65f
+                        simulation.updateAndRender(
+                            canvas = canvas,
+                            dt = dt,
+                            config = cfg,
+                            parallaxX = px,
+                            parallaxY = py,
+                            isBatterySaver = effectivePowerSaver,
+                            isWallpaperMode = true,
+                            batteryPercent = currentBatteryPct,
+                            isSystemDark = systemDark
+                        )
+                    } finally {
+                        try {
+                            holder.unlockCanvasAndPost(canvas)
+                        } catch (_: Throwable) {}
+                    }
                 }
+            }
+
+            maybeNotifyWallpaperColors()
+            flushTelemetryIfNeeded(force = false)
+
+            if (shouldRenderNow()) {
+                val nowMs = SystemClock.elapsedRealtime()
+                val recentlyInteracted = (nowMs - lastInteractionMs) < 4_000L
+                val effectiveFps = when {
+                    effectivePowerSaver -> 15
+                    cfg.targetFps >= 60 -> if (simulation.hasHighMotionActivity || recentlyInteracted) 60 else 30
+                    simulation.hasHighMotionActivity || recentlyInteracted -> 30
+                    else -> 20 // Serene calm cruising: 20fps saves ~33% GPU/CPU power cleanly
+                }
+                val targetIntervalMs = 1000L / effectiveFps
+                val workDurationMs = (SystemClock.elapsedRealtimeNanos() - frameTimeNanos) / 1_000_000L
+                // For 60fps, hook directly onto next VSYNC; for <=30fps, let CPU sleep until ~4ms before next VSYNC!
+                val sleepDelayMs = if (effectiveFps >= 60) {
+                    0L
+                } else {
+                    (targetIntervalMs - workDurationMs - 4L).coerceAtLeast(4L)
+                }
+                scheduleNextFrame(sleepDelayMs)
+            }
+        }
+
+        private fun maybeNotifyWallpaperColors() {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) return
+            val snap = simulation.lastResolvedSnapshot ?: return
+            val nowMs = SystemClock.elapsedRealtime()
+            val polarityChanged = (lastReportedLightSurface != snap.isLightSurface)
+            val skyShifted = (lastReportedSkyBg != snap.colors.skyBg && (nowMs - lastColorNotifyMs) >= 1_200_000L)
+            if (polarityChanged || skyShifted) {
+                lastReportedLightSurface = snap.isLightSurface
+                lastReportedSkyBg = snap.colors.skyBg
+                lastColorNotifyMs = nowMs
+                try {
+                    notifyColorsChanged()
+                } catch (_: Throwable) {}
+            }
+        }
+
+        @RequiresApi(Build.VERSION_CODES.O_MR1)
+        override fun onComputeColors(): WallpaperColors {
+            val cfg = currentConfig
+            val snap = simulation.lastResolvedSnapshot ?: TimeOfDayPalette.resolve(
+                mode = cfg.timeCycleMode,
+                family = cfg.paletteFamily,
+                themeMode = cfg.themeMode,
+                isSystemDark = isSystemNightMode()
+            )
+            val c = snap.colors
+            val primary = Color.valueOf(c.skyBg)
+            val secondary = Color.valueOf(c.meniscusWaveFg)
+            val tertiary = Color.valueOf(c.fishCoral)
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val hints = if (snap.isLightSurface) WallpaperColors.HINT_SUPPORTS_DARK_TEXT else 0
+                WallpaperColors(primary, secondary, tertiary, hints)
+            } else {
+                WallpaperColors(primary, secondary, tertiary)
             }
         }
 
         private fun shouldRenderNow(): Boolean {
             if (isDestroyed || !surfaceReady || !isWallpaperVisible) return false
-            if (currentConfig.pauseOnBackgroundAndScreenOff && !isDisplayInteractive) return false
+            if (currentConfig.pauseOnBackgroundAndScreenOff && (!isDisplayInteractive || isDreaming)) return false
             return true
         }
 
         private fun pauseRenderingImmediately() {
-            unregisterGyro()
-            renderHandler?.removeCallbacks(drawRunnable)
+            unregisterSensor()
+            renderHandler?.removeCallbacks(vsyncArmRunnable)
+            renderHandler?.post {
+                renderChoreographer?.removeFrameCallback(frameCallback)
+            }
         }
 
         private fun flushTelemetryIfNeeded(force: Boolean) {
@@ -235,6 +363,7 @@ class KoiPondWallpaperService : WallpaperService() {
             currentConfig = settingsRepo.loadConfig()
             lastQuickTileSeq = settingsRepo.getQuickTileCommandSeq()
             lastTelemetryFlushMs = SystemClock.elapsedRealtime()
+            lastInteractionMs = SystemClock.elapsedRealtime()
 
             simulation.onHuntOutcomeListener = { caught, predName, preyName ->
                 if (caught) {
@@ -261,8 +390,12 @@ class KoiPondWallpaperService : WallpaperService() {
             try {
                 val filter = IntentFilter().apply {
                     addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+                    addAction(Intent.ACTION_BATTERY_LOW)
+                    addAction(Intent.ACTION_BATTERY_OKAY)
                     addAction(Intent.ACTION_SCREEN_OFF)
                     addAction(Intent.ACTION_SCREEN_ON)
+                    addAction(Intent.ACTION_DREAMING_STARTED)
+                    addAction(Intent.ACTION_DREAMING_STOPPED)
                     addAction(Intent.ACTION_USER_PRESENT)
                 }
                 ContextCompat.registerReceiver(
@@ -277,12 +410,17 @@ class KoiPondWallpaperService : WallpaperService() {
             }
 
             sensorManager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-            gyroSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+            rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
+            gyroFallbackSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
             val thread = HandlerThread("MinamoAsciiThread-" + engineId.toString())
             thread.start()
             renderThread = thread
-            renderHandler = Handler(thread.looper)
+            val handler = Handler(thread.looper)
+            renderHandler = handler
+            handler.post {
+                renderChoreographer = Choreographer.getInstance()
+            }
         }
 
         override fun onSurfaceCreated(holder: SurfaceHolder) {
@@ -302,7 +440,7 @@ class KoiPondWallpaperService : WallpaperService() {
                     surfaceReady = true
                 }
                 lastFrameTimestampNs = 0L
-                scheduleNextFrame()
+                scheduleNextFrame(0L)
             }
         }
 
@@ -328,9 +466,9 @@ class KoiPondWallpaperService : WallpaperService() {
             synchronized(surfaceLock) {
                 surfaceReady = false
             }
-            // Wait up to 120ms for any queued render-thread work to drain before releasing the Surface
             val latch = CountDownLatch(1)
             val posted = renderHandler?.post {
+                renderChoreographer?.removeFrameCallback(frameCallback)
                 flushTelemetryIfNeeded(force = true)
                 latch.countDown()
             } ?: false
@@ -346,11 +484,12 @@ class KoiPondWallpaperService : WallpaperService() {
             super.onVisibilityChanged(visible)
             isWallpaperVisible = visible
             updatePowerStates()
-            if (visible && isDisplayInteractive) {
-                updateGyroRegistration()
+            if (visible && isDisplayInteractive && !isDreaming) {
+                lastInteractionMs = SystemClock.elapsedRealtime()
+                updateSensorRegistration()
                 renderHandler?.post {
                     lastFrameTimestampNs = SystemClock.elapsedRealtimeNanos()
-                    scheduleNextFrame()
+                    scheduleNextFrame(0L)
                 }
             } else {
                 pauseRenderingImmediately()
@@ -369,10 +508,14 @@ class KoiPondWallpaperService : WallpaperService() {
             yPixelOffset: Int
         ) {
             super.onOffsetsChanged(xOffset, yOffset, xOffsetStep, yOffsetStep, xPixelOffset, yPixelOffset)
+            if (kotlin.math.abs(scrollOffsetX - xOffset) > 0.004f) {
+                lastInteractionMs = SystemClock.elapsedRealtime()
+            }
             scrollOffsetX = xOffset
         }
 
         override fun onTouchEvent(event: MotionEvent) {
+            lastInteractionMs = SystemClock.elapsedRealtime()
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     touchDownTimeMs = event.downTime
@@ -405,6 +548,7 @@ class KoiPondWallpaperService : WallpaperService() {
             if (isDestroyed) return
             val newCfg = settingsRepo.loadConfig()
             currentConfig = newCfg
+            TimeOfDayPalette.invalidateCache()
             val tileSeq = settingsRepo.getQuickTileCommandSeq()
             renderHandler?.post {
                 if (isDestroyed) return@post
@@ -418,22 +562,46 @@ class KoiPondWallpaperService : WallpaperService() {
                 }
                 if (tileSeq != lastQuickTileSeq) {
                     lastQuickTileSeq = tileSeq
+                    lastInteractionMs = SystemClock.elapsedRealtime()
                     if (tileSeq % 2 == 0) {
                         simulation.triggerPredatorVisit(System.nanoTime(), 0.70f)
                     } else {
-                        simulation.randomizeEcosystemOnUnlock(System.nanoTime())
+                        simulation.randomizeEcosystemOnUnlock(System.nanoTime(), preserveElderCrown = false)
                         simulation.onLongPress(surfaceWidth * 0.5f, surfaceHeight * 0.6f)
                     }
                 }
+                if (shouldRenderNow()) {
+                    scheduleNextFrame(0L)
+                }
             }
-            updateGyroRegistration()
+            updateSensorRegistration()
         }
 
         override fun onSensorChanged(event: SensorEvent) {
-            if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
-                // Smoothly integrate angular velocity with gentle centering spring for a deep 3D window effect
-                gyroTiltX = (gyroTiltX * 0.94f + event.values[1] * 0.14f).coerceIn(-1.25f, 1.25f)
-                gyroTiltY = (gyroTiltY * 0.94f + event.values[0] * 0.14f).coerceIn(-1.25f, 1.25f)
+            when (event.sensor.type) {
+                Sensor.TYPE_GAME_ROTATION_VECTOR -> {
+                    SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                    SensorManager.getOrientation(rotationMatrix, orientationAngles)
+                    val pitch = orientationAngles[1]
+                    val roll = orientationAngles[2]
+                    if (!hasNeutralBaseline) {
+                        neutralPitch = pitch
+                        neutralRoll = roll
+                        hasNeutralBaseline = true
+                    } else {
+                        // Slowly adapt neutral holding angle so any posture feels centered
+                        neutralPitch += (pitch - neutralPitch) * 0.012f
+                        neutralRoll += (roll - neutralRoll) * 0.012f
+                    }
+                    val targetX = ((roll - neutralRoll) * 2.1f).coerceIn(-1.25f, 1.25f)
+                    val targetY = ((pitch - neutralPitch) * 2.1f).coerceIn(-1.25f, 1.25f)
+                    tiltX += (targetX - tiltX) * 0.22f
+                    tiltY += (targetY - tiltY) * 0.22f
+                }
+                Sensor.TYPE_GYROSCOPE -> {
+                    tiltX = (tiltX * 0.92f + event.values[1] * 0.16f).coerceIn(-1.25f, 1.25f)
+                    tiltY = (tiltY * 0.92f + event.values[0] * 0.16f).coerceIn(-1.25f, 1.25f)
+                }
             }
         }
 
@@ -457,43 +625,56 @@ class KoiPondWallpaperService : WallpaperService() {
             renderThread?.quitSafely()
             renderThread = null
             renderHandler = null
+            renderChoreographer = null
             super.onDestroy()
         }
 
-        private fun scheduleNextFrame() {
-            renderHandler?.removeCallbacks(drawRunnable)
-            if (shouldRenderNow()) {
-                renderHandler?.post(drawRunnable)
+        private fun scheduleNextFrame(delayMs: Long) {
+            val handler = renderHandler ?: return
+            if (!shouldRenderNow()) return
+            handler.removeCallbacks(vsyncArmRunnable)
+            if (delayMs <= 0L) {
+                handler.post(vsyncArmRunnable)
+            } else {
+                handler.postDelayed(vsyncArmRunnable, delayMs)
             }
         }
 
         private fun updatePowerStates() {
-            isSystemBatterySaver = powerManager?.isPowerSaveMode == true
-            isDisplayInteractive = powerManager?.isInteractive != false
+            val pm = powerManager
+            isSystemBatterySaver = pm?.isPowerSaveMode == true
+            isDisplayInteractive = pm?.isInteractive != false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && pm != null) {
+                isThermalWarm = pm.currentThermalStatus >= PowerManager.THERMAL_STATUS_MODERATE
+            } else {
+                isThermalWarm = false
+            }
             val pct = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 85
             if (pct in 1..100) {
                 currentBatteryPct = pct
             }
         }
 
-        private fun updateGyroRegistration() {
-            val effectiveEco = currentConfig.powerSaveMode == PowerSaveMode.MAX_ECO ||
-                (currentConfig.powerSaveMode == PowerSaveMode.AUTO_SAVER && isSystemBatterySaver)
-            val shouldUseGyro = shouldRenderNow() && currentConfig.enableGyro && !effectiveEco
-            if (shouldUseGyro && !isGyroRegistered && gyroSensor != null) {
-                sensorManager?.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_GAME)
-                isGyroRegistered = true
-            } else if (!shouldUseGyro && isGyroRegistered) {
-                unregisterGyro()
+        private fun updateSensorRegistration() {
+            val shouldUseSensor = shouldRenderNow() && currentConfig.enableGyro && !isEcoActive(currentConfig)
+            val chosenSensor = rotationSensor ?: gyroFallbackSensor
+            if (shouldUseSensor && !isSensorRegistered && chosenSensor != null) {
+                hasNeutralBaseline = false
+                // SENSOR_DELAY_UI (~16Hz) + 40ms hardware FIFO batching minimizes IMU battery draw!
+                sensorManager?.registerListener(this, chosenSensor, SensorManager.SENSOR_DELAY_UI, 40_000)
+                isSensorRegistered = true
+            } else if (!shouldUseSensor && isSensorRegistered) {
+                unregisterSensor()
             }
         }
 
-        private fun unregisterGyro() {
-            if (isGyroRegistered) {
+        private fun unregisterSensor() {
+            if (isSensorRegistered) {
                 sensorManager?.unregisterListener(this)
-                isGyroRegistered = false
-                gyroTiltX = 0f
-                gyroTiltY = 0f
+                isSensorRegistered = false
+                hasNeutralBaseline = false
+                tiltX = 0f
+                tiltY = 0f
             }
         }
     }

@@ -414,7 +414,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="app ui mode:"
+                        android:text="light / dark mode (pond + ui):"
                         android:textColor="@color/ascii_dim" />
 
                     <LinearLayout
@@ -423,31 +423,41 @@
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/btnThemeSystem"
-                            style="@style/AsciiText.Body"
+                            android:id="@+id/btnThemeSolar"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="(*) system" />
+                            android:text="(*) solar" />
+
+                        <TextView
+                            android:id="@+id/btnThemeSystem"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.1"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) system" />
 
                         <TextView
                             android:id="@+id/btnThemeLight"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="0.95"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="( ) light" />
 
                         <TextView
                             android:id="@+id/btnThemeDark"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="0.95"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="( ) dark" />

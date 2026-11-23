@@ -5,12 +5,13 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatDelegate
 
 enum class ThemeMode(val id: Int, val label: String) {
+    SOLAR(3, "solar"),
     SYSTEM(0, "system"),
     LIGHT(1, "light"),
     DARK(2, "dark");
 
     companion object {
-        fun fromId(id: Int): ThemeMode = entries.firstOrNull { it.id == id } ?: SYSTEM
+        fun fromId(id: Int): ThemeMode = entries.firstOrNull { it.id == id } ?: SOLAR
     }
 }
 
@@ -80,7 +81,7 @@ enum class PowerSaveMode(val id: Int, val label: String) {
 }
 
 data class WallpaperConfig(
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeMode: ThemeMode = ThemeMode.SOLAR,
     val paletteFamily: PaletteFamily = PaletteFamily.LAGOON,
     val timeCycleMode: TimeCycleMode = TimeCycleMode.AUTO_REALTIME,
     val weatherMode: WeatherMode = WeatherMode.AUTO,
@@ -105,7 +106,7 @@ class WallpaperSettingsRepository(context: Context) {
 
     fun loadConfig(): WallpaperConfig {
         return WallpaperConfig(
-            themeMode = ThemeMode.fromId(prefs.getInt(KEY_THEME_MODE, ThemeMode.SYSTEM.id)),
+            themeMode = ThemeMode.fromId(prefs.getInt(KEY_THEME_MODE, ThemeMode.SOLAR.id)),
             paletteFamily = PaletteFamily.fromId(prefs.getInt(KEY_PALETTE_FAMILY, PaletteFamily.LAGOON.id)),
             timeCycleMode = TimeCycleMode.fromId(prefs.getInt(KEY_TIME_CYCLE, TimeCycleMode.AUTO_REALTIME.id)),
             weatherMode = WeatherMode.fromId(prefs.getInt(KEY_WEATHER_MODE, WeatherMode.AUTO.id)),
@@ -215,13 +216,22 @@ class WallpaperSettingsRepository(context: Context) {
     fun getTotalCrowns(): Int = prefs.getInt(KEY_STAT_CROWNS, 0)
     fun getLastEvent(): String = prefs.getString(KEY_LAST_EVENT, "ok: calm waters") ?: "ok: calm waters"
 
-    fun applyAppNightMode(themeMode: ThemeMode) {
+    fun applyAppNightMode(themeMode: ThemeMode, timeCycleMode: TimeCycleMode = TimeCycleMode.AUTO_REALTIME) {
         val mode = when (themeMode) {
+            ThemeMode.SOLAR -> {
+                if (TimeOfDayPalette.isSolarDaytimeNow(timeCycleMode)) {
+                    AppCompatDelegate.MODE_NIGHT_NO
+                } else {
+                    AppCompatDelegate.MODE_NIGHT_YES
+                }
+            }
             ThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
             ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
             ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
         }
-        AppCompatDelegate.setDefaultNightMode(mode)
+        if (AppCompatDelegate.getDefaultNightMode() != mode) {
+            AppCompatDelegate.setDefaultNightMode(mode)
+        }
     }
 
     fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
