@@ -18,9 +18,9 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * 15 Distinct Ocean Species (3 schooling baitfish + 12 reef & pelagic swimmers)
- * Each species has equal-width lines per frame for distortion-free 3D foreshortening & pitch banking,
- * plus 3 fluid motion frames (`A -> B -> A -> C`) animating tails, fins, shells, and wings.
+ * 15 Distinct Ocean Species (3 schooling baitfish + 12 reef & pelagic swimmers).
+ * Each species defines real screen-width proportions (`lengthFrac`, `aspectRatio`) and biological
+ * anatomy (`bodyPlan`, `marking`) so fish scale naturally across any screen size or grid density.
  */
 enum class AsciiFishSpecies(
     val id: Int,
@@ -30,626 +30,29 @@ enum class AsciiFishSpecies(
     val finAccentRole: Int,
     val baseSpeedColsPerSec: Float,
     val turnAgilityRadPerSec: Float,
-    val rightFrameA: Array<String>,
-    val rightFrameB: Array<String>,
-    val rightFrameC: Array<String>,
-    val leftFrameA: Array<String>,
-    val leftFrameB: Array<String>,
-    val leftFrameC: Array<String>,
-    val turnFrame: Array<String>
+    val lengthFrac: Float,
+    val aspectRatio: Float,
+    val bodyPlan: BodyPlan,
+    val marking: MarkingStyle
 ) {
     // --- SCHOOLING BAITFISH ---
-    BLUE_CHROMIS(
-        id = 0,
-        displayName = "blue chromis",
-        isHeroMultiLine = false,
-        primaryRole = 1,
-        finAccentRole = 2,
-        baseSpeedColsPerSec = 7.4f,
-        turnAgilityRadPerSec = 2.6f,
-        rightFrameA = arrayOf("◀─▒◉▶"),
-        rightFrameB = arrayOf("╲─▒◉▶"),
-        rightFrameC = arrayOf("╱─▒◉▶"),
-        leftFrameA  = arrayOf("◀◉▒─▶"),
-        leftFrameB  = arrayOf("◀◉▒─╱"),
-        leftFrameC  = arrayOf("◀◉▒─╲"),
-        turnFrame   = arrayOf(" ◀◉▶ ")
-    ),
-    SILVER_SARDINE(
-        id = 1,
-        displayName = "silver sardine",
-        isHeroMultiLine = false,
-        primaryRole = 3,
-        finAccentRole = 1,
-        baseSpeedColsPerSec = 8.0f,
-        turnAgilityRadPerSec = 2.8f,
-        rightFrameA = arrayOf("◀═░◉▶"),
-        rightFrameB = arrayOf("╲═░◉▶"),
-        rightFrameC = arrayOf("╱═░◉▶"),
-        leftFrameA  = arrayOf("◀◉░═▶"),
-        leftFrameB  = arrayOf("◀◉░═╱"),
-        leftFrameC  = arrayOf("◀◉░═╲"),
-        turnFrame   = arrayOf(" ◈◉◈ ")
-    ),
-    SUNSET_ANTHIAS(
-        id = 2,
-        displayName = "sunset anthias",
-        isHeroMultiLine = false,
-        primaryRole = 0,
-        finAccentRole = 2,
-        baseSpeedColsPerSec = 7.0f,
-        turnAgilityRadPerSec = 2.5f,
-        rightFrameA = arrayOf("≈─▓◉▶"),
-        rightFrameB = arrayOf("╲─▓◉▶"),
-        rightFrameC = arrayOf("╱─▓◉▶"),
-        leftFrameA  = arrayOf("◀◉▓─≈"),
-        leftFrameB  = arrayOf("◀◉▓─╱"),
-        leftFrameC  = arrayOf("◀◉▓─╲"),
-        turnFrame   = arrayOf(" ◀◉▶ ")
-    ),
+    BLUE_CHROMIS(0, "blue chromis", false, 1, 2, 7.4f, 2.6f, 0.056f, 0.36f, BodyPlan.BAITFISH, MarkingStyle.NONE),
+    SILVER_SARDINE(1, "silver sardine", false, 3, 1, 8.0f, 2.8f, 0.060f, 0.28f, BodyPlan.BAITFISH, MarkingStyle.NONE),
+    SUNSET_ANTHIAS(2, "sunset anthias", false, 0, 2, 7.0f, 2.5f, 0.058f, 0.34f, BodyPlan.BAITFISH, MarkingStyle.NONE),
 
-    // --- SCULPTED REEF & PELAGIC OCEAN LIFE ---
-    CLOWNFISH(
-        id = 3,
-        displayName = "clownfish",
-        isHeroMultiLine = true,
-        primaryRole = 0,
-        finAccentRole = 3,
-        baseSpeedColsPerSec = 4.5f,
-        turnAgilityRadPerSec = 1.9f,
-        rightFrameA = arrayOf(
-            "   ╭───╮   ",
-            " ╲╭▓│▒│▓◉▶ ",
-            "   ╰───╯   "
-        ),
-        rightFrameB = arrayOf(
-            "   ╭───╮   ",
-            "  │▓│▒│▓◉▶ ",
-            "   ╰───╯   "
-        ),
-        rightFrameC = arrayOf(
-            "   ╭───╮   ",
-            " ╱╭▓│▒│▓◉▶ ",
-            "   ╰───╯   "
-        ),
-        leftFrameA = arrayOf(
-            "   ╭───╮   ",
-            " ◀◉▓│▒│▓╮╱ ",
-            "   ╰───╯   "
-        ),
-        leftFrameB = arrayOf(
-            "   ╭───╮   ",
-            " ◀◉▓│▒│▓│  ",
-            "   ╰───╯   "
-        ),
-        leftFrameC = arrayOf(
-            "   ╭───╮   ",
-            " ◀◉▓│▒│▓╮╲ ",
-            "   ╰───╯   "
-        ),
-        turnFrame = arrayOf(
-            "  ╭─╮  ",
-            " ◀│◉│▶ ",
-            "  ╰─╯  "
-        )
-    ),
-    BLUE_TANG(
-        id = 4,
-        displayName = "regal tang",
-        isHeroMultiLine = true,
-        primaryRole = 1,
-        finAccentRole = 2,
-        baseSpeedColsPerSec = 5.4f,
-        turnAgilityRadPerSec = 1.8f,
-        rightFrameA = arrayOf(
-            "   ╭────╮   ",
-            " ╲═▒▓▓▓▒◉▶  ",
-            "   ╰────╯   "
-        ),
-        rightFrameB = arrayOf(
-            "   ╭────╮   ",
-            " ◀═▒▓▓▓▒◉▶  ",
-            "   ╰────╯   "
-        ),
-        rightFrameC = arrayOf(
-            "   ╭────╮   ",
-            " ╱═▒▓▓▓▒◉▶  ",
-            "   ╰────╯   "
-        ),
-        leftFrameA = arrayOf(
-            "   ╭────╮   ",
-            "  ◀◉▒▓▓▓▒═╱ ",
-            "   ╰────╯   "
-        ),
-        leftFrameB = arrayOf(
-            "   ╭────╮   ",
-            "  ◀◉▒▓▓▓▒═▶ ",
-            "   ╰────╯   "
-        ),
-        leftFrameC = arrayOf(
-            "   ╭────╮   ",
-            "  ◀◉▒▓▓▓▒═╲ ",
-            "   ╰────╯   "
-        ),
-        turnFrame = arrayOf(
-            "  ╭─╮  ",
-            " (▓◉▓) ",
-            "  ╰─╯  "
-        )
-    ),
-    MOORISH_IDOL(
-        id = 5,
-        displayName = "moorish idol",
-        isHeroMultiLine = true,
-        primaryRole = 2,
-        finAccentRole = 3,
-        baseSpeedColsPerSec = 4.3f,
-        turnAgilityRadPerSec = 1.7f,
-        rightFrameA = arrayOf(
-            " ≈───╮╱│   ",
-            "    ╱│▓│╲  ",
-            "  ◀│▓█▓█◉▶ ",
-            "    ╲│▓│╱  "
-        ),
-        rightFrameB = arrayOf(
-            "  ≈──╮╱│   ",
-            "    ╱│▓│╲  ",
-            "  ╲│▓█▓█◉▶ ",
-            "    ╲│▓│╱  "
-        ),
-        rightFrameC = arrayOf(
-            "  ──≈╮╱│   ",
-            "    ╱│▓│╲  ",
-            "  ╱│▓█▓█◉▶ ",
-            "    ╲│▓│╱  "
-        ),
-        leftFrameA = arrayOf(
-            "   │╲╭───≈ ",
-            "  ╱│▓│╲    ",
-            " ◀◉█▓█▓│▶  ",
-            "  ╲│▓│╱    "
-        ),
-        leftFrameB = arrayOf(
-            "   │╲╭──≈  ",
-            "  ╱│▓│╲    ",
-            " ◀◉█▓█▓│╱  ",
-            "  ╲│▓│╱    "
-        ),
-        leftFrameC = arrayOf(
-            "   │╲╭≈──  ",
-            "  ╱│▓│╲    ",
-            " ◀◉█▓█▓│╲  ",
-            "  ╲│▓│╱    "
-        ),
-        turnFrame = arrayOf(
-            "   ││   ",
-            "  ╱│▓│  ",
-            "  │◉▓│  ",
-            "   ││   "
-        )
-    ),
-    YELLOWFIN_TUNA(
-        id = 6,
-        displayName = "yellowfin tuna",
-        isHeroMultiLine = true,
-        primaryRole = 1,
-        finAccentRole = 2,
-        baseSpeedColsPerSec = 7.2f,
-        turnAgilityRadPerSec = 1.35f,
-        rightFrameA = arrayOf(
-            " ╲   ╭─══─╮   ",
-            "  ▶══▓▓▒▒░◉▶  ",
-            " ╱   ╰────╯   "
-        ),
-        rightFrameB = arrayOf(
-            "  ╲  ╭─══─╮   ",
-            "  ▶══▓▓▒▒░◉▶  ",
-            "  ╱  ╰────╯   "
-        ),
-        rightFrameC = arrayOf(
-            " │   ╭─══─╮   ",
-            "  ▶══▓▓▒▒░◉▶  ",
-            " │   ╰────╯   "
-        ),
-        leftFrameA = arrayOf(
-            "   ╭─══─╮   ╱ ",
-            "  ◀◉░▒▒▓▓══◀  ",
-            "   ╰────╯   ╲ "
-        ),
-        leftFrameB = arrayOf(
-            "   ╭─══─╮  ╱  ",
-            "  ◀◉░▒▒▓▓══◀  ",
-            "   ╰────╯  ╲  "
-        ),
-        leftFrameC = arrayOf(
-            "   ╭─══─╮   │ ",
-            "  ◀◉░▒▒▓▓══◀  ",
-            "   ╰────╯   │ "
-        ),
-        turnFrame = arrayOf(
-            "  ╭─╮  ",
-            " ◀(◉)▶ ",
-            "  ╰─╯  "
-        )
-    ),
-    PUFFERFISH(
-        id = 7,
-        displayName = "spotted puffer",
-        isHeroMultiLine = true,
-        primaryRole = 2,
-        finAccentRole = 0,
-        baseSpeedColsPerSec = 3.2f,
-        turnAgilityRadPerSec = 2.0f,
-        rightFrameA = arrayOf(
-            "   ╭────╮  ",
-            " ≈(░·░·░◉▶ ",
-            "   ╰────╯  "
-        ),
-        rightFrameB = arrayOf(
-            "   ╭────╮  ",
-            " ◀(░·░·░◉▶ ",
-            "   ╰────╯  "
-        ),
-        rightFrameC = arrayOf(
-            "   ╭────╮  ",
-            " ─(░·░·░◉▶ ",
-            "   ╰────╯  "
-        ),
-        leftFrameA = arrayOf(
-            "  ╭────╮   ",
-            " ◀◉░·░·░)≈ ",
-            "  ╰────╯   "
-        ),
-        leftFrameB = arrayOf(
-            "  ╭────╮   ",
-            " ◀◉░·░·░)▶ ",
-            "  ╰────╯   "
-        ),
-        leftFrameC = arrayOf(
-            "  ╭────╮   ",
-            " ◀◉░·░·░)─ ",
-            "  ╰────╯   "
-        ),
-        turnFrame = arrayOf(
-            "  ╭───╮  ",
-            " (◉░·░◉) ",
-            "  ╰───╯  "
-        )
-    ),
-    EMPEROR_ANGEL(
-        id = 8,
-        displayName = "emperor angel",
-        isHeroMultiLine = true,
-        primaryRole = 4,
-        finAccentRole = 2,
-        baseSpeedColsPerSec = 4.2f,
-        turnAgilityRadPerSec = 1.6f,
-        rightFrameA = arrayOf(
-            "    ╭─▲▲─╮  ",
-            " ╲ ╱▓═▒▒═╲  ",
-            "  ▶│▓═▒▒═◉▶ ",
-            " ╱ ╲▓═▒▒═╱  "
-        ),
-        rightFrameB = arrayOf(
-            "    ╭─▲▲─╮  ",
-            "  │╱▓═▒▒═╲  ",
-            "  ▶│▓═▒▒═◉▶ ",
-            "  │╲▓═▒▒═╱  "
-        ),
-        rightFrameC = arrayOf(
-            "    ╭─▲▲─╮  ",
-            " ╱ ╱▓═▒▒═╲  ",
-            "  ▶│▓═▒▒═◉▶ ",
-            " ╲ ╲▓═▒▒═╱  "
-        ),
-        leftFrameA = arrayOf(
-            "  ╭─▲▲─╮    ",
-            "  ╱═▒▒═▓╲ ╱ ",
-            " ◀◉═▒▒═▓│◀  ",
-            "  ╲═▒▒═▓╱ ╲ "
-        ),
-        leftFrameB = arrayOf(
-            "  ╭─▲▲─╮    ",
-            "  ╱═▒▒═▓╲│  ",
-            " ◀◉═▒▒═▓│◀  ",
-            "  ╲═▒▒═▓╱│  "
-        ),
-        leftFrameC = arrayOf(
-            "  ╭─▲▲─╮    ",
-            "  ╱═▒▒═▓╲ ╲ ",
-            " ◀◉═▒▒═▓│◀  ",
-            "  ╲═▒▒═▓╱ ╱ "
-        ),
-        turnFrame = arrayOf(
-            "  ╭▲▲╮  ",
-            " (▓══▓) ",
-            " (▓◉▒▓) ",
-            "  ╰──╯  "
-        )
-    ),
-    LIONFISH(
-        id = 9,
-        displayName = "reef lionfish",
-        isHeroMultiLine = true,
-        primaryRole = 0,
-        finAccentRole = 4,
-        baseSpeedColsPerSec = 3.4f,
-        turnAgilityRadPerSec = 1.5f,
-        rightFrameA = arrayOf(
-            "  ╲ │ ╱ ╱╮  ",
-            " ≈╲│▓│▒│▓◉▶ ",
-            "  ╱│▓│▒│▓╱  ",
-            "  ╱ │ ╲ ╲╯  "
-        ),
-        rightFrameB = arrayOf(
-            "   ╲│ ╱ ╱╮  ",
-            " ─╲│▓│▒│▓◉▶ ",
-            "   │▓│▒│▓╱  ",
-            "   ╱│ ╲ ╲╯  "
-        ),
-        rightFrameC = arrayOf(
-            "  ╱ │ ╱ ╱╮  ",
-            " ≈◀│▓│▒│▓◉▶ ",
-            "  ╲│▓│▒│▓╱  ",
-            "  ╲ │ ╲ ╲╯  "
-        ),
-        leftFrameA = arrayOf(
-            "  ╭╲ ╲ │ ╱  ",
-            " ◀◉▓│▒│▓│╱≈ ",
-            "  ╲▓│▒│▓│╲  ",
-            "  ╰╱ ╱ │ ╲  "
-        ),
-        leftFrameB = arrayOf(
-            "  ╭╲ ╲ │╱   ",
-            " ◀◉▓│▒│▓│╱─ ",
-            "  ╲▓│▒│▓│   ",
-            "  ╰╱ ╱ │╲   "
-        ),
-        leftFrameC = arrayOf(
-            "  ╭╲ ╲ │ ╲  ",
-            " ◀◉▓│▒│▓│▶≈ ",
-            "  ╲▓│▒│▓│╱  ",
-            "  ╰╱ ╱ │ ╱  "
-        ),
-        turnFrame = arrayOf(
-            " ╲╲│╱╱ ",
-            " ◈│◉│◈ ",
-            " ╱╱│╲╲ "
-        )
-    ),
-    SEA_TURTLE(
-        id = 10,
-        displayName = "green sea turtle",
-        isHeroMultiLine = true,
-        primaryRole = 1,
-        finAccentRole = 2,
-        baseSpeedColsPerSec = 3.5f,
-        turnAgilityRadPerSec = 1.0f,
-        rightFrameA = arrayOf(
-            "   ╱╲  ╭────╮    ",
-            "  ╱  ╭▓▓▒▒▓▓╮──╮ ",
-            "     ╰▓▓▒▒▓▓╯◉▶│ ",
-            "       ╰────╯  ╯ "
-        ),
-        rightFrameB = arrayOf(
-            "       ╭────╮    ",
-            "  ≈≈ ╭▓▓▒▒▓▓╮──╮ ",
-            "     ╰▓▓▒▒▓▓╯◉▶│ ",
-            "    ╲  ╰────╯  ╯ "
-        ),
-        rightFrameC = arrayOf(
-            "       ╭────╮    ",
-            "     ╭▓▓▒▒▓▓╮──╮ ",
-            "     ╰▓▓▒▒▓▓╯◉▶│ ",
-            "   ╲╱  ╰────╯  ╯ "
-        ),
-        leftFrameA = arrayOf(
-            "    ╭────╮  ╱╲   ",
-            " ╭──╭▓▓▒▒▓▓╮  ╲  ",
-            " │◀◉╰▓▓▒▒▓▓╯     ",
-            " ╰  ╰────╯       "
-        ),
-        leftFrameB = arrayOf(
-            "    ╭────╮       ",
-            " ╭──╭▓▓▒▒▓▓╮ ≈≈  ",
-            " │◀◉╰▓▓▒▒▓▓╯     ",
-            " ╰  ╰────╯  ╱    "
-        ),
-        leftFrameC = arrayOf(
-            "    ╭────╮       ",
-            " ╭──╭▓▓▒▒▓▓╮     ",
-            " │◀◉╰▓▓▒▒▓▓╯     ",
-            " ╰  ╰────╯  ╲╱   "
-        ),
-        turnFrame = arrayOf(
-            "  ╭────╮  ",
-            " ╱▓▓▒▒▓▓╲ ",
-            " ╲(◉__◉)╱ ",
-            "  ╰────╯  "
-        )
-    ),
-    EAGLE_RAY(
-        id = 11,
-        displayName = "spotted eagle ray",
-        isHeroMultiLine = true,
-        primaryRole = 3,
-        finAccentRole = 1,
-        baseSpeedColsPerSec = 4.8f,
-        turnAgilityRadPerSec = 1.15f,
-        rightFrameA = arrayOf(
-            "        ╭╱╲      ",
-            "       ╱▒▓▒╲     ",
-            " ≈≈≈≈≈◀▒▓▓▓▒◉▶   ",
-            "        ╰──╯     "
-        ),
-        rightFrameB = arrayOf(
-            "                 ",
-            "        ╭──╮     ",
-            " ≈≈≈≈≈◀▒▓▓▓▓▒◉▶  ",
-            "        ╰──╯     "
-        ),
-        rightFrameC = arrayOf(
-            "        ╭──╮     ",
-            " ≈≈≈≈≈◀▒▓▓▓▒◉▶   ",
-            "       ╲▒▓▒╱     ",
-            "        ╰╲╱      "
-        ),
-        leftFrameA = arrayOf(
-            "      ╱╲╮        ",
-            "     ╱▒▓▒╲       ",
-            "   ◀◉▒▓▓▓▒▶≈≈≈≈≈ ",
-            "     ╰──╯        "
-        ),
-        leftFrameB = arrayOf(
-            "                 ",
-            "     ╭──╮        ",
-            "  ◀◉▒▓▓▓▓▒▶≈≈≈≈≈ ",
-            "     ╰──╯        "
-        ),
-        leftFrameC = arrayOf(
-            "     ╭──╮        ",
-            "   ◀◉▒▓▓▓▒▶≈≈≈≈≈ ",
-            "     ╲▒▓▒╱       ",
-            "      ╲╱╯        "
-        ),
-        turnFrame = arrayOf(
-            "  ╭─▲▲─╮  ",
-            " ╱▒▓◉◉▓▒╲ ",
-            " ╰──══──╯ "
-        )
-    ),
-    MANDARIN(
-        id = 12,
-        displayName = "mandarin dragonet",
-        isHeroMultiLine = true,
-        primaryRole = 4,
-        finAccentRole = 1,
-        baseSpeedColsPerSec = 4.1f,
-        turnAgilityRadPerSec = 1.8f,
-        rightFrameA = arrayOf(
-            "   ╭╱╲╮   ",
-            " ≈◀▒◈▓▒◉▶ ",
-            "   ╰╲╱╯   "
-        ),
-        rightFrameB = arrayOf(
-            "   ╭╱╲╮   ",
-            " ╲◀▒◈▓▒◉▶ ",
-            "   ╰╲╱╯   "
-        ),
-        rightFrameC = arrayOf(
-            "   ╭╱╲╮   ",
-            " ╱◀▒◈▓▒◉▶ ",
-            "   ╰╲╱╯   "
-        ),
-        leftFrameA = arrayOf(
-            "   ╭╱╲╮   ",
-            " ◀◉▒▓◈▒▶≈ ",
-            "   ╰╲╱╯   "
-        ),
-        leftFrameB = arrayOf(
-            "   ╭╱╲╮   ",
-            " ◀◉▒▓◈▒▶╱ ",
-            "   ╰╲╱╯   "
-        ),
-        leftFrameC = arrayOf(
-            "   ╭╱╲╮   ",
-            " ◀◉▒▓◈▒▶╲ ",
-            "   ╰╲╱╯   "
-        ),
-        turnFrame = arrayOf(
-            "  ╱╲  ",
-            " ◈◉▓◈ ",
-            "  ╲╱  "
-        )
-    ),
-    KOHAKU_KOI(
-        id = 13,
-        displayName = "kohaku koi",
-        isHeroMultiLine = true,
-        primaryRole = 3,
-        finAccentRole = 0,
-        baseSpeedColsPerSec = 4.2f,
-        turnAgilityRadPerSec = 1.45f,
-        rightFrameA = arrayOf(
-            "    ╭────╮  ",
-            " ╲◀░░▓▓░▓◉▶ ",
-            "    ╰────╯  "
-        ),
-        rightFrameB = arrayOf(
-            "    ╭────╮  ",
-            "  ≈◀░▓▓░▓◉▶ ",
-            "    ╰────╯  "
-        ),
-        rightFrameC = arrayOf(
-            "    ╭────╮  ",
-            " ╱◀░░▓▓░▓◉▶ ",
-            "    ╰────╯  "
-        ),
-        leftFrameA = arrayOf(
-            "  ╭────╮    ",
-            " ◀◉▓░▓▓░░▶╱ ",
-            "  ╰────╯    "
-        ),
-        leftFrameB = arrayOf(
-            "  ╭────╮    ",
-            " ◀◉▓░▓▓░▶≈  ",
-            "  ╰────╯    "
-        ),
-        leftFrameC = arrayOf(
-            "  ╭────╮    ",
-            " ◀◉▓░▓▓░░▶╲ ",
-            "  ╰────╯    "
-        ),
-        turnFrame = arrayOf(
-            "  ╭────╮  ",
-            " ◀(░◉▓)▶  ",
-            "  ╰────╯  "
-        )
-    ),
-    MAHI_MAHI(
-        id = 14,
-        displayName = "golden dorado",
-        isHeroMultiLine = true,
-        primaryRole = 2,
-        finAccentRole = 1,
-        baseSpeedColsPerSec = 6.2f,
-        turnAgilityRadPerSec = 1.5f,
-        rightFrameA = arrayOf(
-            " ╲  ╭▀▀▀▀▀▀╮ ",
-            "  ▶═▒▓▓▒▒▓◉│ ",
-            " ╱   ╰────╯  "
-        ),
-        rightFrameB = arrayOf(
-            "  ╲ ╭▀▀▀▀▀▀╮ ",
-            "  ▶═▒▓▓▒▒▓◉│ ",
-            "  ╱  ╰────╯  "
-        ),
-        rightFrameC = arrayOf(
-            " │  ╭▀▀▀▀▀▀╮ ",
-            "  ▶═▒▓▓▒▒▓◉│ ",
-            " │   ╰────╯  "
-        ),
-        leftFrameA = arrayOf(
-            " ╭▀▀▀▀▀▀╮  ╱ ",
-            " │◉▓▒▒▓▓▒═◀  ",
-            "  ╰────╯   ╲ "
-        ),
-        leftFrameB = arrayOf(
-            " ╭▀▀▀▀▀▀╮ ╱  ",
-            " │◉▓▒▒▓▓▒═◀  ",
-            "  ╰────╯  ╲  "
-        ),
-        leftFrameC = arrayOf(
-            " ╭▀▀▀▀▀▀╮  │ ",
-            " │◉▓▒▒▓▓▒═◀  ",
-            "  ╰────╯   │ "
-        ),
-        turnFrame = arrayOf(
-            "  ╭▀▀╮  ",
-            " (▓◉▓)  ",
-            "  ╰──╯  "
-        )
-    );
+    // --- REEF & PELAGIC OCEAN LIFE ---
+    CLOWNFISH(3, "clownfish", true, 0, 3, 4.5f, 1.9f, 0.095f, 0.44f, BodyPlan.REEF_OVAL, MarkingStyle.CLOWN_BANDS),
+    BLUE_TANG(4, "regal tang", true, 1, 2, 5.4f, 1.8f, 0.122f, 0.48f, BodyPlan.REEF_OVAL, MarkingStyle.TANG_MASK),
+    MOORISH_IDOL(5, "moorish idol", true, 2, 3, 4.3f, 1.7f, 0.118f, 0.72f, BodyPlan.REEF_TALL, MarkingStyle.IDOL_BANDS),
+    YELLOWFIN_TUNA(6, "yellowfin tuna", true, 1, 2, 7.2f, 1.35f, 0.185f, 0.32f, BodyPlan.PELAGIC_FAST, MarkingStyle.NONE),
+    PUFFERFISH(7, "spotted puffer", true, 2, 0, 3.2f, 2.0f, 0.098f, 0.62f, BodyPlan.PUFFER, MarkingStyle.SPOTS),
+    EMPEROR_ANGEL(8, "emperor angel", true, 4, 2, 4.2f, 1.6f, 0.132f, 0.62f, BodyPlan.REEF_TALL, MarkingStyle.ANGEL_STRIPES),
+    LIONFISH(9, "reef lionfish", true, 0, 4, 3.4f, 1.5f, 0.128f, 0.56f, BodyPlan.LIONFISH, MarkingStyle.CLOWN_BANDS),
+    SEA_TURTLE(10, "green sea turtle", true, 1, 2, 3.5f, 1.0f, 0.195f, 0.46f, BodyPlan.TURTLE, MarkingStyle.TURTLE_SCUTES),
+    EAGLE_RAY(11, "spotted eagle ray", true, 3, 1, 4.8f, 1.15f, 0.215f, 0.48f, BodyPlan.RAY, MarkingStyle.SPOTS),
+    MANDARIN(12, "mandarin dragonet", true, 4, 1, 4.1f, 1.8f, 0.092f, 0.42f, BodyPlan.REEF_OVAL, MarkingStyle.MANDARIN_SWIRL),
+    KOHAKU_KOI(13, "kohaku koi", true, 3, 0, 4.2f, 1.45f, 0.148f, 0.36f, BodyPlan.REEF_OVAL, MarkingStyle.KOI_PATCHES),
+    MAHI_MAHI(14, "golden dorado", true, 2, 1, 6.2f, 1.5f, 0.175f, 0.36f, BodyPlan.PELAGIC_FAST, MarkingStyle.TANG_MASK);
 
     companion object {
         val heroPool = arrayOf(
@@ -676,239 +79,17 @@ enum class OceanVisitorSpecies(
     val canBreach: Boolean,
     val canSpout: Boolean,
     val podSize: Int,
-    val rightFrameA: Array<String>,
-    val rightFrameB: Array<String>,
-    val leftFrameA: Array<String>,
-    val leftFrameB: Array<String>
+    val lengthFrac: Float,
+    val aspectRatio: Float,
+    val bodyPlan: BodyPlan,
+    val marking: MarkingStyle
 ) {
-    HUMPBACK_WHALE(
-        id = 0,
-        displayName = "humpback whale",
-        speedColsPerSec = 2.6f,
-        bodyRole = 1,
-        accentRole = 3,
-        preferredZMin = 0.50f,
-        preferredZMax = 0.84f,
-        canBreach = false,
-        canSpout = true,
-        podSize = 1,
-        rightFrameA = arrayOf(
-            "╲╮            ╭───▀▀▀▀───╮    ",
-            " ╰╲╮     ╭───╯▓▓▓▓▒▒▒▒░░░░╲   ",
-            "   ╰──╮ ╱▓▓▓▒▒  ═══  ═══  ◉╲  ",
-            "      ╰─╲░░░░░░░░░░░░░░░░──╯  ",
-            "         ╰╲╮  ╰───╯           ",
-            "           ╰╲                 "
-        ),
-        rightFrameB = arrayOf(
-            "              ╭───▀▀▀▀───╮    ",
-            "       ╭╮╭───╯▓▓▓▓▒▒▒▒░░░░╲   ",
-            "   ╭──╯ ╱▓▓▓▒▒  ═══  ═══  ◉╲  ",
-            "  ╱   ╰─╲░░░░░░░░░░░░░░░░──╯  ",
-            "         ╰╲╮  ╰───╯           ",
-            "           ╰╲                 "
-        ),
-        leftFrameA = arrayOf(
-            "    ╭───▀▀▀▀───╮            ╭╱",
-            "   ╱░░░░▒▒▒▒▓▓▓▓╰───╮     ╭╱╯ ",
-            "  ╱◉  ═══  ═══  ▒▒▓▓▓╲ ╭──╯   ",
-            "  ╰──░░░░░░░░░░░░░░░░╱─╯      ",
-            "           ╰───╯  ╭╱╯         ",
-            "                 ╱╯           "
-        ),
-        leftFrameB = arrayOf(
-            "    ╭───▀▀▀▀───╮              ",
-            "   ╱░░░░▒▒▒▒▓▓▓▓╰───╮╭╮       ",
-            "  ╱◉  ═══  ═══  ▒▒▓▓▓╲ ╰──╮   ",
-            "  ╰──░░░░░░░░░░░░░░░░╱─╯   ╲  ",
-            "           ╰───╯  ╭╱╯         ",
-            "                 ╱╯           "
-        )
-    ),
-    ORCA(
-        id = 1,
-        displayName = "orca whale",
-        speedColsPerSec = 4.6f,
-        bodyRole = 3,
-        accentRole = 1,
-        preferredZMin = 0.34f,
-        preferredZMax = 0.72f,
-        canBreach = false,
-        canSpout = true,
-        podSize = 1,
-        rightFrameA = arrayOf(
-            "          ╱│             ",
-            " ╲╮   ╭──╯█│────╮        ",
-            "  ╰─╮╱███░░░█ (◉)╲       ",
-            "    ╰╲████████████╰▶     ",
-            "        ╰╲               "
-        ),
-        rightFrameB = arrayOf(
-            "          ╱│             ",
-            "      ╭──╯█│────╮        ",
-            " ╭──╯╱███░░░█ (◉)╲       ",
-            " ╱  ╰╲████████████╰▶     ",
-            "        ╰╲               "
-        ),
-        leftFrameA = arrayOf(
-            "             │╲          ",
-            "        ╭────│█╰──╮   ╭╱ ",
-            "       ╱(◉) █░░░███╲╭─╯  ",
-            "     ◀╯████████████╱╯    ",
-            "               ╱╯        "
-        ),
-        leftFrameB = arrayOf(
-            "             │╲          ",
-            "        ╭────│█╰──╮      ",
-            "       ╱(◉) █░░░███╲╰──╮ ",
-            "     ◀╯████████████╱╯  ╲ ",
-            "               ╱╯        "
-        )
-    ),
-    DOLPHIN_POD(
-        id = 2,
-        displayName = "bottlenose dolphin pod",
-        speedColsPerSec = 9.2f,
-        bodyRole = 1,
-        accentRole = 3,
-        preferredZMin = 0.22f,
-        preferredZMax = 0.56f,
-        canBreach = true,
-        canSpout = false,
-        podSize = 3,
-        rightFrameA = arrayOf(
-            "       ╱│        ",
-            " ╲╮ ╭─╯▓▓╰─╮     ",
-            "  ╰─══▒▒▒▒◉══▶   "
-        ),
-        rightFrameB = arrayOf(
-            "       ╱│        ",
-            "    ╭─╯▓▓╰─╮     ",
-            " ╱╰─══▒▒▒▒◉══▶   "
-        ),
-        leftFrameA = arrayOf(
-            "        │╲       ",
-            "     ╭─╯▓▓╰─╮ ╭╱ ",
-            "   ◀══◉▒▒▒▒══─╯  "
-        ),
-        leftFrameB = arrayOf(
-            "        │╲       ",
-            "     ╭─╯▓▓╰─╮    ",
-            "   ◀══◉▒▒▒▒══─╯╲ "
-        )
-    ),
-    WHALE_SHARK(
-        id = 3,
-        displayName = "whale shark",
-        speedColsPerSec = 3.2f,
-        bodyRole = 1,
-        accentRole = 2,
-        preferredZMin = 0.40f,
-        preferredZMax = 0.78f,
-        canBreach = false,
-        canSpout = false,
-        podSize = 1,
-        rightFrameA = arrayOf(
-            " ╲        ╱│               ",
-            "  ╲  ╭───╯▓│───╮____       ",
-            "   ▶═(░·░·░·░·░·◉│═══      ",
-            "  ╱  ╰───▓▓▓───────╯       ",
-            " ╱        ╲│               "
-        ),
-        rightFrameB = arrayOf(
-            "  ╲       ╱│               ",
-            "   ╲ ╭───╯▓│───╮____       ",
-            "   ▶═(░·░·░·░·░·◉│═══      ",
-            "   ╱ ╰───▓▓▓───────╯       ",
-            "  ╱       ╲│               "
-        ),
-        leftFrameA = arrayOf(
-            "               │╲        ╱ ",
-            "       ____╭───│▓╰───╮  ╱  ",
-            "      ═══│◉·░·░·░·░·░)═◀   ",
-            "       ╰───────▓▓▓───╯  ╲  ",
-            "               │╱        ╲ "
-        ),
-        leftFrameB = arrayOf(
-            "               │╲       ╱  ",
-            "       ____╭───│▓╰───╮ ╱   ",
-            "      ═══│◉·░·░·░·░·░)═◀   ",
-            "       ╰───────▓▓▓───╯ ╲   ",
-            "               │╱       ╲  "
-        )
-    ),
-    GIANT_MANTA(
-        id = 4,
-        displayName = "giant oceanic manta",
-        speedColsPerSec = 4.0f,
-        bodyRole = 3,
-        accentRole = 1,
-        preferredZMin = 0.30f,
-        preferredZMax = 0.70f,
-        canBreach = false,
-        canSpout = false,
-        podSize = 2,
-        rightFrameA = arrayOf(
-            "         ╭╱╲          ",
-            "       ╭╱▓▓▓╲         ",
-            " ≈≈≈≈≈◀▒▓▓▓▓▓▒◉▶      ",
-            "        ╲▓▓▓╱         ",
-            "         ╰──╯         "
-        ),
-        rightFrameB = arrayOf(
-            "         ╭──╮         ",
-            "       ╭╱▓▓▓╲         ",
-            " ≈≈≈≈≈◀▒▓▓▓▓▓▒◉▶      ",
-            "        ╲▓▓▓╱         ",
-            "         ╰╲╱          "
-        ),
-        leftFrameA = arrayOf(
-            "          ╱╲╮         ",
-            "         ╱▓▓▓╲╮       ",
-            "      ◀◉▒▓▓▓▓▓▒▶≈≈≈≈≈ ",
-            "         ╲▓▓▓╱        ",
-            "         ╰──╯         "
-        ),
-        leftFrameB = arrayOf(
-            "         ╭──╮         ",
-            "         ╱▓▓▓╲╮       ",
-            "      ◀◉▒▓▓▓▓▓▒▶≈≈≈≈≈ ",
-            "         ╲▓▓▓╱        ",
-            "          ╲╱╯         "
-        )
-    ),
-    DEEP_SQUID(
-        id = 5,
-        displayName = "glowing giant squid",
-        speedColsPerSec = 4.8f,
-        bodyRole = 4,
-        accentRole = 1,
-        preferredZMin = 0.35f,
-        preferredZMax = 0.75f,
-        canBreach = false,
-        canSpout = false,
-        podSize = 1,
-        rightFrameA = arrayOf(
-            "  ≈─≈─╮  ╭──╮   ",
-            " ≈≈≈≈═(◉│▓▓▓▒▶  ",
-            "  ≈─≈─╯  ╰──╯   "
-        ),
-        rightFrameB = arrayOf(
-            "   ─≈─≈╮ ╭──╮   ",
-            "  ≈≈≈═(◉│▓▓▓▒▶  ",
-            "   ─≈─≈╯ ╰──╯   "
-        ),
-        leftFrameA = arrayOf(
-            "   ╭──╮  ╭─≈─≈  ",
-            "  ◀▒▓▓▓│◉)═≈≈≈≈ ",
-            "   ╰──╯  ╰─≈─≈  "
-        ),
-        leftFrameB = arrayOf(
-            "   ╭──╮ ╭≈─≈─   ",
-            "  ◀▒▓▓▓│◉)═≈≈≈  ",
-            "   ╰──╯ ╰≈─≈─   "
-        )
-    )
+    HUMPBACK_WHALE(0, "humpback whale", 2.6f, 1, 3, 0.46f, 0.80f, false, true, 1, 0.56f, 0.26f, BodyPlan.WHALE, MarkingStyle.WHALE_PLEATS),
+    ORCA(1, "orca whale", 4.6f, 3, 1, 0.32f, 0.70f, false, true, 1, 0.42f, 0.28f, BodyPlan.ORCA, MarkingStyle.ORCA_PATCHES),
+    DOLPHIN_POD(2, "bottlenose dolphin pod", 9.2f, 1, 3, 0.20f, 0.52f, true, false, 3, 0.25f, 0.30f, BodyPlan.DOLPHIN, MarkingStyle.NONE),
+    WHALE_SHARK(3, "whale shark", 3.2f, 1, 2, 0.38f, 0.76f, false, false, 1, 0.48f, 0.26f, BodyPlan.SHARK, MarkingStyle.SPOTS),
+    GIANT_MANTA(4, "giant oceanic manta", 4.0f, 3, 1, 0.28f, 0.68f, false, false, 2, 0.35f, 0.48f, BodyPlan.RAY, MarkingStyle.NONE),
+    DEEP_SQUID(5, "glowing giant squid", 4.8f, 4, 1, 0.34f, 0.72f, false, false, 1, 0.27f, 0.28f, BodyPlan.SQUID, MarkingStyle.NONE)
 }
 
 class OceanVisitorMember(
@@ -940,170 +121,15 @@ enum class PredatorSpecies(
     val id: Int,
     val displayName: String,
     val speedColsPerSec: Float,
-    val rightFrameA: Array<String>,
-    val rightFrameB: Array<String>,
-    val rightChomp: Array<String>,
-    val leftFrameA: Array<String>,
-    val leftFrameB: Array<String>,
-    val leftChomp: Array<String>,
-    val frontChargeFrame: Array<String>,
-    val rearRetreatFrame: Array<String>
+    val lengthFrac: Float,
+    val aspectRatio: Float,
+    val bodyPlan: BodyPlan,
+    val marking: MarkingStyle
 ) {
-    BARRACUDA_PIKE(
-        id = 0,
-        displayName = "barracuda",
-        speedColsPerSec = 11.2f,
-        rightFrameA = arrayOf(
-            "    _.._     ",
-            "><(((===º<   ",
-            "    '--'     "
-        ),
-        rightFrameB = arrayOf(
-            "    _.._     ",
-            "}<(((===º=   ",
-            "    '--'     "
-        ),
-        rightChomp = arrayOf(
-            "    _.._     ",
-            "><(((===º={{ ",
-            "    '--'     "
-        ),
-        leftFrameA = arrayOf(
-            "     _.._    ",
-            "   >º===)))><",
-            "     '--'    "
-        ),
-        leftFrameB = arrayOf(
-            "     _.._    ",
-            "   =º===)))<{",
-            "     '--'    "
-        ),
-        leftChomp = arrayOf(
-            "     _.._    ",
-            " }}=º===)))><",
-            "     '--'    "
-        ),
-        frontChargeFrame = arrayOf(
-            "   _.--._   ",
-            " <((ºVVº))> ",
-            "   '-..-'   "
-        ),
-        rearRetreatFrame = arrayOf(
-            "    _.._    ",
-            "   (|XX|)   ",
-            "    '--'    "
-        )
-    ),
-    REEF_SHARK(
-        id = 1,
-        displayName = "reef shark",
-        speedColsPerSec = 10.6f,
-        rightFrameA = arrayOf(
-            "     /|___   ",
-            "><)))º>==<   ",
-            "     \\/      "
-        ),
-        rightFrameB = arrayOf(
-            "     /|___   ",
-            "}<)))º>==-   ",
-            "     \\/      "
-        ),
-        rightChomp = arrayOf(
-            "     /|___   ",
-            "><)))º>=={{  ",
-            "     \\/      "
-        ),
-        leftFrameA = arrayOf(
-            "   ___|\\     ",
-            "   >==<º(((><",
-            "      \\/     "
-        ),
-        leftFrameB = arrayOf(
-            "   ___|\\     ",
-            "   -==<º(((<{",
-            "      \\/     "
-        ),
-        leftChomp = arrayOf(
-            "   ___|\\     ",
-            "  }}==<º(((><",
-            "      \\/     "
-        ),
-        frontChargeFrame = arrayOf(
-            "     /|\\     ",
-            "  /((ºVº))\\  ",
-            "    \\vvv/    "
-        ),
-        rearRetreatFrame = arrayOf(
-            "     /|\\     ",
-            "   ((|X|))   ",
-            "     \\|/     "
-        )
-    ),
-    SWORDFISH(
-        id = 2,
-        displayName = "marlin swordfish",
-        speedColsPerSec = 12.0f,
-        rightFrameA = arrayOf(
-            "    /|__      ",
-            "><(((º>====-- ",
-            "    \\/        "
-        ),
-        rightFrameB = arrayOf(
-            "    /|__      ",
-            "}<(((º>====-- ",
-            "    \\/        "
-        ),
-        rightChomp = arrayOf(
-            "    /|__      ",
-            "><(((º>==={{- ",
-            "    \\/        "
-        ),
-        leftFrameA = arrayOf(
-            "      __|\\    ",
-            " --====<º(((><",
-            "        \\/    "
-        ),
-        leftFrameB = arrayOf(
-            "      __|\\    ",
-            " --====<º(((<{",
-            "        \\/    "
-        ),
-        leftChomp = arrayOf(
-            "      __|\\    ",
-            " -}}===<º(((><",
-            "        \\/    "
-        ),
-        frontChargeFrame = arrayOf(
-            "     /|\\     ",
-            "  <((º+º))>  ",
-            "     \\|/     "
-        ),
-        rearRetreatFrame = arrayOf(
-            "     /|\\     ",
-            "    (|X|)    ",
-            "     \\|/     "
-        )
-    ),
-    ELECTRIC_MORAY(
-        id = 3,
-        displayName = "moray eel",
-        speedColsPerSec = 9.8f,
-        rightFrameA = arrayOf(" ~^~^~==º< "),
-        rightFrameB = arrayOf(" ^~^~^==º= "),
-        rightChomp  = arrayOf(" ~^~^~==º{{"),
-        leftFrameA  = arrayOf(" >º==~^~^~ "),
-        leftFrameB  = arrayOf(" =º==^~^~^ "),
-        leftChomp   = arrayOf("}}º==~^~^~ "),
-        frontChargeFrame = arrayOf(
-            "   .~^~.   ",
-            "  ((ºVº))  ",
-            "   '~v~'   "
-        ),
-        rearRetreatFrame = arrayOf(
-            "   .~^~.   ",
-            "   ((x))   "
-        )
-    )
+    BARRACUDA_PIKE(0, "barracuda", 11.2f, 0.23f, 0.22f, BodyPlan.PELAGIC_FAST, MarkingStyle.NONE),
+    REEF_SHARK(1, "reef shark", 10.6f, 0.27f, 0.26f, BodyPlan.SHARK, MarkingStyle.NONE),
+    SWORDFISH(2, "marlin swordfish", 12.0f, 0.26f, 0.24f, BodyPlan.SWORDFISH, MarkingStyle.NONE),
+    ELECTRIC_MORAY(3, "moray eel", 9.8f, 0.25f, 0.18f, BodyPlan.EEL, MarkingStyle.SPOTS)
 }
 
 enum class BottomFeederSpecies(
@@ -1210,86 +236,14 @@ enum class LegendarySpecies(
     val id: Int,
     val displayName: String,
     val speedColsPerSec: Float,
-    val rightFrameA: Array<String>,
-    val rightFrameB: Array<String>,
-    val leftFrameA: Array<String>,
-    val leftFrameB: Array<String>
+    val lengthFrac: Float,
+    val aspectRatio: Float,
+    val bodyPlan: BodyPlan,
+    val marking: MarkingStyle
 ) {
-    DRAGON_KOI(
-        id = 0,
-        displayName = "ryujin sea dragon",
-        speedColsPerSec = 3.8f,
-        rightFrameA = arrayOf(
-            "    _/^\\_.._    ",
-            "}><((((({(º>==~ ",
-            "    '-..--'     "
-        ),
-        rightFrameB = arrayOf(
-            "    _/^\\_.._    ",
-            "><(((((({(º>=~- ",
-            "    '-..--'     "
-        ),
-        leftFrameA = arrayOf(
-            "    _.._/^\\_    ",
-            " ~==<º)}))))><{ ",
-            "     '--..-'    "
-        ),
-        leftFrameB = arrayOf(
-            "    _.._/^\\_    ",
-            " -~=<º)})))))>< ",
-            "     '--..-'    "
-        )
-    ),
-    GIANT_OARFISH(
-        id = 1,
-        displayName = "regal oarfish",
-        speedColsPerSec = 4.2f,
-        rightFrameA = arrayOf(
-            "   ~^~^~^~^~\\|// ",
-            " ~===))))))))º>  ",
-            "        '---'    "
-        ),
-        rightFrameB = arrayOf(
-            "   ^~^~^~^~^\\|// ",
-            " -===))))))))º>  ",
-            "        '---'    "
-        ),
-        leftFrameA = arrayOf(
-            " \\|//~^~^~^~^~   ",
-            "  <º((((((((===~ ",
-            "    '---'        "
-        ),
-        leftFrameB = arrayOf(
-            " \\|//^~^~^~^~^   ",
-            "  <º((((((((===- ",
-            "    '---'        "
-        )
-    ),
-    ANCIENT_COELACANTH(
-        id = 2,
-        displayName = "living coelacanth",
-        speedColsPerSec = 3.2f,
-        rightFrameA = arrayOf(
-            "    _/|_/|_    ",
-            "}><((({#{(º>   ",
-            "    \\/  \\/     "
-        ),
-        rightFrameB = arrayOf(
-            "    _/|_/|_    ",
-            "><(((({#{(º>   ",
-            "    \\/  \\/     "
-        ),
-        leftFrameA = arrayOf(
-            "    _|\\_|\\_    ",
-            "   <º)}#}))><{ ",
-            "     \\/  \\/    "
-        ),
-        leftFrameB = arrayOf(
-            "    _|\\_|\\_    ",
-            "   <º)}#})))>< ",
-            "     \\/  \\/    "
-        )
-    )
+    DRAGON_KOI(0, "ryujin sea dragon", 3.8f, 0.26f, 0.34f, BodyPlan.REEF_OVAL, MarkingStyle.KOI_PATCHES),
+    GIANT_OARFISH(1, "regal oarfish", 4.2f, 0.34f, 0.16f, BodyPlan.EEL, MarkingStyle.NONE),
+    ANCIENT_COELACANTH(2, "living coelacanth", 3.2f, 0.24f, 0.38f, BodyPlan.SHARK, MarkingStyle.SPOTS)
 }
 
 class LegendaryAgent(
@@ -1563,11 +517,7 @@ class PondSimulation {
     private val insectDayFrameB = charArrayOf('-', 'o', '-')
     private val insectNightFrameA = charArrayOf(' ', '*', ' ')
     private val insectNightFrameB = charArrayOf(' ', '·', ' ')
-    private val jellyFrameA = arrayOf(" .--. ", "( °° )", " /||\\ ")
-    private val jellyFrameB = arrayOf("  ..  ", " (oo) ", "  ||  ")
     private val padColsScratch = IntArray(2)
-    private val zSwimAwayHero = arrayOf("  _._  ", " (|X|) ", "  '-'  ")
-    private val zSwimAwaySmall = arrayOf(" (x) ")
     private val shadowCharsNear = charArrayOf('.', '=', '=', '=', '.')
     private val shadowCharsFar  = charArrayOf('.', '.', '.')
     private val reflectChars    = charArrayOf('~', '.', '.', '~')
@@ -1632,11 +582,26 @@ class PondSimulation {
         isSubpixelText = true
     }
     private val bgPaint = Paint()
-    private val bodyHaloPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val creatureRenderer = MarineCreatureRenderer()
 
+    private var viewportWidthPx = 1080f
+    private var viewportHeightPx = 2200f
     private var cellWidthPx = 13f
     private var cellHeightPx = 22f
     private var baselineOffsetPx = 17f
+
+    private fun refSpanPx(): Float = minOf(viewportWidthPx, viewportHeightPx * 0.68f).coerceAtLeast(240f)
+
+    private fun creatureLengthPx(lengthFrac: Float, zDepth: Float): Float {
+        val persp = 1.12f - zDepth.coerceIn(0f, 1f) * 0.50f
+        return refSpanPx() * lengthFrac * persp
+    }
+
+    private fun spanCols(lengthFrac: Float, zDepth: Float = 0.38f): Float =
+        (creatureLengthPx(lengthFrac, zDepth) / cellWidthPx.coerceAtLeast(1f)).coerceAtLeast(2.5f)
+
+    private fun spanRows(lengthFrac: Float, aspectRatio: Float, zDepth: Float = 0.38f): Float =
+        (creatureLengthPx(lengthFrac, zDepth) * aspectRatio / cellHeightPx.coerceAtLeast(1f)).coerceAtLeast(1.2f)
 
     var activeSpeciesSummary: String = "sea turtle, moorish idol, eagle ray, blue chromis"
         private set
@@ -1712,6 +677,8 @@ class PondSimulation {
 
     fun configureGrid(widthPx: Int, heightPx: Int, density: GridDensity, waterlinePct: Int = currentWaterlinePct) {
         if (widthPx <= 0 || heightPx <= 0) return
+        viewportWidthPx = widthPx.toFloat()
+        viewportHeightPx = heightPx.toFloat()
         currentWaterlinePct = waterlinePct.coerceIn(25, 65)
         val cols = density.targetCols.coerceIn(50, maxCols - 2)
         cellWidthPx = widthPx.toFloat() / cols.toFloat()
@@ -1733,8 +700,8 @@ class PondSimulation {
         val spanR = (maxR - minR).coerceAtLeast(16)
         for (i in 0 until totalMaxFish) {
             val f = fish[i]
-            val sw = f.species.rightFrameA[0].length
-            f.colX = (f.colFrac * (gridCols - sw - 4) + 2f).coerceIn(2f, (gridCols - sw - 2).toFloat())
+            val sw = spanCols(f.species.lengthFrac, f.zDepth)
+            f.colX = (f.colFrac * (gridCols - sw - 4f) + 2f).coerceIn(2f, (gridCols - sw - 2f).coerceAtLeast(3f))
             f.rowY = minR + f.preferredDepthFrac * spanR
         }
     }
@@ -1794,8 +761,8 @@ class PondSimulation {
             f.targetDepthFrac = f.preferredDepthFrac
             f.colFrac = 0.08f + ((i * 29 + rand.nextInt(19)) % 82) / 100f
 
-            val sw = f.species.rightFrameA[0].length
-            f.colX = (f.colFrac * (gridCols - sw - 2)).coerceIn(1f, (gridCols - sw - 1).toFloat())
+            val sw = spanCols(f.species.lengthFrac, f.zDepth)
+            f.colX = (f.colFrac * (gridCols - sw - 2f)).coerceIn(1f, (gridCols - sw - 1f).coerceAtLeast(2f))
             f.rowY = minR + f.preferredDepthFrac * spanR
 
             val dir = if (i % 2 == 0) 1 else -1
@@ -1888,7 +855,8 @@ class PondSimulation {
 
         val fromLeft = rand.nextBoolean()
         val dir = if (fromLeft) 1f else -1f
-        val spriteW = sp.rightFrameA[0].length
+        val baseZ = sp.preferredZMin + rand.nextFloat() * (sp.preferredZMax - sp.preferredZMin)
+        val spriteW = spanCols(sp.lengthFrac, baseZ)
         val minR = (waterlineRow + 7).coerceAtMost(gridRows - 22)
         val maxR = (gridRows - 16).coerceAtLeast(minR + 8)
         val baseRow = when {
@@ -1896,7 +864,6 @@ class PondSimulation {
             sp.canSpout -> (minR + rand.nextFloat() * (maxR - minR) * 0.52f)
             else -> (minR + rand.nextFloat() * (maxR - minR))
         }
-        val baseZ = sp.preferredZMin + rand.nextFloat() * (sp.preferredZMax - sp.preferredZMin)
 
         oceanVisitor.active = true
         oceanVisitor.species = sp
@@ -2048,7 +1015,7 @@ class PondSimulation {
         for (i in 0 until totalMaxFish) {
             val f = fish[i]
             if (f.respawnTimer > 0f || f.offscreenTimer > 0f) continue
-            val sw = f.species.rightFrameA[0].length
+            val sw = spanCols(f.species.lengthFrac, f.zDepth)
             val centerCol = f.colX + sw * 0.5f
             if (abs(c - centerCol) < (sw * 0.55f + 1.5f) && abs(r - f.rowY) < 2.8f) {
                 val pushDir = if (c <= centerCol) 1 else -1
@@ -2116,7 +1083,7 @@ class PondSimulation {
             for (i in 0 until totalMaxFish) {
                 val f = fish[i]
                 if (f.respawnTimer > 0f || f.offscreenTimer > 0f) continue
-                val sw = f.species.rightFrameA[0].length
+                val sw = spanCols(f.species.lengthFrac, f.zDepth)
                 val dx = (f.colX + sw * 0.5f) - c
                 val dy = f.rowY - r
                 if (abs(dx) < 10f && abs(dy) < 6f) {
@@ -2147,8 +1114,12 @@ class PondSimulation {
             simTime -= 86400f
         }
 
-        if (config.waterlinePercent != currentWaterlinePct && canvas.width > 0 && canvas.height > 0) {
-            configureGrid(canvas.width, canvas.height, config.gridDensity, config.waterlinePercent)
+        if (canvas.width > 0 && canvas.height > 0) {
+            viewportWidthPx = canvas.width.toFloat()
+            viewportHeightPx = canvas.height.toFloat()
+            if (config.waterlinePercent != currentWaterlinePct) {
+                configureGrid(canvas.width, canvas.height, config.gridDensity, config.waterlinePercent)
+            }
         }
 
         val snapshot = TimeOfDayPalette.resolve(
@@ -2769,7 +1740,7 @@ class PondSimulation {
 
             if (b.rowY <= splitRow + 1) {
                 val refFish = fish[i % activeHero.coerceAtLeast(1)]
-                val refW = refFish.species.rightFrameA[0].length
+                val refW = spanCols(refFish.species.lengthFrac, refFish.zDepth)
                 val mouthX = if (refFish.facingDir >= 0) refFish.colX + refW - 0.5f else refFish.colX + 0.5f
                 b.colX = mouthX.coerceIn(2f, (cols - 2).toFloat())
                 b.rowY = if (b.isBubble && refFish.offscreenTimer <= 0f) refFish.rowY else (rows - 4).toFloat()
@@ -2871,126 +1842,76 @@ class PondSimulation {
         }
 
         val baseTextSizePx = textPaint.textSize
+        val waterSurfacePx = (splitRow + 0.55f) * cellHeightPx
 
         /**
-         * Sculpted Monospace Creature Renderer:
-         * - Early frustum cull skips off-screen creatures before any color/matrix math
-         * - Translucent soft-body silhouette halo fills micro-gaps behind crisp Unicode+ASCII glyphs
-         * - Continuous traveling sine-wave spine undulation ripples tail/fins organically in real time
-         * - Smooth 3D foreshortening (`scaleX`), gentle pitch banking (`pitchDeg`), and Beer-Lambert fog
+         * Screen-Proportional Organic Silhouette + Monospace ASCII-Dither Creature Renderer:
+         * - Scales naturally from viewport dimensions (`lengthFrac`), independent of grid density
+         * - Uses real traveling S-wave spine undulation, smooth 3D yaw foreshortening, and Beer-Lambert fog
          */
-        fun drawSubPixelSprite(
+        fun drawMarineCreature(
             colFloat: Float,
             rowFloat: Float,
-            lines: Array<String>,
+            lengthFrac: Float,
+            aspectRatio: Float,
+            plan: BodyPlan,
+            marking: MarkingStyle,
             bodyColor: Int,
-            finColor: Int,
+            accentColor: Int,
             eyeColor: Int,
             zDepth: Float = 0.25f,
             inSunbeamShaft: Boolean = false,
-            scaleX: Float = 1.0f,
-            pitchDeg: Float = 0.0f,
-            allowAboveWater: Boolean = false,
-            wavePhase: Float = 0f,
             facingRight: Boolean = true,
-            spineWaveAmp: Float = 0f,
-            softBodyAlpha: Int = 26
+            cosYaw: Float = if (facingRight) 1f else -1f,
+            sinYaw: Float = 0f,
+            pitchDeg: Float = 0.0f,
+            animPhase: Float = 0f,
+            allowAboveWater: Boolean = false,
+            isChomping: Boolean = false
         ) {
             val zClamped = zDepth.coerceIn(0.0f, 1.0f)
-            val perspScale = 1.15f - zClamped * 0.52f
-            val scaledCellW = cellWidthPx * perspScale
-            val scaledCellH = cellHeightPx * perspScale
-
-            val spriteCols = lines[0].length
-            val pivotX = (colFloat + spriteCols * 0.5f) * cellWidthPx
-            val pivotY = rowFloat * cellHeightPx + baselineOffsetPx * 0.5f
-            val halfWidthPx = spriteCols * 0.5f * scaledCellW
-
-            // Early horizontal frustum cull (zero work for off-window creatures!)
-            if (pivotX + halfWidthPx < -cellWidthPx * 2f || pivotX - halfWidthPx > canvas.width + cellWidthPx * 2f) {
-                return
-            }
-
-            textPaint.textSize = baseTextSizePx * perspScale
+            val lengthPx = creatureLengthPx(lengthFrac, zClamped)
+            val colSpan = lengthPx / cellWidthPx.coerceAtLeast(1f)
+            val centerX = (colFloat + colSpan * 0.5f) * cellWidthPx
+            val centerY = rowFloat * cellHeightPx + baselineOffsetPx * 0.5f
 
             val vertFrac = ((rowFloat - splitRow) / underwaterRows.toFloat()).coerceIn(0f, 1f)
             val localWaterBg = if (rowFloat < splitRow) pal.skyBg else TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.waterBgDeep, vertFrac)
             val fogFactor = if (rowFloat < splitRow) {
-                (zClamped * 0.24f).coerceIn(0f, 0.30f)
+                (zClamped * 0.22f).coerceIn(0f, 0.28f)
             } else {
-                (zClamped * 0.66f + vertFrac * 0.16f).coerceIn(0f, 0.78f)
+                (zClamped * 0.64f + vertFrac * 0.16f).coerceIn(0f, 0.76f)
             }
 
-            val litBody = if (inSunbeamShaft) TimeOfDayPalette.lerpColor(bodyColor, pal.sunbeamHighlight, if (pal.isLightSurface) 0.25f else 0.35f) else bodyColor
-            val litFin  = if (inSunbeamShaft) TimeOfDayPalette.lerpColor(finColor, pal.sunbeamHighlight, if (pal.isLightSurface) 0.30f else 0.45f) else finColor
-            val foggedBody = TimeOfDayPalette.lerpColor(litBody, localWaterBg, fogFactor)
-            val foggedFin  = TimeOfDayPalette.lerpColor(litFin, localWaterBg, fogFactor)
-            val foggedEye  = TimeOfDayPalette.lerpColor(eyeColor, localWaterBg, fogFactor * 0.72f)
-
-            val needTransform = abs(pitchDeg) > 0.35f || abs(scaleX - 1.0f) > 0.015f
-            if (needTransform) {
-                canvas.save()
-                canvas.translate(pivotX, pivotY)
-                if (abs(pitchDeg) > 0.35f) {
-                    canvas.rotate(pitchDeg)
-                }
-                if (abs(scaleX - 1.0f) > 0.015f) {
-                    canvas.scale(scaleX.coerceIn(0.35f, 1.0f), 1.0f)
-                }
-            }
-
-            val minClipY = if (allowAboveWater) 1.5f * cellHeightPx else (splitRow + 0.9f) * cellHeightPx
-            val maxClipY = (floorRow - 0.3f) * cellHeightPx
-
-            // Whisper-soft translucent body silhouette backplate (disabled on true-black AMOLED to keep OLED pixels off)
-            if (!isTrueBlackOled && softBodyAlpha > 0 && lines.size >= 3 && pivotY in minClipY..maxClipY) {
-                val effAlpha = (softBodyAlpha * (1f - fogFactor * 0.45f)).toInt().coerceIn(8, 48)
-                bodyHaloPaint.color = (foggedBody and 0x00FFFFFF) or (effAlpha shl 24)
-                val rx = halfWidthPx * 0.78f
-                val ry = lines.size * scaledCellH * 0.34f
-                val cx = if (needTransform) 0f else pivotX
-                val cy = if (needTransform) 0f else pivotY
-                canvas.drawOval(cx - rx, cy - ry, cx + rx, cy + ry, bodyHaloPaint)
-            }
-
-            val useWave = spineWaveAmp > 0.01f && spriteCols > 3 && !isBatterySaver
-            val wavePx = spineWaveAmp * scaledCellH
-            val invCols = 1f / (spriteCols - 1).coerceAtLeast(1).toFloat()
-
-            for (lineIdx in lines.indices) {
-                val lineOffset = (lineIdx - (lines.size - 1) * 0.5f) * scaledCellH
-                val worldLineY = pivotY + lineOffset + baselineOffsetPx * 0.5f
-                if (worldLineY < minClipY || worldLineY > maxClipY) continue
-
-                val baseDrawY = if (needTransform) (lineOffset + baselineOffsetPx * 0.5f) else worldLineY
-                val startX = if (needTransform) (-halfWidthPx) else (pivotX - halfWidthPx)
-
-                val str = lines[lineIdx]
-                for (chIdx in str.indices) {
-                    val ch = str[chIdx]
-                    if (ch == ' ') continue
-
-                    textPaint.color = when {
-                        ch == '°' || ch == 'º' || ch == '◉' || ch == 'O' -> foggedEye
-                        lines.size >= 3 && (lineIdx == 0 || lineIdx == lines.size - 1) -> foggedFin
-                        ch == '|' || ch == '│' || ch == '{' || ch == '}' || ch == '#' || ch == '▓' || ch == '█' || ch == '◈' || ch == '=' || ch == '═' -> foggedFin
-                        else -> foggedBody
-                    }
-                    val spineY = if (useWave) {
-                        val headToTail = if (facingRight) (1f - chIdx * invCols) else (chIdx * invCols)
-                        sin(wavePhase - headToTail * 3.8f) * (headToTail * headToTail) * wavePx
-                    } else {
-                        0f
-                    }
-                    singleCharBuf[0] = ch
-                    canvas.drawText(singleCharBuf, 0, 1, startX + chIdx * scaledCellW, baseDrawY + spineY, textPaint)
-                }
-            }
-
-            if (needTransform) {
-                canvas.restore()
-            }
-            textPaint.textSize = baseTextSizePx
+            creatureRenderer.drawCreature(
+                canvas = canvas,
+                textPaint = textPaint,
+                baseTextSizePx = baseTextSizePx,
+                centerX = centerX,
+                centerY = centerY,
+                lengthPx = lengthPx,
+                aspectRatio = aspectRatio,
+                plan = plan,
+                marking = marking,
+                bodyColor = bodyColor,
+                accentColor = accentColor,
+                eyeColor = eyeColor,
+                localWaterBg = localWaterBg,
+                fogFactor = fogFactor,
+                inSunbeam = inSunbeamShaft,
+                sunbeamHighlight = pal.sunbeamHighlight,
+                isLightSurface = pal.isLightSurface,
+                isTrueBlackOled = isTrueBlackOled,
+                isBatterySaver = isBatterySaver,
+                facingRight = facingRight,
+                cosYaw = cosYaw,
+                sinYaw = sinYaw,
+                pitchDeg = pitchDeg,
+                animPhase = animPhase,
+                isChomping = isChomping,
+                waterSurfacePx = waterSurfacePx,
+                allowAboveWater = allowAboveWater
+            )
         }
 
         fun resolveRoleColor(role: Int): Int = when (role) {
@@ -3032,17 +1953,19 @@ class PondSimulation {
                 if (jel.rowY < splitRow + 6) {
                     jel.rowY = (floorRow - 6).toFloat()
                 }
-                val jLines = if (sin(jel.phase) > 0f) jellyFrameA else jellyFrameB
                 val jelParallax = 0.85f - jel.zDepth * 0.65f
-                drawSubPixelSprite(
+                drawMarineCreature(
                     colFloat = jel.colX + pShiftCols * jelParallax,
                     rowFloat = (jel.rowY + pShiftRowsFloat * jelParallax).coerceIn(splitRow + 3f, floorRow - 4f),
-                    lines = jLines,
+                    lengthFrac = 0.085f,
+                    aspectRatio = 0.85f,
+                    plan = BodyPlan.JELLYFISH,
+                    marking = MarkingStyle.NONE,
                     bodyColor = pal.fishAqua,
-                    finColor = pal.fishRose,
+                    accentColor = pal.fishRose,
                     eyeColor = pal.fishFoam,
                     zDepth = jel.zDepth,
-                    softBodyAlpha = 36
+                    animPhase = jel.phase
                 )
             }
         }
@@ -3063,11 +1986,11 @@ class PondSimulation {
             }
         } else {
             val sp = oceanVisitor.species
-            val spriteW = sp.rightFrameA[0].length
             var anyStillOnOrApproaching = false
 
             for (m in 0 until oceanVisitor.memberCount) {
                 val mem = oceanVisitor.members[m]
+                val spriteW = spanCols(sp.lengthFrac, mem.zDepth)
                 mem.animPhase = (mem.animPhase + clampedDt * (if (sp.canBreach) 4.4f else 1.7f)) % 62.831855f
                 mem.colX += mem.vx * clampedDt
 
@@ -3154,26 +2077,24 @@ class PondSimulation {
                     val vParallax = 1.0f - mem.zDepth * 0.85f
                     val drawCol = mem.colX + pShiftCols * vParallax
                     val drawRow = mem.rowY + pShiftRowsFloat * vParallax
-                    val useB = sin(mem.animPhase) > 0f
-                    val vLines = if (oceanVisitor.vxDir >= 0f) {
-                        if (useB) sp.rightFrameB else sp.rightFrameA
-                    } else {
-                        if (useB) sp.leftFrameB else sp.leftFrameA
-                    }
-                    drawSubPixelSprite(
+                    val vFacingRight = oceanVisitor.vxDir >= 0f
+                    drawMarineCreature(
                         colFloat = drawCol,
                         rowFloat = drawRow,
-                        lines = vLines,
+                        lengthFrac = sp.lengthFrac,
+                        aspectRatio = sp.aspectRatio,
+                        plan = sp.bodyPlan,
+                        marking = sp.marking,
                         bodyColor = resolveRoleColor(sp.bodyRole),
-                        finColor = resolveRoleColor(sp.accentRole),
+                        accentColor = resolveRoleColor(sp.accentRole),
                         eyeColor = pal.fishFoam,
                         zDepth = mem.zDepth,
+                        facingRight = vFacingRight,
+                        cosYaw = if (vFacingRight) 1f else -1f,
+                        sinYaw = 0f,
                         pitchDeg = mem.pitchDeg,
-                        allowAboveWater = sp.canBreach,
-                        wavePhase = mem.animPhase,
-                        facingRight = oceanVisitor.vxDir >= 0f,
-                        spineWaveAmp = if (sp.canBreach) 0.24f else 0.34f,
-                        softBodyAlpha = 32
+                        animPhase = mem.animPhase,
+                        allowAboveWater = sp.canBreach
                     )
                 }
             }
@@ -3434,16 +2355,17 @@ class PondSimulation {
                     injectSurfaceRipple(predator.colX + 4f, 0.9f)
                 }
 
+                val predW = spanCols(predator.species.lengthFrac, predator.zDepth)
                 val predatorMouthX = if (abs(predator.vz) > 0.22f) {
-                    predator.colX + predator.species.frontChargeFrame[0].length * 0.5f
+                    predator.colX + predW * 0.5f
                 } else if (predator.vxDir >= 0f) {
-                    predator.colX + predator.species.rightFrameA[0].length - 2f
+                    predator.colX + predW - 2f
                 } else {
                     predator.colX + 2f
                 }
 
                 if (!predator.hasCaughtThisVisit && !predator.isRetreating && predator.willCatchThisVisit && targetFish != null) {
-                    val fishCenterX = targetFish.colX + targetFish.species.rightFrameA[0].length * 0.5f
+                    val fishCenterX = targetFish.colX + spanCols(targetFish.species.lengthFrac, targetFish.zDepth) * 0.5f
                     val contactDist2D = hypot(fishCenterX - predatorMouthX, (targetFish.rowY - predator.rowY) * 1.2f)
                     val zDiff = abs(targetFish.zDepth - predator.zDepth)
                     if (contactDist2D < 3.8f && zDiff < 0.22f) {
@@ -3503,7 +2425,7 @@ class PondSimulation {
             if (!f.isSchooler && i >= activeHero) continue
             if (f.isSchooler && (i - maxHeroFish) >= activeSchool) continue
 
-            val spriteW = f.species.rightFrameA[0].length
+            val spriteW = spanCols(f.species.lengthFrac, f.zDepth)
 
             // Caught-prey respawn
             if (f.respawnTimer > 0f) {
@@ -3632,9 +2554,9 @@ class PondSimulation {
 
                 // Gracefully part like living curtains around any passing Ocean Giant!
                 if (oceanVisitor.active) {
-                    val vW = oceanVisitor.species.rightFrameA[0].length
                     for (m in 0 until oceanVisitor.memberCount) {
                         val mem = oceanVisitor.members[m]
+                        val vW = spanCols(oceanVisitor.species.lengthFrac, mem.zDepth)
                         val vCx = mem.colX + vW * 0.5f
                         val gdx = f.colX - vCx
                         val gdy = f.rowY - mem.rowY
@@ -3756,12 +2678,14 @@ class PondSimulation {
                 if (other.isSchooler && (j - maxHeroFish) >= activeSchool) continue
                 if (abs(f.zDepth - other.zDepth) > 0.22f) continue
 
-                val otherW = other.species.rightFrameA[0].length
+                val otherW = spanCols(other.species.lengthFrac, other.zDepth)
                 val dx = (f.colX + spriteW * 0.5f) - (other.colX + otherW * 0.5f)
                 val dy = f.rowY - other.rowY
 
                 val safeX = (spriteW + otherW) * 0.52f + 2.2f
-                val safeY = (f.species.rightFrameA.size + other.species.rightFrameA.size) * 0.52f + 1.4f
+                val fH = spanRows(f.species.lengthFrac, f.species.aspectRatio, f.zDepth)
+                val oH = spanRows(other.species.lengthFrac, other.species.aspectRatio, other.zDepth)
+                val safeY = (fH + oH) * 0.58f + 1.4f
 
                 if (abs(dx) < safeX && abs(dy) < safeY) {
                     val normY = (safeY - abs(dy)) / safeY
@@ -3853,30 +2777,28 @@ class PondSimulation {
                 drewMidgroundVisitors = true
                 if (oceanVisitor.active) {
                     val sp = oceanVisitor.species
+                    val vFacingRight = oceanVisitor.vxDir >= 0f
                     for (m in 0 until oceanVisitor.memberCount) {
                         val mem = oceanVisitor.members[m]
                         if (mem.zDepth <= 0.40f) {
                             val vParallax = 1.0f - mem.zDepth * 0.85f
-                            val useB = sin(mem.animPhase) > 0f
-                            val vLines = if (oceanVisitor.vxDir >= 0f) {
-                                if (useB) sp.rightFrameB else sp.rightFrameA
-                            } else {
-                                if (useB) sp.leftFrameB else sp.leftFrameA
-                            }
-                            drawSubPixelSprite(
+                            drawMarineCreature(
                                 colFloat = mem.colX + pShiftCols * vParallax,
                                 rowFloat = mem.rowY + pShiftRowsFloat * vParallax,
-                                lines = vLines,
+                                lengthFrac = sp.lengthFrac,
+                                aspectRatio = sp.aspectRatio,
+                                plan = sp.bodyPlan,
+                                marking = sp.marking,
                                 bodyColor = resolveRoleColor(sp.bodyRole),
-                                finColor = resolveRoleColor(sp.accentRole),
+                                accentColor = resolveRoleColor(sp.accentRole),
                                 eyeColor = pal.fishFoam,
                                 zDepth = mem.zDepth,
+                                facingRight = vFacingRight,
+                                cosYaw = if (vFacingRight) 1f else -1f,
+                                sinYaw = 0f,
                                 pitchDeg = mem.pitchDeg,
-                                allowAboveWater = sp.canBreach,
-                                wavePhase = mem.animPhase,
-                                facingRight = oceanVisitor.vxDir >= 0f,
-                                spineWaveAmp = if (sp.canBreach) 0.24f else 0.34f,
-                                softBodyAlpha = 32
+                                animPhase = mem.animPhase,
+                                allowAboveWater = sp.canBreach
                             )
                         }
                     }
@@ -3901,42 +2823,12 @@ class PondSimulation {
                 }
             }
 
-            // Smooth 3D Yaw Foreshortening & Seamless Dimensional Sprite Selection!
+            // Smooth 3D Yaw Foreshortening & Continuous Organic Spine Undulation!
             val parallaxMult = 1.05f - effectiveZ * 0.88f
             val cosYaw = cos(f.yaw)
             val sinYaw = sin(f.yaw)
-            val absCos = abs(cosYaw)
-            val waveSin = sin(f.animPhase)
 
-            val isHeadOnOrTailOn = absCos < 0.26f
-            val lines = if (isHeadOnOrTailOn) {
-                if (sinYaw > 0f) {
-                    if (f.isSchooler) zSwimAwaySmall else zSwimAwayHero
-                } else {
-                    f.species.turnFrame
-                }
-            } else if (cosYaw >= 0f) {
-                when {
-                    waveSin > 0.42f -> f.species.rightFrameB
-                    waveSin < -0.42f -> f.species.rightFrameC
-                    else -> f.species.rightFrameA
-                }
-            } else {
-                when {
-                    waveSin > 0.42f -> f.species.leftFrameB
-                    waveSin < -0.42f -> f.species.leftFrameC
-                    else -> f.species.leftFrameA
-                }
-            }
-
-            // Continuous horizontal foreshortening seamlessly bridges side profile <-> head-on turn!
-            val foreshortenX = if (isHeadOnOrTailOn) {
-                0.76f + 0.24f * (1f - absCos / 0.26f)
-            } else {
-                0.44f + 0.56f * ((absCos - 0.26f) / 0.74f).coerceIn(0f, 1f)
-            }
-
-            val sw = lines[0].length
+            val sw = spanCols(f.species.lengthFrac, effectiveZ)
             val drawCol = f.colX + pShiftCols * parallaxMult
             val parallaxDrawRow = (f.rowY + pShiftRowsFloat * parallaxMult)
                 .coerceIn(minFishRow, maxFishRow)
@@ -3982,33 +2874,29 @@ class PondSimulation {
                 }
             }
 
-            val fishWaveAmp = when {
-                isHeadOnOrTailOn -> 0f
-                f.species == AsciiFishSpecies.SEA_TURTLE || f.species == AsciiFishSpecies.PUFFERFISH -> 0.08f
-                f.isSchooler -> 0.16f
-                else -> 0.24f
-            }
-            drawSubPixelSprite(
+            drawMarineCreature(
                 colFloat = drawCol,
                 rowFloat = parallaxDrawRow,
-                lines = lines,
+                lengthFrac = f.species.lengthFrac,
+                aspectRatio = f.species.aspectRatio,
+                plan = f.species.bodyPlan,
+                marking = f.species.marking,
                 bodyColor = resolveRoleColor(f.species.primaryRole),
-                finColor = if (f.isElderCrown) pal.fishGold else resolveRoleColor(f.species.finAccentRole),
+                accentColor = if (f.isElderCrown) pal.fishGold else resolveRoleColor(f.species.finAccentRole),
                 eyeColor = pal.fishFoam,
                 zDepth = effectiveZ,
                 inSunbeamShaft = inBeam,
-                scaleX = foreshortenX,
-                pitchDeg = if (isHeadOnOrTailOn) 0f else f.pitchDeg,
-                wavePhase = f.animPhase,
                 facingRight = cosYaw >= 0f,
-                spineWaveAmp = fishWaveAmp,
-                softBodyAlpha = if (f.isSchooler) 0 else 24
+                cosYaw = cosYaw,
+                sinYaw = sinYaw,
+                pitchDeg = f.pitchDeg,
+                animPhase = f.animPhase
             )
 
             if (f.isElderCrown) {
-                val perspScale = 1.15f - effectiveZ * 0.52f
+                val sh = spanRows(f.species.lengthFrac, f.species.aspectRatio, effectiveZ)
                 val crownCol = drawCol + sw * 0.45f
-                val crownRow = parallaxDrawRow - (lines.size * 0.5f * perspScale) - 0.4f
+                val crownRow = parallaxDrawRow - (sh * 0.65f) - 0.4f
                 textPaint.color = pal.fishGold
                 drawCharZeroAlloc(canvas, '^', crownCol * cellWidthPx, crownRow * cellHeightPx + baselineOffsetPx, textPaint)
             }
@@ -4023,30 +2911,28 @@ class PondSimulation {
         // Guarantee foreground Ocean Visitors draw even if all fish are currently deeper than z=0.40
         if (!drewMidgroundVisitors && oceanVisitor.active) {
             val sp = oceanVisitor.species
+            val vFacingRight = oceanVisitor.vxDir >= 0f
             for (m in 0 until oceanVisitor.memberCount) {
                 val mem = oceanVisitor.members[m]
                 if (mem.zDepth <= 0.40f) {
                     val vParallax = 1.0f - mem.zDepth * 0.85f
-                    val useB = sin(mem.animPhase) > 0f
-                    val vLines = if (oceanVisitor.vxDir >= 0f) {
-                        if (useB) sp.rightFrameB else sp.rightFrameA
-                    } else {
-                        if (useB) sp.leftFrameB else sp.leftFrameA
-                    }
-                    drawSubPixelSprite(
+                    drawMarineCreature(
                         colFloat = mem.colX + pShiftCols * vParallax,
                         rowFloat = mem.rowY + pShiftRowsFloat * vParallax,
-                        lines = vLines,
+                        lengthFrac = sp.lengthFrac,
+                        aspectRatio = sp.aspectRatio,
+                        plan = sp.bodyPlan,
+                        marking = sp.marking,
                         bodyColor = resolveRoleColor(sp.bodyRole),
-                        finColor = resolveRoleColor(sp.accentRole),
+                        accentColor = resolveRoleColor(sp.accentRole),
                         eyeColor = pal.fishFoam,
                         zDepth = mem.zDepth,
+                        facingRight = vFacingRight,
+                        cosYaw = if (vFacingRight) 1f else -1f,
+                        sinYaw = 0f,
                         pitchDeg = mem.pitchDeg,
-                        allowAboveWater = sp.canBreach,
-                        wavePhase = mem.animPhase,
-                        facingRight = oceanVisitor.vxDir >= 0f,
-                        spineWaveAmp = if (sp.canBreach) 0.24f else 0.34f,
-                        softBodyAlpha = 32
+                        animPhase = mem.animPhase,
+                        allowAboveWater = sp.canBreach
                     )
                 }
             }
@@ -4058,7 +2944,7 @@ class PondSimulation {
             legendary.colX += legendary.vxDir * legendary.species.speedColsPerSec * clampedDt
             legendary.rowY = (legendary.rowY + sin(simTime * 1.1f) * 0.9f * clampedDt).coerceIn(minFishRow + 2f, maxFishRow - 2f)
 
-            val legWidth = legendary.species.rightFrameA[0].length
+            val legWidth = spanCols(legendary.species.lengthFrac, legendary.zDepth)
             if (legendary.vxDir > 0f && legendary.colX > cols + 6f) {
                 legendary.vxDir = -1f
             } else if (legendary.vxDir < 0f && legendary.colX < -legWidth - 6f) {
@@ -4068,25 +2954,27 @@ class PondSimulation {
             val legParallax = 1.05f - legendary.zDepth * 0.88f
             val legDrawCol = legendary.colX + pShiftCols * legParallax
             val legDrawRow = (legendary.rowY + pShiftRowsFloat * legParallax).coerceIn(minFishRow, maxFishRow)
-            val useLegB = sin(legendary.animPhase) > 0f
-            val legLines = if (legendary.vxDir >= 0f) {
-                if (useLegB) legendary.species.rightFrameB else legendary.species.rightFrameA
-            } else {
-                if (useLegB) legendary.species.leftFrameB else legendary.species.leftFrameA
-            }
+            val legFacingRight = legendary.vxDir >= 0f
 
-            drawSubPixelSprite(
+            drawMarineCreature(
                 colFloat = legDrawCol,
                 rowFloat = legDrawRow,
-                lines = legLines,
+                lengthFrac = legendary.species.lengthFrac,
+                aspectRatio = legendary.species.aspectRatio,
+                plan = legendary.species.bodyPlan,
+                marking = legendary.species.marking,
                 bodyColor = pal.fishGold,
-                finColor = pal.fishCoral,
+                accentColor = pal.fishCoral,
                 eyeColor = pal.fishFoam,
                 zDepth = legendary.zDepth,
-                inSunbeamShaft = true
+                inSunbeamShaft = true,
+                facingRight = legFacingRight,
+                cosYaw = if (legFacingRight) 1f else -1f,
+                sinYaw = 0f,
+                animPhase = legendary.animPhase
             )
 
-            val trailCol = if (legendary.vxDir >= 0f) legDrawCol - 2.0f else legDrawCol + legWidth + 1.0f
+            val trailCol = if (legFacingRight) legDrawCol - 2.0f else legDrawCol + legWidth + 1.0f
             textPaint.color = pal.fishGold
             drawCharZeroAlloc(canvas, if (wavePhase % 2 == 0) '*' else '·', trailCol * cellWidthPx, legDrawRow * cellHeightPx + baselineOffsetPx, textPaint)
         }
@@ -4154,32 +3042,39 @@ class PondSimulation {
                 canvas.drawText(shadowCharsNear, 0, shadowCharsNear.size, pShadowCol * cellWidthPx, pShadowRow * cellHeightPx + baselineOffsetPx, textPaint)
             }
 
-            val useFrameB = sin(predator.animPhase) > 0f
-            val pLines = when {
-                predator.chompTimer > 0f -> if (predator.vxDir >= 0f) predator.species.rightChomp else predator.species.leftChomp
-                predator.vz < -0.20f -> predator.species.frontChargeFrame
-                predator.vz > 0.20f  -> predator.species.rearRetreatFrame
-                predator.vxDir >= 0f -> if (useFrameB) predator.species.rightFrameB else predator.species.rightFrameA
-                else -> if (useFrameB) predator.species.leftFrameB else predator.species.leftFrameA
-            }
             val predBodyColor = when {
                 predator.chompTimer > 0f -> pal.bloodCore
                 predator.stalkTimer > 0f -> TimeOfDayPalette.lerpColor(pal.fishDimBg, pal.fishCoral, 0.35f)
                 else -> pal.fishCoral
             }
-            drawSubPixelSprite(
+            val predFacingRight = predator.vxDir >= 0f
+            val predHeadingCos = when {
+                abs(predator.vz) > 0.22f -> if (predFacingRight) 0.25f else -0.25f
+                predFacingRight -> 1f
+                else -> -1f
+            }
+            val predHeadingSin = when {
+                predator.vz < -0.20f -> -0.95f
+                predator.vz > 0.20f -> 0.95f
+                else -> 0f
+            }
+            drawMarineCreature(
                 colFloat = predDrawCol,
                 rowFloat = predDrawRow,
-                lines = pLines,
+                lengthFrac = predator.species.lengthFrac,
+                aspectRatio = predator.species.aspectRatio,
+                plan = predator.species.bodyPlan,
+                marking = predator.species.marking,
                 bodyColor = predBodyColor,
-                finColor = pal.fishGold,
+                accentColor = pal.fishGold,
                 eyeColor = pal.fishFoam,
                 zDepth = predator.zDepth,
+                facingRight = predFacingRight,
+                cosYaw = predHeadingCos,
+                sinYaw = predHeadingSin,
                 pitchDeg = if (abs(predator.vz) > 0.20f) 0f else predator.pitchDeg,
-                wavePhase = predator.animPhase,
-                facingRight = predator.vxDir >= 0f,
-                spineWaveAmp = if (abs(predator.vz) > 0.20f) 0f else 0.28f,
-                softBodyAlpha = 26
+                animPhase = predator.animPhase,
+                isChomping = predator.chompTimer > 0f
             )
         }
 
@@ -4253,9 +3148,9 @@ class PondSimulation {
             f.species = AsciiFishSpecies.heroPool[hash % AsciiFishSpecies.heroPool.size]
         }
         val enterLeft = (hash % 2 == 0)
-        val sw = f.species.rightFrameA[0].length
-        f.colX = if (enterLeft) (-sw - 3.5f) else (cols + 3.5f)
         f.zDepth = 0.14f + ((hash % 74) / 100f)
+        val sw = spanCols(f.species.lengthFrac, f.zDepth)
+        f.colX = if (enterLeft) (-sw - 3.5f) else (cols + 3.5f)
         f.preferredDepthFrac = 0.10f + (((hash / 7) % 78) / 100f)
         f.targetDepthFrac = f.preferredDepthFrac
         f.rowY = minFishRow + f.preferredDepthFrac * underwaterSpan
