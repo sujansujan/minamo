@@ -84,12 +84,12 @@ enum class OceanVisitorSpecies(
     val bodyPlan: BodyPlan,
     val marking: MarkingStyle
 ) {
-    HUMPBACK_WHALE(0, "humpback whale", 2.6f, 1, 3, 0.46f, 0.80f, false, true, 1, 0.360f, 0.26f, BodyPlan.WHALE, MarkingStyle.WHALE_PLEATS),
-    ORCA(1, "orca whale", 4.6f, 3, 1, 0.32f, 0.70f, false, true, 1, 0.265f, 0.28f, BodyPlan.ORCA, MarkingStyle.ORCA_PATCHES),
-    DOLPHIN_POD(2, "bottlenose dolphin pod", 9.2f, 1, 3, 0.20f, 0.52f, true, false, 3, 0.155f, 0.30f, BodyPlan.DOLPHIN, MarkingStyle.NONE),
-    WHALE_SHARK(3, "whale shark", 3.2f, 1, 2, 0.38f, 0.76f, false, false, 1, 0.305f, 0.26f, BodyPlan.SHARK, MarkingStyle.SPOTS),
-    GIANT_MANTA(4, "giant oceanic manta", 4.0f, 3, 1, 0.28f, 0.68f, false, false, 2, 0.215f, 0.48f, BodyPlan.RAY, MarkingStyle.NONE),
-    DEEP_SQUID(5, "glowing giant squid", 4.8f, 4, 1, 0.34f, 0.72f, false, false, 1, 0.168f, 0.28f, BodyPlan.SQUID, MarkingStyle.NONE)
+    HUMPBACK_WHALE(0, "humpback whale", 3.4f, 1, 3, 0.34f, 0.58f, false, true, 1, 0.460f, 0.26f, BodyPlan.WHALE, MarkingStyle.WHALE_PLEATS),
+    ORCA(1, "orca whale", 5.2f, 3, 1, 0.24f, 0.52f, false, true, 1, 0.330f, 0.28f, BodyPlan.ORCA, MarkingStyle.ORCA_PATCHES),
+    DOLPHIN_POD(2, "bottlenose dolphin pod", 9.6f, 1, 3, 0.16f, 0.38f, true, false, 3, 0.195f, 0.30f, BodyPlan.DOLPHIN, MarkingStyle.NONE),
+    WHALE_SHARK(3, "whale shark", 3.8f, 1, 2, 0.30f, 0.56f, false, false, 1, 0.380f, 0.26f, BodyPlan.SHARK, MarkingStyle.SPOTS),
+    GIANT_MANTA(4, "giant oceanic manta", 4.5f, 3, 1, 0.22f, 0.54f, false, false, 2, 0.265f, 0.48f, BodyPlan.RAY, MarkingStyle.NONE),
+    DEEP_SQUID(5, "glowing giant squid", 5.0f, 4, 1, 0.28f, 0.58f, false, false, 1, 0.205f, 0.28f, BodyPlan.SQUID, MarkingStyle.NONE)
 }
 
 class OceanVisitorMember(
@@ -112,7 +112,7 @@ class OceanVisitorEncounter(
     var species: OceanVisitorSpecies = OceanVisitorSpecies.HUMPBACK_WHALE,
     var vxDir: Float = 1f,
     var memberCount: Int = 1,
-    var cooldownTimer: Float = 7.0f, // First ocean giant appears soon after viewing!
+    var cooldownTimer: Float = 2.5f, // First ocean giant appears promptly after viewing!
     var spoutTimer: Float = 0f,
     var spoutCol: Float = 0f,
     val members: Array<OceanVisitorMember> = Array(3) { OceanVisitorMember() }
@@ -779,9 +779,9 @@ class PondSimulation {
         predator.active = false
         predator.cooldownTimer = 18f + rand.nextFloat() * 18f
 
-        // Schedule an Ocean Megafauna encounter soon so the window feels vast & alive!
+        // Schedule an Ocean Megafauna encounter promptly so you see whales & dolphins during normal unlocks!
         if (!oceanVisitor.active) {
-            oceanVisitor.cooldownTimer = 4.5f + rand.nextFloat() * 7.5f
+            oceanVisitor.cooldownTimer = 2.0f + rand.nextFloat() * 3.0f
         }
 
         // Rare Legendary Spawn Roll (~7% chance)
@@ -798,16 +798,16 @@ class PondSimulation {
      */
     fun triggerOceanVisitor(seed: Long = System.nanoTime(), isNight: Boolean = false): String {
         val rand = Random(seed)
-        val sp = if (isNight && rand.nextFloat() < 0.30f) {
+        val sp = if (isNight && rand.nextFloat() < 0.22f) {
             OceanVisitorSpecies.DEEP_SQUID
         } else {
-            // Bias slightly toward whales, dolphins, and mantas for maximum ocean-window delight
+            // Strong chance for Humpback Whales, Breaching Dolphin Pods, and Orcas!
             val roll = rand.nextFloat()
             when {
-                roll < 0.26f -> OceanVisitorSpecies.HUMPBACK_WHALE
-                roll < 0.50f -> OceanVisitorSpecies.DOLPHIN_POD
-                roll < 0.68f -> OceanVisitorSpecies.ORCA
-                roll < 0.84f -> OceanVisitorSpecies.GIANT_MANTA
+                roll < 0.29f -> OceanVisitorSpecies.HUMPBACK_WHALE
+                roll < 0.58f -> OceanVisitorSpecies.DOLPHIN_POD
+                roll < 0.76f -> OceanVisitorSpecies.ORCA
+                roll < 0.89f -> OceanVisitorSpecies.GIANT_MANTA
                 else -> OceanVisitorSpecies.WHALE_SHARK
             }
         }
@@ -816,11 +816,11 @@ class PondSimulation {
         val dir = if (fromLeft) 1f else -1f
         val baseZ = sp.preferredZMin + rand.nextFloat() * (sp.preferredZMax - sp.preferredZMin)
         val spriteW = spanCols(sp.lengthFrac, baseZ)
-        val minR = (waterlineRow + 7).coerceAtMost(gridRows - 22)
-        val maxR = (gridRows - 16).coerceAtLeast(minR + 8)
+        val minR = (waterlineRow + 5).coerceAtMost(gridRows - 20)
+        val maxR = (gridRows - 14).coerceAtLeast(minR + 8)
         val baseRow = when {
-            sp.canBreach -> (waterlineRow + 6f + rand.nextFloat() * 6f).coerceIn(minR.toFloat(), maxR.toFloat())
-            sp.canSpout -> (minR + rand.nextFloat() * (maxR - minR) * 0.52f)
+            sp.canBreach -> (waterlineRow + 4.5f + rand.nextFloat() * 2.5f).coerceIn(minR.toFloat(), maxR.toFloat())
+            sp.canSpout -> (minR + rand.nextFloat() * (maxR - minR) * 0.42f)
             else -> (minR + rand.nextFloat() * (maxR - minR))
         }
 
@@ -832,25 +832,26 @@ class PondSimulation {
 
         for (m in 0 until oceanVisitor.memberCount) {
             val mem = oceanVisitor.members[m]
-            val spacing = (spriteW + 4f) * m
-            mem.colX = if (fromLeft) (-spriteW - 4f - spacing) else (gridCols + 4f + spacing)
-            mem.rowY = (baseRow + m * 2.4f).coerceIn(minR.toFloat(), maxR.toFloat())
-            mem.zDepth = (baseZ + m * 0.08f).coerceIn(0.18f, 0.88f)
-            val perspSpd = sp.speedColsPerSec * (1.08f - mem.zDepth * 0.36f)
+            val spacing = (spriteW * 0.85f + 3f) * m
+            // Start right at the window edge so slow giants glide into view within 1-2 seconds!
+            mem.colX = if (fromLeft) (-spriteW * 0.75f - 1.5f - spacing) else (gridCols + 1.5f + spacing)
+            mem.rowY = (baseRow + m * 1.8f).coerceIn(minR.toFloat(), maxR.toFloat())
+            mem.zDepth = (baseZ + m * 0.06f).coerceIn(0.16f, 0.72f)
+            val perspSpd = sp.speedColsPerSec * (1.08f - mem.zDepth * 0.30f)
             mem.vx = dir * perspSpd
             mem.vy = 0f
             // Subtle diagonal 3D ocean depth drift for non-breaching giants!
-            mem.vz = if (sp.canBreach) 0f else ((rand.nextFloat() - 0.5f) * 0.032f)
+            mem.vz = if (sp.canBreach) 0f else ((rand.nextFloat() - 0.5f) * 0.026f)
             mem.pitchDeg = 0f
             mem.animPhase = m * 1.4f
             mem.breachPhase = 0f
             mem.hasBreached = false
             mem.wasAboveWater = false
-            // Stagger where each dolphin in the pod breaches across the window!
+            // Stagger where each dolphin in the pod breaches gracefully above the waves!
             mem.breachTriggerCol = if (fromLeft) {
-                gridCols * (0.24f + m * 0.16f)
+                gridCols * (0.20f + m * 0.17f)
             } else {
-                gridCols * (0.76f - m * 0.16f)
+                gridCols * (0.80f - m * 0.17f)
             }
         }
         return sp.displayName
@@ -1591,7 +1592,7 @@ class PondSimulation {
         if (oceanVisitor.spoutTimer > 0f) {
             oceanVisitor.spoutTimer = (oceanVisitor.spoutTimer - clampedDt).coerceAtLeast(0f)
             val spX = (oceanVisitor.spoutCol + pShiftCols * 0.4f).coerceIn(4f, (cols - 5).toFloat()) * cellWidthPx
-            val frac = 1f - (oceanVisitor.spoutTimer / 2.2f).coerceIn(0f, 1f)
+            val frac = 1f - (oceanVisitor.spoutTimer / 2.4f).coerceIn(0f, 1f)
             sceneRenderer.drawWhaleSpout(canvas, textPaint, spX, waterLinePx, refPx * 0.105f, frac, pal.bubbleFg)
         }
 
@@ -1871,39 +1872,47 @@ class PondSimulation {
                     if (!mem.hasBreached && crossedTrigger) {
                         mem.hasBreached = true
                         mem.breachPhase = 0.01f
-                        mem.vy = -17.5f // Graceful upward launch!
+                        mem.vy = -21.5f // High, unmistakable parabolic leap cleanly above the waves!
                     }
 
                     if (mem.breachPhase > 0f) {
                         mem.breachPhase += clampedDt
                         // Gravity pulls the dolphin into a clean parabolic arch above the waves!
-                        mem.vy += 20.5f * clampedDt
+                        mem.vy += 19.0f * clampedDt
                         mem.rowY += mem.vy * clampedDt
 
                         val isAbove = mem.rowY < splitRow
                         if (isAbove && !mem.wasAboveWater) {
-                            // Breaking out of the ocean surface!
-                            injectSurfaceRipple(mem.colX + spriteW * 0.5f, 5.2f)
-                            emitMouthBubble(mem.colX + spriteW * 0.5f, splitRow + 2f, mem.zDepth)
+                            // Breaking out of the ocean surface with splash crown & ripples!
+                            val splashCol = mem.colX + spriteW * 0.5f
+                            injectSurfaceRipple(splashCol, 5.8f)
+                            emitMouthBubble(splashCol, splitRow + 2f, mem.zDepth)
+                            val spCrown = rainSplashes[nextSplashIdx]
+                            nextSplashIdx = (nextSplashIdx + 1) % rainSplashes.size
+                            spCrown.active = true; spCrown.colX = splashCol; spCrown.age = 0f; spCrown.maxAge = 0.55f
                         } else if (!isAbove && mem.wasAboveWater) {
                             // Splashing cleanly back into the ocean!
-                            injectSurfaceRipple(mem.colX + spriteW * 0.5f, 6.0f)
-                            emitMouthBubble(mem.colX + spriteW * 0.5f, splitRow + 2.5f, mem.zDepth)
+                            val splashCol = mem.colX + spriteW * 0.5f
+                            injectSurfaceRipple(splashCol, 6.4f)
+                            emitMouthBubble(splashCol, splitRow + 2.5f, mem.zDepth)
                             emitMouthBubble(mem.colX + spriteW * 0.35f, splitRow + 3.5f, mem.zDepth)
+                            val spCrown = rainSplashes[nextSplashIdx]
+                            nextSplashIdx = (nextSplashIdx + 1) % rainSplashes.size
+                            spCrown.active = true; spCrown.colX = splashCol; spCrown.age = 0f; spCrown.maxAge = 0.62f
                         }
                         mem.wasAboveWater = isAbove
 
                         // Smooth re-leveling once back underwater
-                        if (!isAbove && mem.vy > 0f && mem.rowY > splitRow + 7f) {
+                        if (!isAbove && mem.vy > 0f && mem.rowY > splitRow + 6f) {
                             mem.vy *= exp(-4.5f * clampedDt)
                             if (abs(mem.vy) < 0.4f) {
                                 mem.breachPhase = 0f
                             }
                         }
                     } else {
-                        // Porpoising sine wave underwater
-                        mem.vy = sin(simTime * 2.2f + m * 1.1f) * 2.2f
-                        mem.rowY = (mem.rowY + mem.vy * clampedDt).coerceIn(minFishRow + 1f, maxFishRow - 3f)
+                        // Porpoising sine wave underwater near the surface
+                        mem.vy = sin(simTime * 2.4f + m * 1.1f) * 2.0f
+                        mem.rowY = (mem.rowY + mem.vy * clampedDt).coerceIn(minFishRow, (splitRow + 10f).coerceAtMost(maxFishRow - 2f))
                     }
                 } else {
                     // Serene deep-ocean glide for whales, orcas, whale sharks & giant mantas
@@ -1911,14 +1920,15 @@ class PondSimulation {
                     mem.vy = gentleBob
                     mem.rowY = (mem.rowY + mem.vy * clampedDt).coerceIn(minFishRow + 2f, maxFishRow - 4f)
 
-                    // Trigger whale surface blowhole spout when crossing mid-window!
-                    if (sp.canSpout && oceanVisitor.spoutTimer <= 0f &&
-                        mem.colX > cols * 0.25f && mem.colX < cols * 0.70f &&
-                        sin(simTime * 0.9f) > 0.96f
+                    // Reliably trigger whale/orca surface blowhole water spout when crossing mid-window!
+                    val centerCol = mem.colX + spriteW * 0.5f
+                    if (sp.canSpout && !mem.hasBreached && oceanVisitor.spoutTimer <= 0f &&
+                        centerCol in (cols * 0.32f)..(cols * 0.68f)
                     ) {
-                        oceanVisitor.spoutTimer = 2.2f
-                        oceanVisitor.spoutCol = if (oceanVisitor.vxDir > 0f) mem.colX + spriteW * 0.78f else mem.colX + spriteW * 0.22f
-                        injectSurfaceRipple(oceanVisitor.spoutCol, 3.2f)
+                        mem.hasBreached = true
+                        oceanVisitor.spoutTimer = 2.4f
+                        oceanVisitor.spoutCol = if (oceanVisitor.vxDir > 0f) mem.colX + spriteW * 0.80f else mem.colX + spriteW * 0.20f
+                        injectSurfaceRipple(oceanVisitor.spoutCol, 3.6f)
                     }
                 }
 
@@ -1941,7 +1951,7 @@ class PondSimulation {
 
             if (!anyStillOnOrApproaching) {
                 oceanVisitor.active = false
-                oceanVisitor.cooldownTimer = 18f + (sin(simTime * 1.7f) * 0.5f + 0.5f) * 24f
+                oceanVisitor.cooldownTimer = 10f + (sin(simTime * 1.7f) * 0.5f + 0.5f) * 12f
             }
         }
 

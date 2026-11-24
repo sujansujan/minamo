@@ -1116,7 +1116,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.9.0"
+                        android:text="minamo v2.9.1"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView
