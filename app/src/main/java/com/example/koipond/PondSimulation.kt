@@ -845,7 +845,8 @@ class PondSimulation {
             mem.pitchDeg = 0f
             mem.animPhase = m * 1.4f
             mem.breachPhase = 0f
-            mem.hasBreached = false
+            // Dolphins 1 & 2 always perform staggered leaps above the waves; dolphin 3 joins 50% of the time!
+            mem.hasBreached = sp.canBreach && (m == 2 && rand.nextBoolean())
             mem.wasAboveWater = false
             // Stagger where each dolphin in the pod breaches gracefully above the waves!
             mem.breachTriggerCol = if (fromLeft) {
@@ -1872,13 +1873,13 @@ class PondSimulation {
                     if (!mem.hasBreached && crossedTrigger) {
                         mem.hasBreached = true
                         mem.breachPhase = 0.01f
-                        mem.vy = -21.5f // High, unmistakable parabolic leap cleanly above the waves!
+                        mem.vy = -22.5f // Graceful high parabolic dolphin leap well above the waves!
                     }
 
                     if (mem.breachPhase > 0f) {
                         mem.breachPhase += clampedDt
-                        // Gravity pulls the dolphin into a clean parabolic arch above the waves!
-                        mem.vy += 19.0f * clampedDt
+                        // Gravity arcs the dolphin smoothly into the sky and nose-first back into the ocean!
+                        mem.vy += 18.5f * clampedDt
                         mem.rowY += mem.vy * clampedDt
 
                         val isAbove = mem.rowY < splitRow
@@ -1932,11 +1933,11 @@ class PondSimulation {
                     }
                 }
 
-                // Smooth natural pitch angle for breaching dolphins & gliding whales
-                val maxPitch = if (sp.canBreach) 28f else 8f
+                // Smooth athletic pitch angle for breaching dolphins (up to 42 deg arch!) & gliding whales
+                val maxPitch = if (sp.canBreach) 42f else 8f
                 val desiredPitch = (atan2(mem.vy, abs(mem.vx).coerceAtLeast(3.0f)) * (180.0 / PI).toFloat() * oceanVisitor.vxDir)
                     .coerceIn(-maxPitch, maxPitch)
-                mem.pitchDeg += (desiredPitch - mem.pitchDeg) * (1f - exp(-9.0f * clampedDt))
+                mem.pitchDeg += (desiredPitch - mem.pitchDeg) * (1f - exp(-10.5f * clampedDt))
 
                 val stillVisible = if (oceanVisitor.vxDir > 0f) mem.colX < cols + 10f else mem.colX > -spriteW - 10f
                 if (stillVisible) {

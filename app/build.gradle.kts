@@ -4,7 +4,7 @@ plugins {
 }
 
 val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
-val computedVersionCode = if (ciRunNumber != null) 10 + ciRunNumber else 9
+val computedVersionCode = if (ciRunNumber != null) 10 + ciRunNumber else 10
 
 val releaseKeystorePath = System.getenv("MINAMO_KEYSTORE_PATH")
 val releaseKeystorePassword = System.getenv("MINAMO_KEYSTORE_PASSWORD")
@@ -26,7 +26,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = computedVersionCode
-        versionName = "2.9.1"
+        versionName = "2.9.2"
     }
 
     signingConfigs {

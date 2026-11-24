@@ -5,6 +5,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 
@@ -204,6 +205,19 @@ class MarineCreatureRenderer {
             BodyPlan.JELLYFISH -> drawJellyfish(
                 canvas, textPaint, halfL, halfH, foggedBody, foggedAccent, foggedEye,
                 jellyAlpha, outlineAlpha, animPhase, glyphSize, isBatterySaver
+            )
+            BodyPlan.DOLPHIN -> drawDolphin(
+                canvas, textPaint, lengthPx, halfH, foggedBody, foggedAccent, bellyColor, foggedEye,
+                solidBodyFill, solidFinFill, outlineAlpha, animPhase, glyphSize, glyphHalfH,
+                isTrueBlackOled, isBatterySaver
+            )
+            BodyPlan.ORCA -> drawOrca(
+                canvas, textPaint, lengthPx, halfH, foggedBody, foggedAccent, localWaterBg, fogFactor,
+                outlineAlpha, animPhase, glyphSize, glyphHalfH, isTrueBlackOled, isBatterySaver
+            )
+            BodyPlan.WHALE -> drawHumpbackWhale(
+                canvas, textPaint, lengthPx, halfH, foggedBody, foggedAccent, bellyColor, foggedEye,
+                solidBodyFill, solidFinFill, outlineAlpha, animPhase, glyphSize, glyphHalfH, isBatterySaver
             )
             BodyPlan.TURTLE -> drawSeaTurtle(
                 canvas, textPaint, lengthPx, halfH, foggedBody, foggedAccent, foggedEye,
@@ -628,22 +642,41 @@ class MarineCreatureRenderer {
                 canvas.drawPath(finPath, fillPaint)
                 canvas.drawPath(finPath, strokePaint)
             }
-            BodyPlan.DOLPHIN, BodyPlan.SHARK -> {
-                val dHeight = if (plan == BodyPlan.SHARK) halfH * 1.25f else halfH * 0.95f
+            BodyPlan.SHARK -> {
+                // Iconic tall triangular primary dorsal fin + smaller second dorsal fin
+                val dHeight = halfH * 1.28f
                 finPath.reset()
-                finPath.moveTo(upperX[5], upperY[5] + 1f)
-                finPath.quadTo(upperX[7], upperY[6] - dHeight, upperX[9] - lengthPx * 0.02f, upperY[6] - dHeight * 0.92f)
-                finPath.quadTo(upperX[8], upperY[7] - dHeight * 0.32f, upperX[9], upperY[9] + 1f)
+                finPath.moveTo(upperX[4], upperY[4] + 1f)
+                finPath.quadTo(upperX[6], upperY[5] - dHeight, upperX[8] - lengthPx * 0.02f, upperY[5] - dHeight * 0.94f)
+                finPath.quadTo(upperX[7], upperY[6] - dHeight * 0.30f, upperX[8], upperY[8] + 1f)
                 finPath.close()
                 canvas.drawPath(finPath, fillPaint)
                 canvas.drawPath(finPath, strokePaint)
 
+                // Small second dorsal fin near tail peduncle
                 finPath.reset()
-                finPath.moveTo(lowerX[4], lowerY[4] - 1f)
-                finPath.quadTo(lowerX[6], lowerY[5] + halfH * 0.85f + flutter * 2f, lowerX[7], lowerY[6])
+                finPath.moveTo(upperX[10], upperY[10] + 1f)
+                finPath.lineTo(upperX[11], upperY[11] - halfH * 0.42f)
+                finPath.lineTo(upperX[12], upperY[12] + 1f)
                 finPath.close()
                 canvas.drawPath(finPath, fillPaint)
                 canvas.drawPath(finPath, strokePaint)
+
+                // Swept shark pectoral fin + pelvic fin
+                finPath.reset()
+                finPath.moveTo(lowerX[4], lowerY[4] - 1f)
+                finPath.quadTo(lowerX[6], lowerY[5] + halfH * 0.95f + flutter * 2f, lowerX[7], lowerY[6])
+                finPath.close()
+                canvas.drawPath(finPath, fillPaint)
+                canvas.drawPath(finPath, strokePaint)
+
+                // 3 crisp shark gill slits behind the head
+                val gx = spineX[3]
+                val gy = spineY[3]
+                for (g in 0..2) {
+                    val xOff = gx - g * (lengthPx * 0.024f)
+                    canvas.drawLine(xOff, gy - halfH * 0.24f, xOff - 1.5f, gy + halfH * 0.24f, strokePaint)
+                }
             }
             BodyPlan.SWORDFISH -> {
                 strokePaint.strokeWidth = (lengthPx * 0.018f).coerceIn(1.5f, 3.0f)
@@ -828,6 +861,371 @@ class MarineCreatureRenderer {
         }
     }
 
+    // =========================================================================
+    // DEDICATED ANATOMICAL MARINE MAMMAL RENDERERS (DOLPHIN, ORCA, HUMPBACK WHALE)
+    // =========================================================================
+
+    /**
+     * Unmistakable Bottlenose Dolphin:
+     * - Distinct slender protruding beak (rostrum) + curved smile line + rounded melon forehead
+     * - Curved falcate (sickle) dorsal fin + swept pectoral flipper
+     * - True horizontal crescent tail flukes pumping vertically (mammal propulsion!)
+     * - Pale counter-shaded belly + crisp monospace ASCII shimmer along the arched back
+     */
+    private fun drawDolphin(
+        canvas: Canvas,
+        textPaint: Paint,
+        lengthPx: Float,
+        halfH: Float,
+        bodyColor: Int,
+        accentColor: Int,
+        bellyColor: Int,
+        eyeColor: Int,
+        solidBodyFill: Int,
+        solidFinFill: Int,
+        outlineAlpha: Int,
+        animPhase: Float,
+        glyphSize: Float,
+        glyphHalfH: Float,
+        isTrueBlackOled: Boolean,
+        isBatterySaver: Boolean
+    ) {
+        val halfL = lengthPx * 0.5f
+        val stroke = sin(animPhase)
+        val midFlex = stroke * halfH * 0.22f
+        val tailY = stroke * halfH * 0.68f
+        val flukeTilt = cos(animPhase) * halfH * 0.36f
+        val lineW = (lengthPx * 0.015f).coerceIn(1.1f, 2.2f)
+
+        // 1. Curved Falcate (Sickle-Shaped) Dorsal Fin at Mid-Back
+        finPath.reset()
+        finPath.moveTo(halfL * 0.14f, -halfH * 0.82f + midFlex * 0.3f)
+        finPath.quadTo(-halfL * 0.02f, -halfH * 1.72f + midFlex * 0.4f, -halfL * 0.22f, -halfH * 1.68f + midFlex * 0.4f)
+        finPath.quadTo(-halfL * 0.10f, -halfH * 1.12f + midFlex * 0.3f, -halfL * 0.16f, -halfH * 0.72f + midFlex * 0.4f)
+        finPath.close()
+        fillPaint.color = solidFinFill
+        canvas.drawPath(finPath, fillPaint)
+        strokePaint.color = (bodyColor and 0x00FFFFFF) or (outlineAlpha shl 24)
+        strokePaint.strokeWidth = lineW
+        canvas.drawPath(finPath, strokePaint)
+
+        // 2. True Horizontal Crescent Tail Flukes (3/4 perspective pumping UP & DOWN!)
+        finPath.reset()
+        val pedX = -halfL * 0.78f
+        finPath.moveTo(pedX, tailY - halfH * 0.12f)
+        // Far fluke lobe arching up-back
+        finPath.quadTo(pedX - halfL * 0.16f, tailY - halfH * 0.62f - flukeTilt * 0.5f, -halfL * 1.08f, tailY - halfH * 0.42f - flukeTilt)
+        finPath.quadTo(pedX - halfL * 0.12f, tailY - halfH * 0.08f, pedX - halfL * 0.10f, tailY)
+        // Near fluke lobe sweeping down-back
+        finPath.quadTo(pedX - halfL * 0.14f, tailY + halfH * 0.52f - flukeTilt * 0.3f, -halfL * 1.02f, tailY + halfH * 0.68f - flukeTilt)
+        finPath.quadTo(pedX - halfL * 0.08f, tailY + halfH * 0.30f, pedX, tailY + halfH * 0.12f)
+        finPath.close()
+        fillPaint.color = solidFinFill
+        canvas.drawPath(finPath, fillPaint)
+        canvas.drawPath(finPath, strokePaint)
+
+        // 3. Iconic Streamlined Bottlenose Dolphin Body Silhouette (Beak -> Melon -> Arch -> Narrow Peduncle)
+        bodyPath.reset()
+        // Tip of bottlenose beak (rostrum)
+        bodyPath.moveTo(halfL * 1.06f, halfH * 0.14f)
+        // Upper beak edge into concave melon crease
+        bodyPath.quadTo(halfL * 0.90f, halfH * 0.04f, halfL * 0.76f, -halfH * 0.02f)
+        // Bulbous rounded dolphin melon forehead rising smoothly into muscular back
+        bodyPath.quadTo(halfL * 0.64f, -halfH * 0.74f, halfL * 0.24f, -halfH * 0.88f + midFlex * 0.2f)
+        bodyPath.quadTo(-halfL * 0.28f, -halfH * 0.84f + midFlex * 0.5f, pedX, tailY - halfH * 0.14f)
+        // Slender tail peduncle
+        bodyPath.lineTo(pedX, tailY + halfH * 0.14f)
+        // Smooth curved underside belly returning cleanly into lower beak jaw
+        bodyPath.quadTo(-halfL * 0.24f, halfH * 0.68f + midFlex * 0.5f, halfL * 0.26f, halfH * 0.76f + midFlex * 0.2f)
+        bodyPath.quadTo(halfL * 0.66f, halfH * 0.64f, halfL * 0.78f, halfH * 0.32f)
+        bodyPath.quadTo(halfL * 0.92f, halfH * 0.28f, halfL * 1.06f, halfH * 0.14f)
+        bodyPath.close()
+
+        fillPaint.color = solidBodyFill
+        canvas.drawPath(bodyPath, fillPaint)
+
+        // 4. Soft Pale Counter-Shaded Belly Curve
+        if (!isTrueBlackOled) {
+            accentPath.reset()
+            accentPath.moveTo(halfL * 0.82f, halfH * 0.28f)
+            accentPath.quadTo(halfL * 0.32f, halfH * 0.26f + midFlex * 0.2f, -halfL * 0.35f, halfH * 0.22f + midFlex * 0.5f)
+            accentPath.quadTo(halfL * 0.22f, halfH * 0.72f + midFlex * 0.2f, halfL * 0.74f, halfH * 0.44f)
+            accentPath.close()
+            fillPaint.color = (bellyColor and 0x00FFFFFF) or (72 shl 24)
+            canvas.drawPath(accentPath, fillPaint)
+        }
+
+        // Crisp body outline
+        strokePaint.color = (bodyColor and 0x00FFFFFF) or (outlineAlpha shl 24)
+        strokePaint.strokeWidth = lineW
+        canvas.drawPath(bodyPath, strokePaint)
+
+        // Iconic gentle curved dolphin smile line!
+        strokePaint.strokeWidth = (lineW * 0.78f).coerceAtLeast(0.95f)
+        canvas.drawLine(halfL * 1.03f, halfH * 0.17f, halfL * 0.74f, halfH * 0.22f, strokePaint)
+
+        // 5. Slept-Back Pectoral Flipper (drawn cleanly overlapping lower side!)
+        finPath.reset()
+        finPath.moveTo(halfL * 0.42f, halfH * 0.40f + midFlex * 0.15f)
+        finPath.quadTo(halfL * 0.26f, halfH * 1.18f + midFlex * 0.25f, halfL * 0.04f, halfH * 1.14f + midFlex * 0.25f)
+        finPath.quadTo(halfL * 0.16f, halfH * 0.65f + midFlex * 0.2f, halfL * 0.24f, halfH * 0.48f + midFlex * 0.2f)
+        finPath.close()
+        fillPaint.color = solidFinFill
+        canvas.drawPath(finPath, fillPaint)
+        strokePaint.strokeWidth = lineW
+        canvas.drawPath(finPath, strokePaint)
+
+        // 6. Monospace ASCII Back Shimmer + Crisp Eye behind Melon
+        textPaint.color = accentColor
+        drawChar(canvas, '~', halfL * 0.10f - glyphSize * 0.25f, -halfH * 0.28f + midFlex * 0.2f + glyphHalfH, textPaint)
+        if (!isBatterySaver) {
+            drawChar(canvas, ':', -halfL * 0.25f - glyphSize * 0.25f, -halfH * 0.12f + midFlex * 0.4f + glyphHalfH, textPaint)
+            drawChar(canvas, '·', -halfL * 0.52f - glyphSize * 0.25f, tailY * 0.55f + glyphHalfH, textPaint)
+        }
+        textPaint.color = eyeColor
+        drawChar(canvas, '◉', halfL * 0.62f - glyphSize * 0.30f, halfH * 0.06f + glyphHalfH, textPaint)
+    }
+
+    /**
+     * Unmistakable Orca (Killer Whale):
+     * - Deep obsidian-charcoal body with high-contrast bright-white markings!
+     * - Towering iconic tall dorsal fin (nearly 1.8x body height) + pale dorsal saddle patch
+     * - Bold bright-white oval eye patch + sweeping white chin/belly/rear flank blaze
+     * - Broad rounded oval pectoral paddle + horizontal crescent tail flukes
+     */
+    private fun drawOrca(
+        canvas: Canvas,
+        textPaint: Paint,
+        lengthPx: Float,
+        halfH: Float,
+        rimColor: Int,
+        accentColor: Int,
+        localWaterBg: Int,
+        fogFactor: Float,
+        outlineAlpha: Int,
+        animPhase: Float,
+        glyphSize: Float,
+        glyphHalfH: Float,
+        isTrueBlackOled: Boolean,
+        isBatterySaver: Boolean
+    ) {
+        val halfL = lengthPx * 0.5f
+        val stroke = sin(animPhase)
+        val midFlex = stroke * halfH * 0.20f
+        val tailY = stroke * halfH * 0.58f
+        val flukeTilt = cos(animPhase) * halfH * 0.32f
+        val lineW = (lengthPx * 0.013f).coerceIn(1.2f, 2.3f)
+
+        // Deep dramatic Killer Whale obsidian-ink fill vs crisp polar-white markings!
+        val orcaBlackFill = if (isTrueBlackOled) {
+            0xFF000000.toInt()
+        } else {
+            TimeOfDayPalette.lerpColor(0xFF0A161F.toInt(), localWaterBg, fogFactor * 0.45f) or (0xFF shl 24)
+        }
+        val orcaWhitePatch = TimeOfDayPalette.lerpColor(0xFFF3F8FB.toInt(), localWaterBg, fogFactor * 0.38f) or (0xFF shl 24)
+        val orcaSaddleGray = TimeOfDayPalette.lerpColor(0xFF9CB5C2.toInt(), localWaterBg, fogFactor * 0.45f) or (0xFF shl 24)
+        val outlineCol = (rimColor and 0x00FFFFFF) or (outlineAlpha shl 24)
+
+        // 1. Towering Iconic Orca Tall Dorsal Fin!
+        finPath.reset()
+        finPath.moveTo(halfL * 0.16f, -halfH * 0.86f + midFlex * 0.25f)
+        finPath.quadTo(halfL * 0.02f, -halfH * 2.45f + midFlex * 0.35f, -halfL * 0.09f, -halfH * 2.62f + midFlex * 0.35f)
+        finPath.quadTo(-halfL * 0.12f, -halfH * 1.48f + midFlex * 0.35f, -halfL * 0.18f, -halfH * 0.80f + midFlex * 0.35f)
+        finPath.close()
+        fillPaint.color = orcaBlackFill
+        canvas.drawPath(finPath, fillPaint)
+        strokePaint.color = outlineCol
+        strokePaint.strokeWidth = lineW
+        canvas.drawPath(finPath, strokePaint)
+
+        // 2. Broad Horizontal Crescent Whale Tail Flukes
+        val pedX = -halfL * 0.78f
+        finPath.reset()
+        finPath.moveTo(pedX, tailY - halfH * 0.14f)
+        finPath.quadTo(pedX - halfL * 0.16f, tailY - halfH * 0.72f - flukeTilt * 0.5f, -halfL * 1.08f, tailY - halfH * 0.48f - flukeTilt)
+        finPath.quadTo(pedX - halfL * 0.10f, tailY - halfH * 0.06f, pedX - halfL * 0.08f, tailY)
+        finPath.quadTo(pedX - halfL * 0.14f, tailY + halfH * 0.58f - flukeTilt * 0.3f, -halfL * 1.02f, tailY + halfH * 0.74f - flukeTilt)
+        finPath.quadTo(pedX - halfL * 0.06f, tailY + halfH * 0.32f, pedX, tailY + halfH * 0.14f)
+        finPath.close()
+        fillPaint.color = orcaBlackFill
+        canvas.drawPath(finPath, fillPaint)
+        canvas.drawPath(finPath, strokePaint)
+
+        // 3. Powerful Rounded-Conical Orca Torso
+        bodyPath.reset()
+        bodyPath.moveTo(halfL * 1.02f, halfH * 0.18f)
+        bodyPath.quadTo(halfL * 0.88f, -halfH * 0.58f, halfL * 0.42f, -halfH * 0.90f + midFlex * 0.15f)
+        bodyPath.quadTo(-halfL * 0.22f, -halfH * 0.92f + midFlex * 0.45f, pedX, tailY - halfH * 0.15f)
+        bodyPath.lineTo(pedX, tailY + halfH * 0.15f)
+        bodyPath.quadTo(-halfL * 0.22f, halfH * 0.80f + midFlex * 0.45f, halfL * 0.38f, halfH * 0.84f + midFlex * 0.15f)
+        bodyPath.quadTo(halfL * 0.88f, halfH * 0.72f, halfL * 1.02f, halfH * 0.18f)
+        bodyPath.close()
+        fillPaint.color = orcaBlackFill
+        canvas.drawPath(bodyPath, fillPaint)
+
+        // 4. Iconic High-Contrast Orca White Markings!
+        //    4a. Sweeping White Chin -> Belly -> Upward Rear Flank Blaze!
+        accentPath.reset()
+        accentPath.moveTo(halfL * 0.96f, halfH * 0.34f)
+        accentPath.quadTo(halfL * 0.62f, halfH * 0.38f, halfL * 0.36f, halfH * 0.58f + midFlex * 0.15f)
+        accentPath.quadTo(-halfL * 0.05f, halfH * 0.48f + midFlex * 0.35f, -halfL * 0.26f, halfH * 0.08f + midFlex * 0.45f)
+        accentPath.quadTo(-halfL * 0.44f, halfH * 0.04f + midFlex * 0.50f, -halfL * 0.48f, halfH * 0.36f + midFlex * 0.50f)
+        accentPath.quadTo(-halfL * 0.18f, halfH * 0.74f + midFlex * 0.45f, halfL * 0.38f, halfH * 0.80f + midFlex * 0.15f)
+        accentPath.quadTo(halfL * 0.80f, halfH * 0.70f, halfL * 0.96f, halfH * 0.34f)
+        accentPath.close()
+        fillPaint.color = orcaWhitePatch
+        canvas.drawPath(accentPath, fillPaint)
+
+        //    4b. Iconic Bold Oval White Eye Patch behind & above eye!
+        accentPath.reset()
+        val epx = halfL * 0.56f
+        val epy = -halfH * 0.18f
+        accentPath.addOval(
+            epx - lengthPx * 0.068f, epy - halfH * 0.20f,
+            epx + lengthPx * 0.068f, epy + halfH * 0.16f,
+            Path.Direction.CW
+        )
+        fillPaint.color = orcaWhitePatch
+        canvas.drawPath(accentPath, fillPaint)
+
+        //    4c. Subtle Gray-White Dorsal Saddle Patch behind Dorsal Fin
+        if (!isTrueBlackOled) {
+            accentPath.reset()
+            accentPath.moveTo(-halfL * 0.14f, -halfH * 0.80f + midFlex * 0.35f)
+            accentPath.quadTo(-halfL * 0.34f, -halfH * 0.28f + midFlex * 0.45f, -halfL * 0.46f, -halfH * 0.68f + midFlex * 0.48f)
+            accentPath.close()
+            fillPaint.color = (orcaSaddleGray and 0x00FFFFFF) or (135 shl 24)
+            canvas.drawPath(accentPath, fillPaint)
+        }
+
+        // Crisp body outline
+        strokePaint.color = outlineCol
+        strokePaint.strokeWidth = lineW
+        canvas.drawPath(bodyPath, strokePaint)
+
+        // 5. Broad Rounded Oval Orca Pectoral Paddle
+        finPath.reset()
+        finPath.moveTo(halfL * 0.44f, halfH * 0.52f + midFlex * 0.15f)
+        finPath.quadTo(halfL * 0.34f, halfH * 1.48f + midFlex * 0.25f, halfL * 0.06f, halfH * 1.32f + midFlex * 0.25f)
+        finPath.quadTo(halfL * 0.12f, halfH * 0.72f + midFlex * 0.20f, halfL * 0.26f, halfH * 0.54f + midFlex * 0.20f)
+        finPath.close()
+        fillPaint.color = orcaBlackFill
+        canvas.drawPath(finPath, fillPaint)
+        canvas.drawPath(finPath, strokePaint)
+
+        // 6. Monospace ASCII Flank Texture + Crisp Eye ahead of White Patch
+        textPaint.color = accentColor
+        drawChar(canvas, '=', halfL * 0.06f - glyphSize * 0.28f, -halfH * 0.34f + midFlex * 0.25f + glyphHalfH, textPaint)
+        if (!isBatterySaver) {
+            drawChar(canvas, '~', -halfL * 0.28f - glyphSize * 0.28f, -halfH * 0.28f + midFlex * 0.42f + glyphHalfH, textPaint)
+        }
+        textPaint.color = orcaWhitePatch
+        drawChar(canvas, '°', halfL * 0.72f - glyphSize * 0.25f, halfH * 0.02f + glyphHalfH, textPaint)
+    }
+
+    /**
+     * Majestic Humpback Whale:
+     * - Massive rounded brow, curved mouth line & ventral throat pleats
+     * - Famous long sweeping pectoral wing + small dorsal hump ridge
+     * - Broad horizontal notched whale tail flukes pumping slowly up & down!
+     */
+    private fun drawHumpbackWhale(
+        canvas: Canvas,
+        textPaint: Paint,
+        lengthPx: Float,
+        halfH: Float,
+        bodyColor: Int,
+        accentColor: Int,
+        bellyColor: Int,
+        eyeColor: Int,
+        solidBodyFill: Int,
+        solidFinFill: Int,
+        outlineAlpha: Int,
+        animPhase: Float,
+        glyphSize: Float,
+        glyphHalfH: Float,
+        isBatterySaver: Boolean
+    ) {
+        val halfL = lengthPx * 0.5f
+        val stroke = sin(animPhase)
+        val midFlex = stroke * halfH * 0.18f
+        val tailY = stroke * halfH * 0.52f
+        val flukeTilt = cos(animPhase) * halfH * 0.34f
+        val lineW = (lengthPx * 0.012f).coerceIn(1.2f, 2.3f)
+
+        strokePaint.color = (bodyColor and 0x00FFFFFF) or (outlineAlpha shl 24)
+        strokePaint.strokeWidth = lineW
+
+        // 1. Small Classic Humpback Dorsal Hump Ridge (2/3 back)
+        finPath.reset()
+        finPath.moveTo(-halfL * 0.14f, -halfH * 0.64f + midFlex * 0.45f)
+        finPath.quadTo(-halfL * 0.28f, -halfH * 1.02f + midFlex * 0.5f, -halfL * 0.38f, -halfH * 0.58f + midFlex * 0.55f)
+        finPath.close()
+        fillPaint.color = solidFinFill
+        canvas.drawPath(finPath, fillPaint)
+        canvas.drawPath(finPath, strokePaint)
+
+        // 2. Broad Horizontal Notched Whale Flukes (pumping slowly up & down!)
+        val pedX = -halfL * 0.78f
+        finPath.reset()
+        finPath.moveTo(pedX, tailY - halfH * 0.15f)
+        finPath.quadTo(pedX - halfL * 0.18f, tailY - halfH * 0.88f - flukeTilt * 0.45f, -halfL * 1.12f, tailY - halfH * 0.60f - flukeTilt)
+        finPath.quadTo(pedX - halfL * 0.12f, tailY - halfH * 0.10f, pedX - halfL * 0.10f, tailY)
+        finPath.quadTo(pedX - halfL * 0.16f, tailY + halfH * 0.72f - flukeTilt * 0.35f, -halfL * 1.06f, tailY + halfH * 0.84f - flukeTilt)
+        finPath.quadTo(pedX - halfL * 0.08f, tailY + halfH * 0.36f, pedX, tailY + halfH * 0.15f)
+        finPath.close()
+        fillPaint.color = solidFinFill
+        canvas.drawPath(finPath, fillPaint)
+        canvas.drawPath(finPath, strokePaint)
+
+        // 3. Colossal Rounded Humpback Whale Body
+        bodyPath.reset()
+        bodyPath.moveTo(halfL * 1.02f, -halfH * 0.06f)
+        bodyPath.quadTo(halfL * 0.72f, -halfH * 0.88f, halfL * 0.18f, -halfH * 0.90f + midFlex * 0.2f)
+        bodyPath.quadTo(-halfL * 0.32f, -halfH * 0.74f + midFlex * 0.5f, pedX, tailY - halfH * 0.16f)
+        bodyPath.lineTo(pedX, tailY + halfH * 0.16f)
+        bodyPath.quadTo(-halfL * 0.26f, halfH * 0.58f + midFlex * 0.5f, halfL * 0.36f, halfH * 0.98f + midFlex * 0.15f)
+        bodyPath.quadTo(halfL * 0.90f, halfH * 0.90f, halfL * 1.02f, -halfH * 0.06f)
+        bodyPath.close()
+        fillPaint.color = solidBodyFill
+        canvas.drawPath(bodyPath, fillPaint)
+        canvas.drawPath(bodyPath, strokePaint)
+
+        // 4. Ventral Throat Pleats & Curved Whale Mouth Line
+        strokePaint.color = (bellyColor and 0x00FFFFFF) or ((outlineAlpha * 0.75f).toInt().coerceIn(50, 175) shl 24)
+        strokePaint.strokeWidth = 1.15f
+        for (row in 0..2) {
+            val yOff = halfH * (0.34f + row * 0.17f)
+            canvas.drawLine(halfL * 0.88f, yOff, halfL * 0.28f, yOff + halfH * 0.08f, strokePaint)
+        }
+        strokePaint.color = (accentColor and 0x00FFFFFF) or (outlineAlpha shl 24)
+        strokePaint.strokeWidth = lineW * 0.85f
+        canvas.drawLine(halfL * 0.98f, halfH * 0.02f, halfL * 0.52f, halfH * 0.18f, strokePaint)
+
+        // 5. Famous Long Sweeping Humpback Pectoral Wing!
+        val wingBeat = sin(animPhase * 0.85f) * halfH * 0.22f
+        finPath.reset()
+        finPath.moveTo(halfL * 0.34f, halfH * 0.52f + midFlex * 0.15f)
+        finPath.quadTo(halfL * 0.10f, halfH * 1.92f + wingBeat, -halfL * 0.28f, halfH * 1.58f + wingBeat * 1.15f)
+        finPath.quadTo(halfL * 0.04f, halfH * 0.95f + wingBeat * 0.4f, halfL * 0.12f, halfH * 0.58f + midFlex * 0.2f)
+        finPath.close()
+        fillPaint.color = solidFinFill
+        canvas.drawPath(finPath, fillPaint)
+        strokePaint.color = (accentColor and 0x00FFFFFF) or (outlineAlpha shl 24)
+        strokePaint.strokeWidth = lineW
+        canvas.drawPath(finPath, strokePaint)
+
+        // 6. Monospace ASCII Back & Belly Texture + Calm Whale Eye
+        textPaint.color = accentColor
+        drawChar(canvas, '=', halfL * 0.24f - glyphSize * 0.28f, -halfH * 0.34f + glyphHalfH, textPaint)
+        drawChar(canvas, '~', -halfL * 0.08f - glyphSize * 0.28f, -halfH * 0.20f + midFlex * 0.3f + glyphHalfH, textPaint)
+        if (!isBatterySaver) {
+            drawChar(canvas, '=', -halfL * 0.38f - glyphSize * 0.28f, tailY * 0.35f + glyphHalfH, textPaint)
+        }
+        textPaint.color = eyeColor
+        drawChar(canvas, '◉', halfL * 0.58f - glyphSize * 0.28f, halfH * 0.06f + glyphHalfH, textPaint)
+    }
+
     /**
      * Graceful Green Sea Turtle with domed mosaic carapace, extending head, and sweeping wing-like flippers!
      */
@@ -981,6 +1379,21 @@ class MarineCreatureRenderer {
         if (!isBatterySaver) {
             drawChar(canvas, ':', -halfL * 0.02f, glyphHalfH, textPaint)
             drawChar(canvas, '~', -halfL * 0.55f, sin(animPhase - 2f) * halfH * 0.12f + glyphHalfH, textPaint)
+        }
+
+        // Iconic twin forward cephalic horn fins on Giant Oceanic Mantas!
+        if (marking == MarkingStyle.NONE) {
+            strokePaint.color = (bodyColor and 0x00FFFFFF) or (outlineAlpha shl 24)
+            strokePaint.strokeWidth = (lengthPx * 0.015f).coerceIn(1.2f, 2.5f)
+            finPath.reset()
+            finPath.moveTo(halfL * 0.50f, -halfH * 0.14f)
+            finPath.quadTo(halfL * 0.72f, -halfH * 0.24f, halfL * 0.82f, -halfH * 0.08f)
+            canvas.drawPath(finPath, strokePaint)
+
+            finPath.reset()
+            finPath.moveTo(halfL * 0.50f, halfH * 0.14f)
+            finPath.quadTo(halfL * 0.72f, halfH * 0.24f, halfL * 0.82f, halfH * 0.08f)
+            canvas.drawPath(finPath, strokePaint)
         }
 
         // Crisp eye
