@@ -187,16 +187,16 @@ class MarineCreatureRenderer {
         }
         val outlineAlpha = ((205f * (1f - fogFactor * 0.45f)).toInt()).coerceIn(70, 225)
 
-        // Micro-ASCII text size scales proportionally to the creature (stays crisp & terminal-like!)
+        // Micro-ASCII text size scales proportionally to the creature (stays crisp & terminal-like even on dainty reef fish!)
         val glyphSize = (lengthPx * when (plan) {
-            BodyPlan.BAITFISH -> 0.22f
-            BodyPlan.WHALE, BodyPlan.ORCA -> 0.048f
-            BodyPlan.SHARK -> 0.068f
-            BodyPlan.RAY -> 0.082f
-            BodyPlan.DOLPHIN, BodyPlan.TURTLE -> 0.092f
-            BodyPlan.CRAB, BodyPlan.SHRIMP, BodyPlan.CONCH -> 0.165f
-            else -> 0.135f
-        }).coerceIn(baseTextSizePx * 0.46f, baseTextSizePx * 1.15f)
+            BodyPlan.BAITFISH -> 0.24f
+            BodyPlan.WHALE, BodyPlan.ORCA -> 0.056f
+            BodyPlan.SHARK -> 0.075f
+            BodyPlan.RAY -> 0.090f
+            BodyPlan.DOLPHIN, BodyPlan.TURTLE -> 0.105f
+            BodyPlan.CRAB, BodyPlan.SHRIMP, BodyPlan.CONCH -> 0.185f
+            else -> 0.150f
+        }).coerceIn(baseTextSizePx * 0.34f, baseTextSizePx * 1.05f)
         textPaint.textSize = glyphSize
         val glyphHalfH = glyphSize * 0.34f
 
@@ -362,7 +362,7 @@ class MarineCreatureRenderer {
         // 4. Fill SOLID opaque water-tinted silhouette (100% clean depth occlusion!) + crisp outline
         fillPaint.color = solidBodyFill
         canvas.drawPath(bodyPath, fillPaint)
-        strokePaint.strokeWidth = (lengthPx * 0.012f).coerceIn(1.1f, 2.4f)
+        strokePaint.strokeWidth = (lengthPx * 0.015f).coerceIn(0.95f, 2.1f)
         strokePaint.color = (bodyColor and 0x00FFFFFF) or (outlineAlpha shl 24)
         canvas.drawPath(bodyPath, strokePaint)
 

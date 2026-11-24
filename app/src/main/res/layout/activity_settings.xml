@@ -8,6 +8,7 @@
 
     <!-- Path-style screen header (~/minamo/...) with hairline below -->
     <LinearLayout
+        android:id="@+id/headerBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
@@ -36,6 +37,7 @@
     </LinearLayout>
 
     <View
+        android:id="@+id/headerDivider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/ascii_border" />
@@ -93,6 +95,7 @@
             android:layout_weight="1">
 
             <LinearLayout
+                android:id="@+id/pondBoxContainer"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginTop="9dp"
@@ -120,7 +123,7 @@
                 android:textColor="@color/ascii_accent2" />
         </FrameLayout>
 
-        <!-- 24h Solar Preview Scrubber (drag bar to preview dawn/noon/dusk/night) -->
+        <!-- 24h Solar Preview Scrubber + Fullscreen Preview Toggle -->
         <LinearLayout
             android:id="@+id/rowSolarScrubber"
             android:layout_width="match_parent"
@@ -135,7 +138,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:minHeight="40dp"
+                android:minHeight="44dp"
                 android:gravity="center_vertical"
                 android:text="sun: [------|-----] live"
                 android:textColor="@color/ascii_accent3" />
@@ -145,12 +148,24 @@
                 style="@style/AsciiText.Small"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minHeight="40dp"
+                android:minHeight="44dp"
                 android:gravity="center"
                 android:paddingStart="6dp"
                 android:paddingEnd="4dp"
                 android:text="[live]"
                 android:textColor="@color/ascii_accent2" />
+
+            <TextView
+                android:id="@+id/btnFullscreenPreview"
+                style="@style/AsciiText.Small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:gravity="center"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="[full]"
+                android:textColor="@color/ascii_accent" />
         </LinearLayout>
 
         <!-- Standardized status ticker -->
@@ -178,6 +193,7 @@
 
         <!-- Bottom thumb-reachable action bar -->
         <LinearLayout
+            android:id="@+id/pondActionBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
@@ -243,6 +259,80 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
+            <!-- BOX 0: ONE-TAP CURATED MOOD PRESETS -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:background="@drawable/bg_ascii_box"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="8dp">
+
+                    <TextView
+                        android:id="@+id/btnPresetReef"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:gravity="center"
+                        android:text="[reef]"
+                        android:textColor="@color/ascii_accent2" />
+
+                    <TextView
+                        android:id="@+id/btnPresetAbyss"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:gravity="center"
+                        android:text="[abyss]"
+                        android:textColor="@color/ascii_accent3" />
+
+                    <TextView
+                        android:id="@+id/btnPresetZen"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:gravity="center"
+                        android:text="[zen]"
+                        android:textColor="@color/ascii_good" />
+
+                    <TextView
+                        android:id="@+id/btnPresetOled"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:gravity="center"
+                        android:text="[oled]"
+                        android:textColor="@color/ascii_accent" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@color/ascii_bg"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:text=" quick moods "
+                    android:textColor="@color/ascii_accent3" />
+            </FrameLayout>
 
             <!-- BOX 1: SKY & PALETTE -->
             <FrameLayout
@@ -1026,7 +1116,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.8.0"
+                        android:text="minamo v2.9.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView
@@ -1153,11 +1243,13 @@ moon jellyfish .. ( °° ) /||\\" />
 
     <!-- Bottom Navigation Bar -->
     <View
+        android:id="@+id/bottomNavDivider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/ascii_border" />
 
     <LinearLayout
+        android:id="@+id/bottomNavBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/ascii_surface"

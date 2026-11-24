@@ -1170,4 +1170,222 @@ class OceanSceneRenderer {
             canvas.drawCircle(cx, cy, radiusPx, fillPaint)
         }
     }
+
+    // =========================================================================
+    // 5. SCULPTED WEATHER (AURORA CURTAINS, RAIN SPLASHES, SNOW) & WATER REALISM
+    // =========================================================================
+
+    fun drawAuroraCurtains(
+        canvas: Canvas,
+        textPaint: Paint,
+        waterY: Float,
+        simTime: Float,
+        colorA: Int,
+        colorB: Int,
+        colorC: Int,
+        calmScrim: Boolean,
+        isBatterySaver: Boolean,
+        isTrueBlackOled: Boolean
+    ) {
+        val w = canvas.width.toFloat()
+        val skyH = waterY.coerceAtLeast(80f)
+        val layers = if (isBatterySaver) 2 else 3
+        val segs = 16
+
+        for (layer in 0 until layers) {
+            val baseY = skyH * (0.26f + layer * 0.14f)
+            val bandH = skyH * (0.16f - layer * 0.02f)
+            val col = when (layer) {
+                0 -> colorA
+                1 -> colorB
+                else -> colorC
+            }
+            val speed = 0.85f + layer * 0.25f
+            val freq = 3.8f + layer * 1.4f
+
+            shapePath.reset()
+            for (i in 0..segs) {
+                val frac = i / segs.toFloat()
+                val x = frac * w
+                val wave = sin(frac * freq + simTime * speed + layer * 1.9f) * (skyH * 0.07f) +
+                    cos(frac * freq * 1.6f - simTime * 0.55f) * (skyH * 0.03f)
+                val y = (baseY + wave).coerceIn(12f, waterY - 24f)
+                if (i == 0) shapePath.moveTo(x, y) else shapePath.lineTo(x, y)
+            }
+            if (!isTrueBlackOled) {
+                for (i in segs downTo 0) {
+                    val frac = i / segs.toFloat()
+                    val x = frac * w
+                    val wave = sin(frac * freq + simTime * speed + layer * 1.9f) * (skyH * 0.07f) +
+                        cos(frac * freq * 1.6f - simTime * 0.55f) * (skyH * 0.03f)
+                    val drop = bandH * (0.65f + 0.35f * sin(frac * 6.5f + simTime * 1.1f + layer))
+                    val y = (baseY + wave + drop).coerceIn(16f, waterY - 12f)
+                    shapePath.lineTo(x, y)
+                }
+                shapePath.close()
+                val fillAlpha = if (calmScrim) 18 else (32 - layer * 5).coerceAtLeast(16)
+                fillPaint.color = (col and 0x00FFFFFF) or (fillAlpha shl 24)
+                canvas.drawPath(shapePath, fillPaint)
+            }
+
+            // Luminous flowing upper aurora edge + delicate ASCII shimmer
+            detailPath.reset()
+            for (i in 0..segs) {
+                val frac = i / segs.toFloat()
+                val x = frac * w
+                val wave = sin(frac * freq + simTime * speed + layer * 1.9f) * (skyH * 0.07f) +
+                    cos(frac * freq * 1.6f - simTime * 0.55f) * (skyH * 0.03f)
+                val y = (baseY + wave).coerceIn(12f, waterY - 24f)
+                if (i == 0) detailPath.moveTo(x, y) else detailPath.lineTo(x, y)
+            }
+            val lineAlpha = if (calmScrim) 70 else 135
+            strokePaint.color = (col and 0x00FFFFFF) or (lineAlpha shl 24)
+            strokePaint.strokeWidth = 1.4f
+            canvas.drawPath(detailPath, strokePaint)
+
+            if (layer == 0 && !isBatterySaver) {
+                val prevSize = textPaint.textSize
+                textPaint.textSize = (prevSize * 0.72f).coerceAtLeast(8f)
+                textPaint.color = (col and 0x00FFFFFF) or ((lineAlpha + 15).coerceAtMost(180) shl 24)
+                for (i in 2 until segs step 4) {
+                    val frac = i / segs.toFloat()
+                    val x = frac * w
+                    val wave = sin(frac * freq + simTime * speed) * (skyH * 0.07f)
+                    drawChar(canvas, if (i % 8 == 2) ':' else '·', x, baseY + wave + bandH * 0.45f, textPaint)
+                }
+                textPaint.textSize = prevSize
+            }
+        }
+    }
+
+    fun drawRainDrop(
+        canvas: Canvas,
+        x: Float,
+        y: Float,
+        lengthPx: Float,
+        color: Int
+    ) {
+        strokePaint.color = (color and 0x00FFFFFF) or (155 shl 24)
+        strokePaint.strokeWidth = 1.25f
+        canvas.drawLine(x, y, x - lengthPx * 0.22f, y + lengthPx, strokePaint)
+    }
+
+    fun drawSnowFlake(
+        canvas: Canvas,
+        textPaint: Paint,
+        x: Float,
+        y: Float,
+        radiusPx: Float,
+        useGlyph: Boolean,
+        color: Int
+    ) {
+        if (useGlyph) {
+            val prevSize = textPaint.textSize
+            textPaint.textSize = (radiusPx * 3.2f).coerceIn(8f, prevSize * 0.85f)
+            textPaint.color = (color and 0x00FFFFFF) or (185 shl 24)
+            drawChar(canvas, '*', x - textPaint.textSize * 0.28f, y + textPaint.textSize * 0.30f, textPaint)
+            textPaint.textSize = prevSize
+        } else {
+            fillPaint.color = (color and 0x00FFFFFF) or (180 shl 24)
+            canvas.drawCircle(x, y, radiusPx, fillPaint)
+        }
+    }
+
+    fun drawRainSplashCrown(
+        canvas: Canvas,
+        cx: Float,
+        waterY: Float,
+        lifeFrac: Float, // 0 = impact, 1 = faded
+        maxRadiusPx: Float,
+        color: Int
+    ) {
+        val alpha = ((1f - lifeFrac) * 185f).toInt().coerceIn(0, 195)
+        if (alpha <= 5) return
+        val r = maxRadiusPx * (0.25f + 0.75f * lifeFrac)
+        val archH = maxRadiusPx * 0.55f * sin(lifeFrac * PI.toFloat()).coerceAtLeast(0f)
+
+        strokePaint.color = (color and 0x00FFFFFF) or (alpha shl 24)
+        strokePaint.strokeWidth = 1.2f
+        // Expanding water ripple ring on meniscus
+        canvas.drawOval(cx - r, waterY - r * 0.22f, cx + r, waterY + r * 0.22f, strokePaint)
+        // Delicate leaping twin water-crown droplets
+        if (archH > 1.2f) {
+            canvas.drawLine(cx - r * 0.35f, waterY, cx - r * 0.58f, waterY - archH, strokePaint)
+            canvas.drawLine(cx + r * 0.35f, waterY, cx + r * 0.58f, waterY - archH, strokePaint)
+        }
+    }
+
+    fun drawSeabedCaustics(
+        canvas: Canvas,
+        floorY: Float,
+        refPx: Float,
+        simTime: Float,
+        parallaxPx: Float,
+        sunRayColor: Int,
+        calmScrim: Boolean,
+        isLightSurface: Boolean,
+        isRaining: Boolean,
+        isTrueBlackOled: Boolean
+    ) {
+        if (isTrueBlackOled) return
+        val w = canvas.width.toFloat()
+        val baseAlpha = when {
+            isRaining -> 12
+            calmScrim -> 16
+            isLightSurface -> 34
+            else -> 26
+        }
+        strokePaint.color = (sunRayColor and 0x00FFFFFF) or (baseAlpha shl 24)
+        strokePaint.strokeWidth = 1.5f
+        val count = 7
+        val span = w / count
+        for (i in 0 until count) {
+            val phase = simTime * 1.25f + i * 1.35f
+            val cx = (i + 0.5f) * span + sin(phase * 0.7f) * (span * 0.22f) - parallaxPx * 0.45f
+            val cy = floorY - refPx * (0.015f + (i % 3) * 0.014f)
+            val rx = refPx * (0.042f + 0.014f * sin(phase))
+            val ry = rx * 0.24f
+            canvas.drawOval(cx - rx, cy - ry, cx + rx, cy + ry, strokePaint)
+        }
+    }
+
+    fun drawSurfaceReflections(
+        canvas: Canvas,
+        waterY: Float,
+        celX: Float,
+        celColor: Int,
+        lhX: Float,
+        lhBeaconOn: Boolean,
+        lhColor: Int,
+        refPx: Float,
+        simTime: Float,
+        calmScrim: Boolean,
+        isTrueBlackOled: Boolean
+    ) {
+        if (isTrueBlackOled) return
+        // Soft inverted shimmer bands beneath Sun / Moon
+        val maxAlpha = if (calmScrim) 28 else 52
+        for (band in 0 until 5) {
+            val frac = band / 4f
+            val y = waterY + 6f + band * (refPx * 0.013f)
+            val halfW = refPx * (0.045f * (1f - frac * 0.58f)) * (0.85f + 0.22f * sin(simTime * 2.6f + band * 1.4f))
+            val driftX = sin(simTime * 2.1f + band * 1.7f) * (refPx * 0.008f)
+            val a = ((1f - frac * 0.72f) * maxAlpha).toInt().coerceIn(8, 65)
+            fillPaint.color = (celColor and 0x00FFFFFF) or (a shl 24)
+            canvas.drawOval(celX + driftX - halfW, y - 2.2f, celX + driftX + halfW, y + 2.2f, fillPaint)
+        }
+
+        // Inverted golden lighthouse beacon reflection dancing on dark water at dusk/night!
+        if (lhBeaconOn) {
+            for (band in 0 until 3) {
+                val frac = band / 2f
+                val y = waterY + 7f + band * (refPx * 0.012f)
+                val halfW = refPx * (0.026f * (1f - frac * 0.45f))
+                val driftX = cos(simTime * 3.1f + band) * 3.5f
+                val a = ((1f - frac * 0.6f) * (if (calmScrim) 26 else 48)).toInt().coerceIn(8, 56)
+                fillPaint.color = (lhColor and 0x00FFFFFF) or (a shl 24)
+                canvas.drawOval(lhX + driftX - halfW, y - 1.8f, lhX + driftX + halfW, y + 1.8f, fillPaint)
+            }
+        }
+    }
 }

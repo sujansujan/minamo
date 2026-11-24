@@ -35,24 +35,24 @@ enum class AsciiFishSpecies(
     val bodyPlan: BodyPlan,
     val marking: MarkingStyle
 ) {
-    // --- SCHOOLING BAITFISH ---
-    BLUE_CHROMIS(0, "blue chromis", false, 1, 2, 7.4f, 2.6f, 0.056f, 0.36f, BodyPlan.BAITFISH, MarkingStyle.NONE),
-    SILVER_SARDINE(1, "silver sardine", false, 3, 1, 8.0f, 2.8f, 0.060f, 0.28f, BodyPlan.BAITFISH, MarkingStyle.NONE),
-    SUNSET_ANTHIAS(2, "sunset anthias", false, 0, 2, 7.0f, 2.5f, 0.058f, 0.34f, BodyPlan.BAITFISH, MarkingStyle.NONE),
+    // --- SCHOOLING BAITFISH (delicate shimmering darts ~3.6-3.8% screen width) ---
+    BLUE_CHROMIS(0, "blue chromis", false, 1, 2, 7.4f, 2.6f, 0.036f, 0.36f, BodyPlan.BAITFISH, MarkingStyle.NONE),
+    SILVER_SARDINE(1, "silver sardine", false, 3, 1, 8.0f, 2.8f, 0.038f, 0.28f, BodyPlan.BAITFISH, MarkingStyle.NONE),
+    SUNSET_ANTHIAS(2, "sunset anthias", false, 0, 2, 7.0f, 2.5f, 0.037f, 0.34f, BodyPlan.BAITFISH, MarkingStyle.NONE),
 
-    // --- REEF & PELAGIC OCEAN LIFE ---
-    CLOWNFISH(3, "clownfish", true, 0, 3, 4.5f, 1.9f, 0.095f, 0.44f, BodyPlan.REEF_OVAL, MarkingStyle.CLOWN_BANDS),
-    BLUE_TANG(4, "regal tang", true, 1, 2, 5.4f, 1.8f, 0.122f, 0.48f, BodyPlan.REEF_OVAL, MarkingStyle.TANG_MASK),
-    MOORISH_IDOL(5, "moorish idol", true, 2, 3, 4.3f, 1.7f, 0.118f, 0.72f, BodyPlan.REEF_TALL, MarkingStyle.IDOL_BANDS),
-    YELLOWFIN_TUNA(6, "yellowfin tuna", true, 1, 2, 7.2f, 1.35f, 0.185f, 0.32f, BodyPlan.PELAGIC_FAST, MarkingStyle.NONE),
-    PUFFERFISH(7, "spotted puffer", true, 2, 0, 3.2f, 2.0f, 0.098f, 0.62f, BodyPlan.PUFFER, MarkingStyle.SPOTS),
-    EMPEROR_ANGEL(8, "emperor angel", true, 4, 2, 4.2f, 1.6f, 0.132f, 0.62f, BodyPlan.REEF_TALL, MarkingStyle.ANGEL_STRIPES),
-    LIONFISH(9, "reef lionfish", true, 0, 4, 3.4f, 1.5f, 0.128f, 0.56f, BodyPlan.LIONFISH, MarkingStyle.CLOWN_BANDS),
-    SEA_TURTLE(10, "green sea turtle", true, 1, 2, 3.5f, 1.0f, 0.195f, 0.46f, BodyPlan.TURTLE, MarkingStyle.TURTLE_SCUTES),
-    EAGLE_RAY(11, "spotted eagle ray", true, 3, 1, 4.8f, 1.15f, 0.215f, 0.48f, BodyPlan.RAY, MarkingStyle.SPOTS),
-    MANDARIN(12, "mandarin dragonet", true, 4, 1, 4.1f, 1.8f, 0.092f, 0.42f, BodyPlan.REEF_OVAL, MarkingStyle.MANDARIN_SWIRL),
-    KOHAKU_KOI(13, "kohaku koi", true, 3, 0, 4.2f, 1.45f, 0.148f, 0.36f, BodyPlan.REEF_OVAL, MarkingStyle.KOI_PATCHES),
-    MAHI_MAHI(14, "golden dorado", true, 2, 1, 6.2f, 1.5f, 0.175f, 0.36f, BodyPlan.PELAGIC_FAST, MarkingStyle.TANG_MASK);
+    // --- REEF & PELAGIC OCEAN LIFE (refined spacious mobile-window proportions) ---
+    CLOWNFISH(3, "clownfish", true, 0, 3, 4.5f, 1.9f, 0.058f, 0.44f, BodyPlan.REEF_OVAL, MarkingStyle.CLOWN_BANDS),
+    BLUE_TANG(4, "regal tang", true, 1, 2, 5.4f, 1.8f, 0.074f, 0.48f, BodyPlan.REEF_OVAL, MarkingStyle.TANG_MASK),
+    MOORISH_IDOL(5, "moorish idol", true, 2, 3, 4.3f, 1.7f, 0.072f, 0.72f, BodyPlan.REEF_TALL, MarkingStyle.IDOL_BANDS),
+    YELLOWFIN_TUNA(6, "yellowfin tuna", true, 1, 2, 7.2f, 1.35f, 0.112f, 0.32f, BodyPlan.PELAGIC_FAST, MarkingStyle.NONE),
+    PUFFERFISH(7, "spotted puffer", true, 2, 0, 3.2f, 2.0f, 0.060f, 0.62f, BodyPlan.PUFFER, MarkingStyle.SPOTS),
+    EMPEROR_ANGEL(8, "emperor angel", true, 4, 2, 4.2f, 1.6f, 0.080f, 0.62f, BodyPlan.REEF_TALL, MarkingStyle.ANGEL_STRIPES),
+    LIONFISH(9, "reef lionfish", true, 0, 4, 3.4f, 1.5f, 0.078f, 0.56f, BodyPlan.LIONFISH, MarkingStyle.CLOWN_BANDS),
+    SEA_TURTLE(10, "green sea turtle", true, 1, 2, 3.5f, 1.0f, 0.118f, 0.46f, BodyPlan.TURTLE, MarkingStyle.TURTLE_SCUTES),
+    EAGLE_RAY(11, "spotted eagle ray", true, 3, 1, 4.8f, 1.15f, 0.130f, 0.48f, BodyPlan.RAY, MarkingStyle.SPOTS),
+    MANDARIN(12, "mandarin dragonet", true, 4, 1, 4.1f, 1.8f, 0.056f, 0.42f, BodyPlan.REEF_OVAL, MarkingStyle.MANDARIN_SWIRL),
+    KOHAKU_KOI(13, "kohaku koi", true, 3, 0, 4.2f, 1.45f, 0.088f, 0.36f, BodyPlan.REEF_OVAL, MarkingStyle.KOI_PATCHES),
+    MAHI_MAHI(14, "golden dorado", true, 2, 1, 6.2f, 1.5f, 0.105f, 0.36f, BodyPlan.PELAGIC_FAST, MarkingStyle.TANG_MASK);
 
     companion object {
         val heroPool = arrayOf(
@@ -84,12 +84,12 @@ enum class OceanVisitorSpecies(
     val bodyPlan: BodyPlan,
     val marking: MarkingStyle
 ) {
-    HUMPBACK_WHALE(0, "humpback whale", 2.6f, 1, 3, 0.46f, 0.80f, false, true, 1, 0.56f, 0.26f, BodyPlan.WHALE, MarkingStyle.WHALE_PLEATS),
-    ORCA(1, "orca whale", 4.6f, 3, 1, 0.32f, 0.70f, false, true, 1, 0.42f, 0.28f, BodyPlan.ORCA, MarkingStyle.ORCA_PATCHES),
-    DOLPHIN_POD(2, "bottlenose dolphin pod", 9.2f, 1, 3, 0.20f, 0.52f, true, false, 3, 0.25f, 0.30f, BodyPlan.DOLPHIN, MarkingStyle.NONE),
-    WHALE_SHARK(3, "whale shark", 3.2f, 1, 2, 0.38f, 0.76f, false, false, 1, 0.48f, 0.26f, BodyPlan.SHARK, MarkingStyle.SPOTS),
-    GIANT_MANTA(4, "giant oceanic manta", 4.0f, 3, 1, 0.28f, 0.68f, false, false, 2, 0.35f, 0.48f, BodyPlan.RAY, MarkingStyle.NONE),
-    DEEP_SQUID(5, "glowing giant squid", 4.8f, 4, 1, 0.34f, 0.72f, false, false, 1, 0.27f, 0.28f, BodyPlan.SQUID, MarkingStyle.NONE)
+    HUMPBACK_WHALE(0, "humpback whale", 2.6f, 1, 3, 0.46f, 0.80f, false, true, 1, 0.360f, 0.26f, BodyPlan.WHALE, MarkingStyle.WHALE_PLEATS),
+    ORCA(1, "orca whale", 4.6f, 3, 1, 0.32f, 0.70f, false, true, 1, 0.265f, 0.28f, BodyPlan.ORCA, MarkingStyle.ORCA_PATCHES),
+    DOLPHIN_POD(2, "bottlenose dolphin pod", 9.2f, 1, 3, 0.20f, 0.52f, true, false, 3, 0.155f, 0.30f, BodyPlan.DOLPHIN, MarkingStyle.NONE),
+    WHALE_SHARK(3, "whale shark", 3.2f, 1, 2, 0.38f, 0.76f, false, false, 1, 0.305f, 0.26f, BodyPlan.SHARK, MarkingStyle.SPOTS),
+    GIANT_MANTA(4, "giant oceanic manta", 4.0f, 3, 1, 0.28f, 0.68f, false, false, 2, 0.215f, 0.48f, BodyPlan.RAY, MarkingStyle.NONE),
+    DEEP_SQUID(5, "glowing giant squid", 4.8f, 4, 1, 0.34f, 0.72f, false, false, 1, 0.168f, 0.28f, BodyPlan.SQUID, MarkingStyle.NONE)
 }
 
 class OceanVisitorMember(
@@ -127,10 +127,10 @@ enum class PredatorSpecies(
     val bodyPlan: BodyPlan,
     val marking: MarkingStyle
 ) {
-    BARRACUDA_PIKE(0, "barracuda", 11.2f, 0.23f, 0.22f, BodyPlan.PELAGIC_FAST, MarkingStyle.NONE),
-    REEF_SHARK(1, "reef shark", 10.6f, 0.27f, 0.26f, BodyPlan.SHARK, MarkingStyle.NONE),
-    SWORDFISH(2, "marlin swordfish", 12.0f, 0.26f, 0.24f, BodyPlan.SWORDFISH, MarkingStyle.NONE),
-    ELECTRIC_MORAY(3, "moray eel", 9.8f, 0.25f, 0.18f, BodyPlan.EEL, MarkingStyle.SPOTS)
+    BARRACUDA_PIKE(0, "barracuda", 11.2f, 0.140f, 0.22f, BodyPlan.PELAGIC_FAST, MarkingStyle.NONE),
+    REEF_SHARK(1, "reef shark", 10.6f, 0.165f, 0.26f, BodyPlan.SHARK, MarkingStyle.NONE),
+    SWORDFISH(2, "marlin swordfish", 12.0f, 0.160f, 0.24f, BodyPlan.SWORDFISH, MarkingStyle.NONE),
+    ELECTRIC_MORAY(3, "moray eel", 9.8f, 0.152f, 0.18f, BodyPlan.EEL, MarkingStyle.SPOTS)
 }
 
 enum class BottomFeederSpecies(
@@ -144,10 +144,10 @@ enum class BottomFeederSpecies(
     val bodyPlan: BodyPlan,
     val marking: MarkingStyle
 ) {
-    RIVER_CRAB(0, "reef crab", 2.0f, 0, 2, 0.095f, 0.62f, BodyPlan.CRAB, MarkingStyle.NONE),
-    CHERRY_SHRIMP(1, "cleaner shrimp", 2.8f, 4, 3, 0.088f, 0.44f, BodyPlan.SHRIMP, MarkingStyle.NONE),
-    CORY_CATFISH(2, "sand goby", 2.4f, 2, 1, 0.108f, 0.38f, BodyPlan.GOBY, MarkingStyle.SPOTS),
-    APPLE_SNAIL(3, "sea conch", 0.8f, 2, 0, 0.078f, 0.56f, BodyPlan.CONCH, MarkingStyle.NONE)
+    RIVER_CRAB(0, "reef crab", 2.0f, 0, 2, 0.058f, 0.62f, BodyPlan.CRAB, MarkingStyle.NONE),
+    CHERRY_SHRIMP(1, "cleaner shrimp", 2.8f, 4, 3, 0.054f, 0.44f, BodyPlan.SHRIMP, MarkingStyle.NONE),
+    CORY_CATFISH(2, "sand goby", 2.4f, 2, 1, 0.064f, 0.38f, BodyPlan.GOBY, MarkingStyle.SPOTS),
+    APPLE_SNAIL(3, "sea conch", 0.8f, 2, 0, 0.046f, 0.56f, BodyPlan.CONCH, MarkingStyle.NONE)
 }
 
 class AsciiFishAgent(
@@ -192,9 +192,9 @@ enum class LegendarySpecies(
     val bodyPlan: BodyPlan,
     val marking: MarkingStyle
 ) {
-    DRAGON_KOI(0, "ryujin sea dragon", 3.8f, 0.26f, 0.34f, BodyPlan.REEF_OVAL, MarkingStyle.KOI_PATCHES),
-    GIANT_OARFISH(1, "regal oarfish", 4.2f, 0.34f, 0.16f, BodyPlan.EEL, MarkingStyle.NONE),
-    ANCIENT_COELACANTH(2, "living coelacanth", 3.2f, 0.24f, 0.38f, BodyPlan.SHARK, MarkingStyle.SPOTS)
+    DRAGON_KOI(0, "ryujin sea dragon", 3.8f, 0.162f, 0.34f, BodyPlan.REEF_OVAL, MarkingStyle.KOI_PATCHES),
+    GIANT_OARFISH(1, "regal oarfish", 4.2f, 0.205f, 0.16f, BodyPlan.EEL, MarkingStyle.NONE),
+    ANCIENT_COELACANTH(2, "living coelacanth", 3.2f, 0.148f, 0.38f, BodyPlan.SHARK, MarkingStyle.SPOTS)
 }
 
 class LegendaryAgent(
@@ -345,6 +345,13 @@ class BioPlankton(
     var vy: Float = 0f,
     var age: Float = 0f,
     var maxAge: Float = 1.3f
+)
+
+class RainSplash(
+    var active: Boolean = false,
+    var colX: Float = 0f,
+    var age: Float = 0f,
+    var maxAge: Float = 0.42f
 )
 
 class PondSimulation {
@@ -528,12 +535,14 @@ class PondSimulation {
     private val creatureRenderer = MarineCreatureRenderer()
     private val sceneRenderer = OceanSceneRenderer()
 
-    // Unified Zero-Allocation Depth-Sorted Draw Queue (Painter's Algorithm across ALL creatures!)
-    // Kind: 0=Fish, 1=OceanVisitorMember, 2=BottomFeeder, 3=NightJellyfish, 4=Legendary, 5=Predator
-    private val maxDrawables = 48
+    // Unified Zero-Allocation Depth-Sorted Draw Queue (Painter's Algorithm across ALL creatures & 3D flora!)
+    // Kind: 0=Fish, 1=OceanVisitorMember, 2=BottomFeeder, 3=NightJellyfish, 4=Legendary, 5=Predator, 6=Kelp, 7=CoralOutcrop
+    private val maxDrawables = 64
     private val drawKind = IntArray(maxDrawables)
     private val drawIdx = IntArray(maxDrawables)
     private val drawZ = FloatArray(maxDrawables)
+    private val rainSplashes = Array(10) { RainSplash() }
+    private var nextSplashIdx = 0
 
     private var viewportWidthPx = 1080f
     private var viewportHeightPx = 2200f
@@ -544,8 +553,8 @@ class PondSimulation {
     private fun refSpanPx(): Float = minOf(viewportWidthPx, viewportHeightPx * 0.68f).coerceAtLeast(240f)
 
     private fun creatureLengthPx(lengthFrac: Float, zDepth: Float): Float {
-        // Wider 3D perspective scale (1.24x close to glass -> 0.46x far in the deep haze!)
-        val persp = 1.24f - zDepth.coerceIn(0f, 1f) * 0.78f
+        // Refined mobile-window 3D perspective scale (1.06x near glass -> 0.42x deep haze, crisp 2.5x depth zoom!)
+        val persp = 1.06f - zDepth.coerceIn(0f, 1f) * 0.64f
         return refSpanPx() * lengthFrac * persp
     }
 
@@ -1222,17 +1231,8 @@ class PondSimulation {
             else -> config.weatherMode
         }
 
-        if (effectiveWeather == WeatherMode.AURORA) {
-            for (c in 3 until cols - 3 step 2) {
-                val wave = sin(c * 0.16f + simTime * 1.4f) * 2.5f + cos(c * 0.09f - simTime * 0.9f) * 1.5f
-                val baseR = (splitRow * 0.28f + wave).roundToInt().coerceIn(2, splitRow - 6)
-                val aCol1 = if ((c / 4) % 2 == 0) pal.meniscusWaveFg else pal.fishAqua
-                val aCol2 = pal.fishRose
-                setCell(c, baseR, ':', aCol1)
-                setCell(c, baseR + 1, '|', aCol1)
-                setCell(c, baseR + 2, '.', aCol2)
-            }
-        } else if (effectiveWeather == WeatherMode.RAIN || effectiveWeather == WeatherMode.SNOW) {
+        val isRaining = (effectiveWeather == WeatherMode.RAIN)
+        if (effectiveWeather == WeatherMode.RAIN || effectiveWeather == WeatherMode.SNOW) {
             val isSnow = effectiveWeather == WeatherMode.SNOW
             val dropCount = if (isBatterySaver) 12 else weatherDrops.size
             for (dIdx in 0 until dropCount) {
@@ -1244,15 +1244,24 @@ class PondSimulation {
 
                 if (drop.rowY >= splitRow) {
                     if (!isSnow) {
-                        setCell(drop.colX.roundToInt(), splitRow - 1, '^', pal.meniscusWaveFg)
+                        val sp = rainSplashes[nextSplashIdx]
+                        nextSplashIdx = (nextSplashIdx + 1) % rainSplashes.size
+                        sp.active = true
+                        sp.colX = drop.colX
+                        sp.age = 0f
+                        sp.maxAge = 0.36f + (dIdx % 3) * 0.08f
                         injectSurfaceRipple(drop.colX, 1.4f)
                     }
                     drop.rowY = 1f
                     drop.colX = ((dIdx * 19 + (simTime * 13f).toInt()) % cols).toFloat()
-                } else {
-                    val ch = if (isSnow) (if (dIdx % 2 == 0) '*' else '.') else (if (dIdx % 2 == 0) '/' else '`')
-                    setCell(drop.colX.roundToInt(), drop.rowY.roundToInt(), ch, pal.bubbleFg)
                 }
+            }
+        }
+        for (sIdx in rainSplashes.indices) {
+            val sp = rainSplashes[sIdx]
+            if (sp.active) {
+                sp.age += clampedDt
+                if (sp.age >= sp.maxAge) sp.active = false
             }
         }
 
@@ -1480,10 +1489,18 @@ class PondSimulation {
         val waterLinePx = splitRow * cellHeightPx + baselineOffsetPx * 0.35f
         val floorLinePx = floorRow * cellHeightPx + baselineOffsetPx * 0.2f
 
-        // 3A. Sky: Sun / Lunar Moon, Drifting Clouds, Seabirds, Sailboat, Lighthouse & Whale Spout
+        // 3A. Sky: Sculpted Aurora, Sun / Lunar Moon, Drifting Clouds, Seabirds, Sailboat, Lighthouse, Rain/Snow & Whale Spout
+        if (effectiveWeather == WeatherMode.AURORA) {
+            sceneRenderer.drawAuroraCurtains(
+                canvas, textPaint, waterLinePx, simTime,
+                pal.meniscusWaveFg, pal.fishAqua, pal.fishRose,
+                calmScrim, isBatterySaver, isTrueBlackOled
+            )
+        }
+
         val celX = celestialColFloat * cellWidthPx
         val celY = celestialRowFloat * cellHeightPx
-        val celRadius = refPx * 0.044f
+        val celRadius = refPx * 0.038f
         if (snapshot.isNight) {
             sceneRenderer.drawMoon(
                 canvas, textPaint, celX, celY, celRadius, snapshot.lunarPhaseIndex,
@@ -1492,7 +1509,7 @@ class PondSimulation {
         } else {
             sceneRenderer.drawSun(
                 canvas, textPaint, celX, celY, celRadius,
-                pal.celestialGlyph, pal.skyBg, simTime, pal.isLightSurface, isTrueBlackOled, calmScrim
+                pal.celestialGlyph, pal.skyBg, simTime, pal.isLightSurface, isTrueBlackOled, calmScrim || isRaining
             )
         }
 
@@ -1500,16 +1517,20 @@ class PondSimulation {
         val cloud1X = ((simTime * cellWidthPx * 0.9f + refPx * 0.14f + pShiftCols * cellWidthPx) % cloudWrapSpan) - refPx * 0.18f
         val cloud1Y = (splitRow * 0.32f).coerceIn(2.5f, (splitRow - 4).toFloat()) * cellHeightPx
         sceneRenderer.drawCloud(
-            canvas, textPaint, cloud1X, cloud1Y, refPx * 0.17f,
+            canvas, textPaint, cloud1X, cloud1Y, refPx * 0.15f,
             pal.cloudReedFg, pal.skyBg, pal.isLightSurface, isTrueBlackOled, calmScrim
         )
 
         val cloud2X = ((simTime * cellWidthPx * 0.55f + canvas.width * 0.58f + pShiftCols * cellWidthPx) % cloudWrapSpan) - refPx * 0.18f
         val cloud2Y = (splitRow * 0.54f).coerceIn(3.5f, (splitRow - 3).toFloat()) * cellHeightPx
         sceneRenderer.drawCloud(
-            canvas, textPaint, cloud2X, cloud2Y, refPx * 0.14f,
+            canvas, textPaint, cloud2X, cloud2Y, refPx * 0.125f,
             pal.cloudReedFg, pal.skyBg, pal.isLightSurface, isTrueBlackOled, calmScrim
         )
+
+        val lhX = ((cols - 8f) + pShiftCols * 0.12f).coerceIn(cols - 12f, cols - 4f) * cellWidthPx
+        val isDuskOrNight = snapshot.isNight || pal.phaseName == "dusk" || pal.phaseName == "sunset" || pal.phaseName == "twilight"
+        val beaconOn = isOceanBiome && isDuskOrNight && sin(simTime * 1.85f) > 0.15f
 
         if (isOceanBiome) {
             if (!snapshot.isNight) {
@@ -1519,7 +1540,7 @@ class PondSimulation {
                     val bx = (bird.colX + pShiftCols * 0.35f) * cellWidthPx
                     val by = (splitRow * bird.rowFrac + sin(bird.flapPhase * 0.45f) * 0.85f).coerceIn(2f, (splitRow - 3.5f)) * cellHeightPx
                     sceneRenderer.drawSeabird(
-                        canvas, bx, by, refPx * (0.042f - bIdx * 0.005f),
+                        canvas, bx, by, refPx * (0.036f - bIdx * 0.004f),
                         bird.flapPhase, pal.cloudReedFg, calmScrim
                     )
                 }
@@ -1527,20 +1548,43 @@ class PondSimulation {
             val boatX = (distantBoatCol + pShiftCols * 0.18f) * cellWidthPx
             val boatColor = TimeOfDayPalette.lerpColor(pal.skyHorizonBg, pal.cloudReedFg, 0.82f)
             sceneRenderer.drawSailboat(
-                canvas, textPaint, boatX, waterLinePx, refPx * 0.068f,
+                canvas, textPaint, boatX, waterLinePx, refPx * 0.056f,
                 boatColor, pal.fishFoam, pal.skyHorizonBg, simTime, isTrueBlackOled
             )
-
-            val lhX = ((cols - 8f) + pShiftCols * 0.12f).coerceIn(cols - 12f, cols - 4f) * cellWidthPx
-            val isDuskOrNight = snapshot.isNight || pal.phaseName == "dusk" || pal.phaseName == "sunset" || pal.phaseName == "twilight"
-            val beaconOn = isDuskOrNight && sin(simTime * 1.85f) > 0.15f
             sceneRenderer.drawLighthouse(
-                canvas, textPaint, lhX, waterLinePx, refPx * 0.082f,
+                canvas, textPaint, lhX, waterLinePx, refPx * 0.070f,
                 pal.cloudReedFg, pal.fishGold, pal.skyHorizonBg, beaconOn, simTime, isTrueBlackOled
             )
         } else {
-            sceneRenderer.drawShorelineReeds(canvas, cellWidthPx * 4.5f, waterLinePx, refPx * 0.075f, simTime, pal.kelpFg)
-            sceneRenderer.drawShorelineReeds(canvas, canvas.width - cellWidthPx * 4.5f, waterLinePx, refPx * 0.075f, simTime + 1.4f, pal.kelpFg)
+            sceneRenderer.drawShorelineReeds(canvas, cellWidthPx * 4.5f, waterLinePx, refPx * 0.065f, simTime, pal.kelpFg)
+            sceneRenderer.drawShorelineReeds(canvas, canvas.width - cellWidthPx * 4.5f, waterLinePx, refPx * 0.065f, simTime + 1.4f, pal.kelpFg)
+        }
+
+        // Sculpted Raindrops / Snowflakes & Expanding Water-Surface Splash Crowns
+        if (effectiveWeather == WeatherMode.RAIN || effectiveWeather == WeatherMode.SNOW) {
+            val isSnow = effectiveWeather == WeatherMode.SNOW
+            val dropCount = if (isBatterySaver) 12 else weatherDrops.size
+            for (dIdx in 0 until dropCount) {
+                val drop = weatherDrops[dIdx]
+                if (drop.rowY >= splitRow) continue
+                val dx = drop.colX * cellWidthPx
+                val dy = drop.rowY * cellHeightPx
+                if (isSnow) {
+                    sceneRenderer.drawSnowFlake(canvas, textPaint, dx, dy, refPx * 0.0045f, dIdx % 3 == 0, pal.bubbleFg)
+                } else {
+                    sceneRenderer.drawRainDrop(canvas, dx, dy, refPx * 0.022f, pal.bubbleFg)
+                }
+            }
+        }
+        for (sIdx in rainSplashes.indices) {
+            val sp = rainSplashes[sIdx]
+            if (sp.active) {
+                sceneRenderer.drawRainSplashCrown(
+                    canvas, sp.colX * cellWidthPx, waterLinePx,
+                    (sp.age / sp.maxAge).coerceIn(0f, 1f),
+                    refPx * 0.026f, pal.meniscusWaveFg
+                )
+            }
         }
 
         // Whale surface blowhole water spout arc!
@@ -1548,28 +1592,40 @@ class PondSimulation {
             oceanVisitor.spoutTimer = (oceanVisitor.spoutTimer - clampedDt).coerceAtLeast(0f)
             val spX = (oceanVisitor.spoutCol + pShiftCols * 0.4f).coerceIn(4f, (cols - 5).toFloat()) * cellWidthPx
             val frac = 1f - (oceanVisitor.spoutTimer / 2.2f).coerceIn(0f, 1f)
-            sceneRenderer.drawWhaleSpout(canvas, textPaint, spX, waterLinePx, refPx * 0.12f, frac, pal.bubbleFg)
+            sceneRenderer.drawWhaleSpout(canvas, textPaint, spX, waterLinePx, refPx * 0.105f, frac, pal.bubbleFg)
         }
 
-        // 3B. Underwater Landscape: Abyssal Canyon Ridge, Reef Shelf & Volumetric Sunbeams
+        // 3B. Underwater Landscape: Abyssal Canyon Ridge, Reef Shelf, Sunbeams, Surface Reflections & Seabed Caustics
         val canyonBaseY = (splitRow + underwaterRows * 0.62f + pShiftRowsFloat * 0.15f).coerceIn(splitRow + 6f, floorRow - 8f) * cellHeightPx
         sceneRenderer.drawSubmergedTerrainRidge(
-            canvas, canyonBaseY, refPx * 0.032f, 8.5f, -pShiftCols * 0.04f,
+            canvas, canyonBaseY, refPx * 0.028f, 8.5f, -pShiftCols * 0.04f,
             pal.pebbleFg, pal.waterBgDeep, if (calmScrim) 0.14f else 0.22f, isTrueBlackOled
         )
         val shelfBaseY = (floorRow - 7f + pShiftRowsFloat * 0.38f).coerceIn(splitRow + 10f, floorRow - 4f) * cellHeightPx
         sceneRenderer.drawSubmergedTerrainRidge(
-            canvas, shelfBaseY, refPx * 0.022f, 12.0f, -pShiftCols * 0.09f + 1.8f,
+            canvas, shelfBaseY, refPx * 0.020f, 12.0f, -pShiftCols * 0.09f + 1.8f,
             pal.pebbleFg, pal.waterBgDeep, if (calmScrim) 0.22f else 0.34f, isTrueBlackOled
         )
 
         if (!snapshot.isNight && config.waterClarity > 0.45f) {
-            val rayCount = if (config.waterClarity > 0.78f) 4 else 2
+            val rayCount = if (isRaining) 2 else if (config.waterClarity > 0.78f) 4 else 2
             sceneRenderer.drawSunbeamRibbons(
                 canvas, waterLinePx, floorLinePx, simTime, rayCount,
-                pal.sunRayFg, calmScrim, pal.isLightSurface, isTrueBlackOled
+                pal.sunRayFg, calmScrim || isRaining, pal.isLightSurface, isTrueBlackOled
+            )
+            sceneRenderer.drawSeabedCaustics(
+                canvas, floorLinePx, refPx, simTime, pShiftCols * cellWidthPx,
+                pal.sunRayFg, calmScrim, pal.isLightSurface, isRaining, isTrueBlackOled
             )
         }
+
+        // Soft Inverted Surface Reflections beneath the Meniscus (Sun / Moon + Blinking Lighthouse)
+        sceneRenderer.drawSurfaceReflections(
+            canvas, waterLinePx, celX,
+            if (snapshot.isNight) pal.bubbleFg else pal.celestialGlyph,
+            lhX, beaconOn, pal.fishGold,
+            refPx, simTime, calmScrim, isTrueBlackOled
+        )
 
         // 3C. Continuous Spring-Wave Meniscus & Zen Pond Floating Elements
         sceneRenderer.drawMeniscusWave(
@@ -1581,19 +1637,19 @@ class PondSimulation {
             val pad1Col = (cols * 0.22f + sin(simTime * 0.6f) * 1.5f + pShiftCols)
             val pad1BobPx = -waveHeight[pad1Col.roundToInt().coerceIn(0, cols - 1)] * cellHeightPx * 0.35f
             sceneRenderer.drawLilyPadAndLotus(
-                canvas, textPaint, pad1Col * cellWidthPx, waterLinePx + pad1BobPx, refPx * 0.11f,
+                canvas, textPaint, pad1Col * cellWidthPx, waterLinePx + pad1BobPx, refPx * 0.090f,
                 hasLotus = true, simTime, pal.lilyPadFg, pal.lotusFlowerFg, pal.waterBgTop, isTrueBlackOled
             )
             val pad2Col = (cols * 0.62f + cos(simTime * 0.5f) * 1.5f + pShiftCols)
             val pad2BobPx = -waveHeight[pad2Col.roundToInt().coerceIn(0, cols - 1)] * cellHeightPx * 0.35f
             sceneRenderer.drawLilyPadAndLotus(
-                canvas, textPaint, pad2Col * cellWidthPx, waterLinePx + pad2BobPx, refPx * 0.095f,
+                canvas, textPaint, pad2Col * cellWidthPx, waterLinePx + pad2BobPx, refPx * 0.078f,
                 hasLotus = false, simTime + 1.5f, pal.lilyPadFg, pal.lotusFlowerFg, pal.waterBgTop, isTrueBlackOled
             )
 
             val rockX = (cols - 10.5f) * cellWidthPx
             sceneRenderer.drawShoreRockAndAmphibian(
-                canvas, textPaint, rockX, waterLinePx, refPx * 0.105f,
+                canvas, textPaint, rockX, waterLinePx, refPx * 0.088f,
                 isTurtle = shoreAmphibian.isTurtle,
                 isBlinking = sin(shoreAmphibian.blinkPhase) > 0.92f,
                 isHidden = shoreAmphibian.diveHideTimer > 0f,
@@ -1610,36 +1666,25 @@ class PondSimulation {
             val driftC = (surfaceDrifter.colX + pShiftCols * 0.4f)
             val driftBobPx = -waveHeight[driftC.roundToInt().coerceIn(0, cols - 1)] * cellHeightPx * 0.35f
             sceneRenderer.drawSurfaceDrifter(
-                canvas, driftC * cellWidthPx, waterLinePx + driftBobPx, refPx * 0.064f,
+                canvas, driftC * cellWidthPx, waterLinePx + driftBobPx, refPx * 0.052f,
                 surfaceDrifter.isPaperBoat,
                 if (surfaceDrifter.isPaperBoat) pal.fishFoam else pal.fishCoral,
                 pal.skyHorizonBg, isTrueBlackOled
             )
         }
 
-        // 3D. Seabed: Sculpted Cobbles, Ocean Corals/Anemones/Giant Clam, Stone Battery Lantern, Reactive Kelp & Food Pellets
+        // 3D. Background Seabed Layer: Cobbles, Giant Clam, Stone Battery Lantern & Food Pellets
+        //     (Kelp Stalks & Foreground Coral/Anemone now render in Step 11's Unified 3D Z-Sort so fish weave between them!)
         sceneRenderer.drawSeabedPebbles(
             canvas, textPaint, floorLinePx, pShiftCols * cellWidthPx * 0.65f,
             pal.pebbleFg, pal.waterBgDeep, isTrueBlackOled
         )
 
         if (isOceanBiome) {
-            val coralColor = TimeOfDayPalette.lerpColor(pal.fishCoral, pal.waterBgDeep, if (calmScrim) 0.48f else 0.22f)
-            val anemColor = TimeOfDayPalette.lerpColor(pal.fishRose, pal.waterBgDeep, if (calmScrim) 0.44f else 0.20f)
-            val leftCoralX = (5f + pShiftCols * 0.72f).coerceIn(3f, 12f) * cellWidthPx
-            sceneRenderer.drawCoralCluster(canvas, textPaint, leftCoralX, floorLinePx, refPx * 0.095f, coralColor, pal.waterBgDeep, isTrueBlackOled)
-            sceneRenderer.drawSeaAnemone(
-                canvas, leftCoralX + refPx * 0.095f, floorLinePx, refPx * 0.068f,
-                simTime, oceanCurrent, anemColor, pal.fishGold, pal.waterBgDeep, isTrueBlackOled
-            )
-
-            val rightCoralX = (cols - 8f + pShiftCols * 0.72f).coerceIn(cols - 13f, cols - 4f) * cellWidthPx
-            sceneRenderer.drawCoralCluster(canvas, textPaint, rightCoralX, floorLinePx, refPx * 0.085f, coralColor, pal.waterBgDeep, isTrueBlackOled)
-
             val clamX = (cols * 0.72f + pShiftCols * 0.45f).coerceIn(12f, (cols - 14).toFloat()) * cellWidthPx
             val clamOpenFrac = ((sin(clamOpenPhase) - 0.15f) / 0.85f).coerceIn(0f, 1f)
             sceneRenderer.drawGiantClam(
-                canvas, textPaint, clamX, floorLinePx - 2f, refPx * 0.088f,
+                canvas, textPaint, clamX, floorLinePx - 2f, refPx * 0.072f,
                 clamOpenFrac, pal.pebbleFg, pal.fishFoam, pal.waterBgDeep, isTrueBlackOled
             )
         }
@@ -1654,27 +1699,9 @@ class PondSimulation {
         }
         val lowBatBlink = config.enableBatteryLantern && batteryPercent < 20 && (wavePhase % 2 == 1)
         sceneRenderer.drawStoneLantern(
-            canvas, textPaint, lmX, floorLinePx, refPx * 0.092f,
+            canvas, textPaint, lmX, floorLinePx, refPx * 0.076f,
             pal.pebbleFg, lanternGlowCol, pal.waterBgDeep, lowBatBlink, isTrueBlackOled
         )
-
-        for (kIdx in 0 until kelpCount) {
-            val ks = kelpStalks[kIdx]
-            val baseCol = ks.colFrac * cols
-            val rootRow = (floorRow - 1 - (ks.zDepth * 3.5f).roundToInt()).coerceIn(splitRow + 10, floorRow - 1)
-            val kParallax = 0.85f - ks.zDepth * 0.62f
-            val kelpFade = (ks.zDepth * 0.58f + (if (calmScrim) 0.22f else 0f)).coerceAtMost(0.84f)
-            val kColor = TimeOfDayPalette.lerpColor(pal.kelpFg, pal.waterBgDeep, kelpFade)
-            val maxH = ks.heightRows.coerceAtMost((rootRow - splitRow - 4).coerceAtLeast(3))
-            sceneRenderer.drawKelpRibbon(
-                canvas, textPaint,
-                (baseCol + pShiftCols * kParallax) * cellWidthPx,
-                rootRow * cellHeightPx + baselineOffsetPx * 0.3f,
-                maxH * cellHeightPx,
-                cellWidthPx, simTime, ks.phase, ks.bendOffset,
-                kColor, pal.waterBgDeep, isBatterySaver, isTrueBlackOled
-            )
-        }
 
         // Render active sinking Food Pellets & Heavy Algae Wafers
         for (i in pellets.indices) {
@@ -1688,7 +1715,7 @@ class PondSimulation {
             } else {
                 TimeOfDayPalette.lerpColor(pal.fishGold, pal.waterBgDeep, pel.zDepth * 0.45f)
             }
-            val pRadius = (refPx * (if (pel.isHeavyAlgaeWafer) 0.011f else 0.0055f) * (1.15f - pel.zDepth * 0.45f)).coerceAtLeast(2.2f)
+            val pRadius = (refPx * (if (pel.isHeavyAlgaeWafer) 0.0095f else 0.0048f) * (1.10f - pel.zDepth * 0.45f)).coerceAtLeast(2.0f)
             sceneRenderer.drawFoodPellet(canvas, textPaint, px, py, pRadius, pel.isHeavyAlgaeWafer, pColor, pal.waterBgDeep, isTrueBlackOled)
         }
 
@@ -2587,6 +2614,15 @@ class PondSimulation {
         if (predator.active) {
             enqueueDrawable(5, 0, predator.zDepth)
         }
+        // Kind 6: 3D Depth-Layered Reactive Kelp Stalks (fish weave behind close kelp & in front of deep kelp!)
+        for (kIdx in 0 until kelpCount) {
+            enqueueDrawable(6, kIdx, kelpStalks[kIdx].zDepth)
+        }
+        // Kind 7: Ocean Biome Foreground Coral & Swaying Sea Anemone Outcrops (z=0.24 left, z=0.28 right)
+        if (isOceanBiome) {
+            enqueueDrawable(7, 0, 0.24f)
+            enqueueDrawable(7, 1, 0.28f)
+        }
 
         // Insertion sort descending by zDepth (farthest/deepest draws first -> closest draws last on top!)
         for (i in 1 until drawCount) {
@@ -2786,7 +2822,7 @@ class PondSimulation {
                     drawMarineCreature(
                         colFloat = jel.colX + pShiftCols * jelParallax,
                         rowFloat = (jel.rowY + pShiftRowsFloat * jelParallax).coerceIn(splitRow + 3f, floorRow - 4f),
-                        lengthFrac = 0.085f,
+                        lengthFrac = 0.052f,
                         aspectRatio = 0.85f,
                         plan = BodyPlan.JELLYFISH,
                         marking = MarkingStyle.NONE,
@@ -2873,6 +2909,40 @@ class PondSimulation {
                         animPhase = predator.animPhase,
                         isChomping = predator.chompTimer > 0f
                     )
+                }
+                6 -> {
+                    // 3D Depth-Layered Reactive Kelp Ribbon
+                    val ks = kelpStalks[itemIdx]
+                    val baseCol = ks.colFrac * cols
+                    val rootRow = (floorRow - 1 - (ks.zDepth * 3.5f).roundToInt()).coerceIn(splitRow + 10, floorRow - 1)
+                    val kParallax = 0.85f - ks.zDepth * 0.62f
+                    val kelpFade = (ks.zDepth * 0.58f + (if (calmScrim) 0.22f else 0f)).coerceAtMost(0.84f)
+                    val kColor = TimeOfDayPalette.lerpColor(pal.kelpFg, pal.waterBgDeep, kelpFade)
+                    val maxH = ks.heightRows.coerceAtMost((rootRow - splitRow - 4).coerceAtLeast(3))
+                    sceneRenderer.drawKelpRibbon(
+                        canvas, textPaint,
+                        (baseCol + pShiftCols * kParallax) * cellWidthPx,
+                        rootRow * cellHeightPx + baselineOffsetPx * 0.3f,
+                        maxH * cellHeightPx,
+                        cellWidthPx, simTime, ks.phase, ks.bendOffset,
+                        kColor, pal.waterBgDeep, isBatterySaver, isTrueBlackOled
+                    )
+                }
+                7 -> {
+                    // 3D Depth-Layered Foreground Coral Reef & Swaying Sea Anemone
+                    val coralColor = TimeOfDayPalette.lerpColor(pal.fishCoral, pal.waterBgDeep, if (calmScrim) 0.48f else 0.22f)
+                    if (itemIdx == 0) {
+                        val anemColor = TimeOfDayPalette.lerpColor(pal.fishRose, pal.waterBgDeep, if (calmScrim) 0.44f else 0.20f)
+                        val leftCoralX = (5f + pShiftCols * 0.72f).coerceIn(3f, 12f) * cellWidthPx
+                        sceneRenderer.drawCoralCluster(canvas, textPaint, leftCoralX, floorLinePx, refPx * 0.078f, coralColor, pal.waterBgDeep, isTrueBlackOled)
+                        sceneRenderer.drawSeaAnemone(
+                            canvas, leftCoralX + refPx * 0.078f, floorLinePx, refPx * 0.056f,
+                            simTime, oceanCurrent, anemColor, pal.fishGold, pal.waterBgDeep, isTrueBlackOled
+                        )
+                    } else {
+                        val rightCoralX = (cols - 8f + pShiftCols * 0.72f).coerceIn(cols - 13f, cols - 4f) * cellWidthPx
+                        sceneRenderer.drawCoralCluster(canvas, textPaint, rightCoralX, floorLinePx, refPx * 0.070f, coralColor, pal.waterBgDeep, isTrueBlackOled)
+                    }
                 }
             }
         }

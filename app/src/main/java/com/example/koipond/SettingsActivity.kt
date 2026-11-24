@@ -14,6 +14,7 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -29,6 +30,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var currentConfig: WallpaperConfig
     private var previousConfigForUndo: WallpaperConfig? = null
 
+    private lateinit var headerBar: View
+    private lateinit var headerDivider: View
     private lateinit var textHeaderPath: TextView
     private lateinit var textHeaderClockTag: TextView
     private lateinit var bannerUndo: LinearLayout
@@ -36,6 +39,11 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnUndoReset: TextView
 
     private lateinit var screenPond: LinearLayout
+    private lateinit var pondBoxContainer: LinearLayout
+    private lateinit var textPondBoxTitle: TextView
+    private lateinit var pondActionBar: View
+    private lateinit var bottomNavDivider: View
+    private lateinit var bottomNavBar: View
     private lateinit var screenSettings: ScrollView
     private lateinit var screenAbout: ScrollView
 
@@ -46,9 +54,15 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var asciiPondView: AsciiPondView
     private lateinit var textSolarBar: TextView
     private lateinit var btnSolarLive: TextView
+    private lateinit var btnFullscreenPreview: TextView
     private lateinit var textBiomeStatus: TextView
     private lateinit var textHuntStatus: TextView
     private lateinit var textAboutTelemetry: TextView
+
+    private lateinit var btnPresetReef: TextView
+    private lateinit var btnPresetAbyss: TextView
+    private lateinit var btnPresetZen: TextView
+    private lateinit var btnPresetOled: TextView
 
     private lateinit var btnBiomeOcean: TextView
     private lateinit var btnBiomePond: TextView
@@ -97,6 +111,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var textGyroSwitch: TextView
 
     private var activeTab = 1
+    private var isFullscreenPreview = false
     private val uiHandler = Handler(Looper.getMainLooper())
     private val hideUndoRunnable = Runnable {
         bannerUndo.visibility = View.GONE
@@ -123,14 +138,27 @@ class SettingsActivity : AppCompatActivity() {
 
         if (savedInstanceState != null) {
             activeTab = savedInstanceState.getInt("active_tab", 1)
+            isFullscreenPreview = savedInstanceState.getBoolean("fullscreen_preview", false)
         }
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isFullscreenPreview) {
+                    setFullscreenPreview(false)
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
         switchTab(activeTab)
+        setFullscreenPreview(isFullscreenPreview)
         refreshAsciiUi()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt("active_tab", activeTab)
+        outState.putBoolean("fullscreen_preview", isFullscreenPreview)
     }
 
     override fun onResume() {
@@ -145,6 +173,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun bindViews() {
+        headerBar = findViewById(R.id.headerBar)
+        headerDivider = findViewById(R.id.headerDivider)
         textHeaderPath = findViewById(R.id.textHeaderPath)
         textHeaderClockTag = findViewById(R.id.textHeaderClockTag)
         bannerUndo = findViewById(R.id.bannerUndo)
@@ -152,6 +182,11 @@ class SettingsActivity : AppCompatActivity() {
         btnUndoReset = findViewById(R.id.btnUndoReset)
 
         screenPond = findViewById(R.id.screenPond)
+        pondBoxContainer = findViewById(R.id.pondBoxContainer)
+        textPondBoxTitle = findViewById(R.id.textPondBoxTitle)
+        pondActionBar = findViewById(R.id.pondActionBar)
+        bottomNavDivider = findViewById(R.id.bottomNavDivider)
+        bottomNavBar = findViewById(R.id.bottomNavBar)
         screenSettings = findViewById(R.id.screenSettings)
         screenAbout = findViewById(R.id.screenAbout)
 
@@ -162,9 +197,15 @@ class SettingsActivity : AppCompatActivity() {
         asciiPondView = findViewById(R.id.asciiPondView)
         textSolarBar = findViewById(R.id.textSolarBar)
         btnSolarLive = findViewById(R.id.btnSolarLive)
+        btnFullscreenPreview = findViewById(R.id.btnFullscreenPreview)
         textBiomeStatus = findViewById(R.id.textBiomeStatus)
         textHuntStatus = findViewById(R.id.textHuntStatus)
         textAboutTelemetry = findViewById(R.id.textAboutTelemetry)
+
+        btnPresetReef = findViewById(R.id.btnPresetReef)
+        btnPresetAbyss = findViewById(R.id.btnPresetAbyss)
+        btnPresetZen = findViewById(R.id.btnPresetZen)
+        btnPresetOled = findViewById(R.id.btnPresetOled)
 
         btnBiomeOcean = findViewById(R.id.btnBiomeOcean)
         btnBiomePond = findViewById(R.id.btnBiomePond)
@@ -320,6 +361,91 @@ class SettingsActivity : AppCompatActivity() {
             asciiPondView.invalidate()
         }
 
+        btnFullscreenPreview.contentDescription = "Toggle fullscreen live preview"
+        btnFullscreenPreview.setOnClickListener {
+            haptic(it)
+            setFullscreenPreview(!isFullscreenPreview)
+        }
+
+        fun applyMoodPreset(label: String, preset: WallpaperConfig) {
+            previousConfigForUndo = currentConfig
+            updateConfig(preset)
+            repository.applyAppNightMode(preset.themeMode, preset.timeCycleMode)
+            showUndoBanner("ok: applied " + label + " mood.")
+        }
+        btnPresetReef.contentDescription = "Apply Tropical Reef mood preset"
+        btnPresetReef.setOnClickListener {
+            haptic(it)
+            applyMoodPreset(
+                "tropical reef",
+                currentConfig.copy(
+                    sceneBiome = SceneBiome.OCEAN,
+                    paletteFamily = PaletteFamily.LAGOON,
+                    themeMode = ThemeMode.SOLAR,
+                    timeCycleMode = TimeCycleMode.AUTO_REALTIME,
+                    weatherMode = WeatherMode.AUTO,
+                    heroFishCount = 7,
+                    waterClarity = 0.90f,
+                    waterlinePercent = 36,
+                    calmIconMode = false
+                )
+            )
+        }
+        btnPresetAbyss.contentDescription = "Apply Deep Abyss aurora mood preset"
+        btnPresetAbyss.setOnClickListener {
+            haptic(it)
+            applyMoodPreset(
+                "deep abyss",
+                currentConfig.copy(
+                    sceneBiome = SceneBiome.OCEAN,
+                    paletteFamily = PaletteFamily.LAGOON,
+                    themeMode = ThemeMode.DARK,
+                    timeCycleMode = TimeCycleMode.NIGHT,
+                    weatherMode = WeatherMode.AURORA,
+                    heroFishCount = 6,
+                    waterClarity = 0.72f,
+                    waterlinePercent = 30,
+                    calmIconMode = false
+                )
+            )
+        }
+        btnPresetZen.contentDescription = "Apply Zen Koi pond mood preset"
+        btnPresetZen.setOnClickListener {
+            haptic(it)
+            applyMoodPreset(
+                "zen koi",
+                currentConfig.copy(
+                    sceneBiome = SceneBiome.ZEN_POND,
+                    paletteFamily = PaletteFamily.MOSS,
+                    themeMode = ThemeMode.SOLAR,
+                    timeCycleMode = TimeCycleMode.AUTO_REALTIME,
+                    weatherMode = WeatherMode.CLEAR,
+                    heroFishCount = 5,
+                    waterClarity = 0.85f,
+                    waterlinePercent = 38,
+                    calmIconMode = false
+                )
+            )
+        }
+        btnPresetOled.contentDescription = "Apply AMOLED Minimal battery-saving mood preset"
+        btnPresetOled.setOnClickListener {
+            haptic(it)
+            applyMoodPreset(
+                "amoled minimal",
+                currentConfig.copy(
+                    sceneBiome = SceneBiome.OCEAN,
+                    paletteFamily = PaletteFamily.AMOLED,
+                    themeMode = ThemeMode.DARK,
+                    timeCycleMode = TimeCycleMode.AUTO_REALTIME,
+                    weatherMode = WeatherMode.CLEAR,
+                    heroFishCount = 5,
+                    waterClarity = 0.70f,
+                    waterlinePercent = 34,
+                    calmIconMode = true
+                )
+            )
+        }
+
         btnBiomeOcean.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.OCEAN)) }
         btnBiomePond.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.ZEN_POND)) }
 
@@ -453,8 +579,42 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun setFullscreenPreview(enabled: Boolean) {
+        isFullscreenPreview = enabled && (activeTab == 1)
+        val chromeVis = if (isFullscreenPreview) View.GONE else View.VISIBLE
+        headerBar.visibility = chromeVis
+        headerDivider.visibility = chromeVis
+        textPondBoxTitle.visibility = chromeVis
+        textBiomeStatus.visibility = chromeVis
+        textHuntStatus.visibility = chromeVis
+        pondActionBar.visibility = chromeVis
+        bottomNavDivider.visibility = chromeVis
+        bottomNavBar.visibility = chromeVis
+
+        val padPx = if (isFullscreenPreview) 0 else (12f * resources.displayMetrics.density).roundToInt()
+        val boxPadPx = if (isFullscreenPreview) 0 else (2f * resources.displayMetrics.density).roundToInt()
+        val boxTopMarginPx = if (isFullscreenPreview) 0 else (9f * resources.displayMetrics.density).roundToInt()
+        screenPond.setPadding(padPx, padPx, padPx, padPx)
+        pondBoxContainer.setPadding(boxPadPx, boxPadPx, boxPadPx, boxPadPx)
+        val lp = pondBoxContainer.layoutParams as? android.widget.FrameLayout.LayoutParams
+        if (lp != null) {
+            lp.topMargin = boxTopMarginPx
+            pondBoxContainer.layoutParams = lp
+        }
+        if (isFullscreenPreview) {
+            pondBoxContainer.background = null
+        } else {
+            pondBoxContainer.setBackgroundResource(R.drawable.bg_ascii_box)
+        }
+        btnFullscreenPreview.text = if (isFullscreenPreview) "[exit]" else "[full]"
+        btnFullscreenPreview.contentDescription = if (isFullscreenPreview) "Exit fullscreen live preview" else "Expand fullscreen live preview"
+    }
+
     private fun switchTab(tab: Int) {
         activeTab = tab
+        if (tab != 1 && isFullscreenPreview) {
+            setFullscreenPreview(false)
+        }
         screenPond.visibility = if (tab == 1) View.VISIBLE else View.GONE
         screenSettings.visibility = if (tab == 2) View.VISIBLE else View.GONE
         screenAbout.visibility = if (tab == 3) View.VISIBLE else View.GONE
