@@ -461,11 +461,6 @@ class PondSimulation {
     private val colorGrid = IntArray(maxCols * maxRows)
     private val rowCharScratch = CharArray(maxCols)
     private val singleCharBuf = CharArray(1)
-    private val insectDayFrameA = charArrayOf('~', 'o', '~')
-    private val insectDayFrameB = charArrayOf('-', 'o', '-')
-    private val insectNightFrameA = charArrayOf(' ', '*', ' ')
-    private val insectNightFrameB = charArrayOf(' ', '·', ' ')
-    private val padColsScratch = IntArray(2)
     private val shadowCharsNear = charArrayOf('.', '=', '=', '=', '.')
     private val shadowCharsFar  = charArrayOf('.', '.', '.')
     private val reflectChars    = charArrayOf('~', '.', '.', '~')
@@ -531,6 +526,7 @@ class PondSimulation {
     }
     private val bgPaint = Paint()
     private val creatureRenderer = MarineCreatureRenderer()
+    private val sceneRenderer = OceanSceneRenderer()
 
     // Unified Zero-Allocation Depth-Sorted Draw Queue (Painter's Algorithm across ALL creatures!)
     // Kind: 0=Fish, 1=OceanVisitorMember, 2=BottomFeeder, 3=NightJellyfish, 4=Legendary, 5=Predator
@@ -1097,7 +1093,6 @@ class PondSimulation {
 
         val topCalmRow = if (isWallpaperMode) (rows * 0.12f).toInt() else 0
         val floorRow = rows - 2
-        val subFloorRow = rows - 1
         val underwaterRows = (rows - splitRow).coerceAtLeast(1)
         val isTrueBlackOled = (config.paletteFamily == PaletteFamily.AMOLED && !pal.isLightSurface)
         val isOceanBiome = (config.sceneBiome == SceneBiome.OCEAN)
@@ -1178,12 +1173,14 @@ class PondSimulation {
         }
 
         // =========================================================================
-        // 2. OVER-WATER SKY: Sun / Moon, Shooting Stars, Aurora Curtains, Weather
+        // 2. ATMOSPHERIC ASCII PARTICLES (Stars, Shooting Star, Aurora, Weather,
+        //    Glitter Path, Bubbles & Marine Snow) + PHYSICS UPDATES FOR SCENE
         // =========================================================================
         val pShiftInt = pShiftCols.roundToInt()
-        val celestialCol = ((snapshot.sunArcX * (cols - 12)).roundToInt() + 6 + pShiftInt).coerceIn(5, cols - 7)
+        val celestialColFloat = (snapshot.sunArcX * (cols - 12) + 6f + pShiftCols).coerceIn(5f, (cols - 7).toFloat())
+        val celestialCol = celestialColFloat.roundToInt()
         val skyHeight = (splitRow - 5).coerceAtLeast(6)
-        val celestialRow = ((1f - snapshot.sunArcY) * (skyHeight - 4) + 3).roundToInt().coerceIn(3, splitRow - 5)
+        val celestialRowFloat = ((1f - snapshot.sunArcY) * (skyHeight - 4) + 3f).coerceIn(3f, (splitRow - 5).toFloat())
 
         if (snapshot.isNight) {
             for (s in 0 until 20) {
@@ -1193,29 +1190,6 @@ class PondSimulation {
                 val starChar = if (twinkle > 0.35f) '*' else '.'
                 setCell(sc, sr, starChar, pal.celestialGlyph)
             }
-            when (snapshot.lunarPhaseIndex) {
-                0 -> {
-                    drawStringAtGrid(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
-                    drawStringAtGrid(celestialCol - 2, celestialRow,     "   ) )", pal.celestialGlyph)
-                    drawStringAtGrid(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
-                }
-                1 -> {
-                    drawStringAtGrid(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
-                    drawStringAtGrid(celestialCol - 2, celestialRow,     "  | ) ", pal.celestialGlyph)
-                    drawStringAtGrid(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
-                }
-                2 -> {
-                    drawStringAtGrid(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
-                    drawStringAtGrid(celestialCol - 2, celestialRow,     " (  ) ", pal.celestialGlyph)
-                    drawStringAtGrid(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
-                }
-                else -> {
-                    drawStringAtGrid(celestialCol - 2, celestialRow - 1, " .--. ", pal.celestialGlyph)
-                    drawStringAtGrid(celestialCol - 2, celestialRow,     "( (   ", pal.celestialGlyph)
-                    drawStringAtGrid(celestialCol - 2, celestialRow + 1, " '--' ", pal.celestialGlyph)
-                }
-            }
-
             if (!shootingStar.active) {
                 shootingStar.timer -= clampedDt
                 if (shootingStar.timer <= 0f) {
@@ -1235,31 +1209,10 @@ class PondSimulation {
                     shootingStar.timer = 16f + (sin(simTime) * 0.5f + 0.5f) * 14f
                 }
             }
-        } else {
-            val rayPulse = ((simTime * 1.5f).toInt() % 2 == 0)
-            if (rayPulse) {
-                drawStringAtGrid(celestialCol - 3, celestialRow - 1, " \\ | / ", pal.celestialGlyph)
-                drawStringAtGrid(celestialCol - 3, celestialRow,     "--(O)--", pal.celestialGlyph)
-                drawStringAtGrid(celestialCol - 3, celestialRow + 1, " / | \\ ", pal.celestialGlyph)
-            } else {
-                drawStringAtGrid(celestialCol - 3, celestialRow - 1, "  \\|/  ", pal.celestialGlyph)
-                drawStringAtGrid(celestialCol - 3, celestialRow,     " -(o)- ", pal.celestialGlyph)
-                drawStringAtGrid(celestialCol - 3, celestialRow + 1, "  /|\\  ", pal.celestialGlyph)
-            }
         }
-
-        val cloud1Col = ((simTime * 0.9f + 8f + pShiftInt).toInt() % (cols + 14)) - 10
-        val cloud1Row = (splitRow * 0.32f).toInt().coerceIn(2, splitRow - 4)
-        drawStringAtGrid(cloud1Col, cloud1Row,     "  .--.   ", pal.cloudReedFg)
-        drawStringAtGrid(cloud1Col, cloud1Row + 1, "-(    )-.", pal.cloudReedFg)
-
-        val cloud2Col = (((simTime * 0.55f + cols * 0.58f + pShiftInt).toInt()) % (cols + 14)) - 10
-        val cloud2Row = (splitRow * 0.54f).toInt().coerceIn(3, splitRow - 3)
-        drawStringAtGrid(cloud2Col, cloud2Row, " .-(   )-.", pal.cloudReedFg)
 
         val effectiveWeather = when (config.weatherMode) {
             WeatherMode.AUTO -> {
-                // Organic calm 30-min clock-seeded weather (mostly clear, occasional rain shower or rare night aurora)
                 when {
                     snapshot.autoWeatherSlot == 2 -> WeatherMode.RAIN
                     snapshot.isNight && snapshot.autoWeatherSlot == 9 -> WeatherMode.AURORA
@@ -1303,41 +1256,7 @@ class PondSimulation {
             }
         }
 
-        if (isOceanBiome) {
-            // Soaring coastal seabirds / albatrosses gliding across the ocean sky!
-            if (!snapshot.isNight) {
-                val birdCount = if (isBatterySaver) 2 else seabirds.size
-                for (bIdx in 0 until birdCount) {
-                    val bird = seabirds[bIdx]
-                    bird.flapPhase = (bird.flapPhase + clampedDt * 3.8f) % 62.831855f
-                    bird.colX += bird.vx * clampedDt
-                    if (bird.colX > cols + 8f) bird.colX = -6f
-                    if (bird.colX < -8f) bird.colX = (cols + 6).toFloat()
-                    val bCol = (bird.colX + pShiftCols * 0.35f).roundToInt()
-                    val bRow = (splitRow * bird.rowFrac + sin(bird.flapPhase * 0.45f) * 1.1f).roundToInt().coerceIn(2, splitRow - 4)
-                    val flap = sin(bird.flapPhase)
-                    val bSprite = when {
-                        flap > 0.38f -> "~v~"
-                        flap < -0.38f -> "-^-"
-                        else -> "\\_/"
-                    }
-                    drawStringAtGrid(bCol, bRow, bSprite, pal.cloudReedFg)
-                }
-            }
-        } else {
-            val swayLeft = sin(simTime * 1.4f) > 0f
-            for (c in 0 until cols) {
-                if (c in 2..6 || c in (cols - 7)..(cols - 3)) {
-                    val reedTop = if ((c + if (swayLeft) 1 else 0) % 2 == 0) '/' else '|'
-                    setCell(c, splitRow - 2, reedTop, pal.kelpFg)
-                    setCell(c, splitRow - 1, '|', pal.kelpFg)
-                }
-            }
-        }
-
-        // =========================================================================
-        // 3. 1D SPRING-PROPAGATED WATERLINE MENISCUS, GLITTER PATH & HORIZON LIFE
-        // =========================================================================
+        // Update 1D spring-propagated waterline wave heightfield
         val wavePhase = (simTime * 3.0f).toInt()
         val waveDamp = exp(-2.2f * clampedDt)
         val tension = 28.0f
@@ -1352,25 +1271,12 @@ class PondSimulation {
         }
         for (c in 0 until cols) {
             waveHeight[c] = waveNext[c]
-            val ambient = sin(c * 0.42f + simTime * 2.3f) * 0.32f + cos(c * 0.23f - simTime * 1.4f) * 0.22f
-            val hVal = ambient + waveHeight[c]
-            val ch = when {
-                hVal > 0.65f -> '^'
-                hVal > 0.18f -> '~'
-                hVal > -0.18f -> '-'
-                hVal > -0.52f -> '.'
-                else -> '_'
-            }
-            setCell(c, splitRow, ch, pal.meniscusWaveFg)
-            if (waveHeight[c] > 0.85f) {
-                setCell(c, splitRow - 1, '.', pal.meniscusWaveFg)
-            }
         }
 
         // Sun & Moon Glitter Path shimmering on the ocean surface directly beneath the celestial body!
         val glitterBaseCol = celestialCol.coerceIn(5, cols - 6)
         val glitterColor = if (snapshot.isNight) pal.bubbleFg else pal.celestialGlyph
-        for (gRow in 0..4) {
+        for (gRow in 1..4) {
             val halfSpan = (5 - gRow).coerceAtLeast(1)
             val rowMix = (1f - gRow * 0.17f) * (if (calmScrim) 0.55f else 0.88f)
             val gCol = TimeOfDayPalette.lerpColor(pal.waterBgTop, glitterColor, rowMix)
@@ -1378,7 +1284,6 @@ class PondSimulation {
                 val shimmer = sin(simTime * 3.4f + gRow * 1.9f + off * 1.3f)
                 if (shimmer > 0.28f) {
                     val gCh = when {
-                        gRow == 0 -> if (shimmer > 0.72f) '=' else '~'
                         gRow <= 2 -> if (shimmer > 0.70f) '~' else '-'
                         else -> if (shimmer > 0.65f) ':' else '·'
                     }
@@ -1387,250 +1292,48 @@ class PondSimulation {
             }
         }
 
-        // Whale surface water spout animation above the ocean meniscus!
-        if (oceanVisitor.spoutTimer > 0f) {
-            oceanVisitor.spoutTimer = (oceanVisitor.spoutTimer - clampedDt).coerceAtLeast(0f)
-            val spCol = (oceanVisitor.spoutCol + pShiftCols * 0.4f).roundToInt().coerceIn(4, cols - 5)
-            val frac = 1f - (oceanVisitor.spoutTimer / 2.2f).coerceIn(0f, 1f)
-            val spoutH = (2 + (sin(frac * PI.toFloat()) * 6f).roundToInt()).coerceIn(2, 8)
-            for (h in 1..spoutH) {
-                setCell(spCol, splitRow - h, if (h == spoutH) '*' else '|', pal.bubbleFg)
-            }
-            if (spoutH >= 4) {
-                setCell(spCol - 1, splitRow - spoutH, '\\', pal.bubbleFg)
-                setCell(spCol + 1, splitRow - spoutH, '/', pal.bubbleFg)
-                setCell(spCol - 2, splitRow - spoutH + 1, '.', pal.bubbleFg)
-                setCell(spCol + 2, splitRow - spoutH + 1, '.', pal.bubbleFg)
-            }
-        }
-
+        // Update sky & horizon dynamic actors (seabirds, sailboat, clam, frog/turtle, drifter, dragonfly)
         if (isOceanBiome) {
-            // Distant ocean horizon sailboat drifting gently with tiny parallax
+            if (!snapshot.isNight) {
+                val birdCount = if (isBatterySaver) 2 else seabirds.size
+                for (bIdx in 0 until birdCount) {
+                    val bird = seabirds[bIdx]
+                    bird.flapPhase = (bird.flapPhase + clampedDt * 3.8f) % 62.831855f
+                    bird.colX += bird.vx * clampedDt
+                    if (bird.colX > cols + 8f) bird.colX = -6f
+                    if (bird.colX < -8f) bird.colX = (cols + 6).toFloat()
+                }
+            }
             distantBoatCol += 0.48f * clampedDt
             if (distantBoatCol > cols + 6f) distantBoatCol = -8f
-            val boatC = (distantBoatCol + pShiftCols * 0.18f).roundToInt()
-            val boatColor = TimeOfDayPalette.lerpColor(pal.skyHorizonBg, pal.cloudReedFg, 0.78f)
-            drawStringAtGrid(boatC, splitRow - 2, " /| ", boatColor)
-            drawStringAtGrid(boatC, splitRow - 1, "\\__/", boatColor)
 
-            // Far rocky headland + coastal lighthouse blinking gently at dusk & night!
-            val lhCol = (cols - 9 + (pShiftCols * 0.12f).roundToInt()).coerceIn(cols - 12, cols - 5)
-            drawStringAtGrid(lhCol - 1, splitRow - 1, "_/\\_", pal.cloudReedFg)
-            drawStringAtGrid(lhCol, splitRow - 2, "||", pal.cloudReedFg)
-            val isDuskOrNight = snapshot.isNight || pal.phaseName == "dusk" || pal.phaseName == "sunset" || pal.phaseName == "twilight"
-            val beaconOn = isDuskOrNight && sin(simTime * 1.85f) > 0.15f
-            if (beaconOn) {
-                drawStringAtGrid(lhCol - 3, splitRow - 3, "--*--", pal.fishGold)
-            } else {
-                setCell(lhCol, splitRow - 3, '^', pal.cloudReedFg)
+            clamOpenPhase = (clamOpenPhase + clampedDt * 0.45f) % 6.2831855f
+            val clamColFloat = (cols * 0.72f + pShiftCols * 0.45f).coerceIn(12f, (cols - 14).toFloat())
+            if (sin(clamOpenPhase) > 0.65f && sin(clamOpenPhase * 12f) > 0.96f) {
+                emitMouthBubble(clamColFloat, (floorRow - 2).toFloat(), 0.42f)
             }
         } else {
-            val pad1Col = (cols * 0.22f + sin(simTime * 0.6f) * 1.5f + pShiftInt).roundToInt()
-            val pad1Bob = if (waveHeight[pad1Col.coerceIn(0, cols - 1)] > 0.55f) -1 else 0
-            drawStringAtGrid(pad1Col, splitRow + pad1Bob, "[_v_]", pal.lilyPadFg)
-            drawStringAtGrid(pad1Col + 1, splitRow - 1 + pad1Bob, "(*)", pal.lotusFlowerFg)
-
-            val pad2Col = (cols * 0.62f + cos(simTime * 0.5f) * 1.5f + pShiftInt).roundToInt()
-            val pad2Bob = if (waveHeight[pad2Col.coerceIn(0, cols - 1)] > 0.55f) -1 else 0
-            drawStringAtGrid(pad2Col, splitRow + pad2Bob, "[_v_]", pal.lilyPadFg)
-
-            val rootColor = TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.lilyPadFg, 0.52f)
-            padColsScratch[0] = pad1Col
-            padColsScratch[1] = pad2Col
-            for (pIdx in 0..1) {
-                val padC = padColsScratch[pIdx]
-                for (rStep in 1..4) {
-                    val rootSway = sin(simTime * 1.4f - rStep * 0.6f + padC * 0.2f)
-                    val rc = padC + 2 + (if (rootSway > 0.35f) 1 else if (rootSway < -0.35f) -1 else 0)
-                    val rr = splitRow + rStep
-                    val rootCh = when (rStep) {
-                        1 -> '|'
-                        2 -> ':'
-                        3 -> if (rootSway >= 0f) ')' else '('
-                        else -> '.'
-                    }
-                    setCell(rc, rr, rootCh, rootColor)
-                    if (rStep <= 2) {
-                        setCell(rc - 1, rr, ':', rootColor)
-                    }
-                }
-            }
-
-            // Perched Shoreline Rock & Frog/Turtle
-            val rockCol = cols - 13
-            drawStringAtGrid(rockCol, splitRow, "_.-._", pal.pebbleFg)
             if (shoreAmphibian.diveHideTimer > 0f) {
                 shoreAmphibian.diveHideTimer = (shoreAmphibian.diveHideTimer - clampedDt).coerceAtLeast(0f)
-                if (shoreAmphibian.diveHideTimer > 8.2f) {
-                    drawStringAtGrid(rockCol + 1, splitRow - 1, "\\^/", pal.meniscusWaveFg)
-                }
             } else {
                 shoreAmphibian.blinkPhase = (shoreAmphibian.blinkPhase + clampedDt * 2.0f) % 6.2831855f
                 if (shoreAmphibian.tongueTimer > 0f) {
                     shoreAmphibian.tongueTimer = (shoreAmphibian.tongueTimer - clampedDt).coerceAtLeast(0f)
                 }
-                val amphSprite = if (shoreAmphibian.isTurtle) {
-                    "_(@)_"
-                } else {
-                    if (sin(shoreAmphibian.blinkPhase) > 0.92f) "(-.-)" else "(o.o)"
-                }
-                drawStringAtGrid(rockCol, splitRow - 1, amphSprite, pal.lilyPadFg)
-
+                val rockCol = (cols - 11).toFloat()
                 if (!shoreAmphibian.isTurtle && !snapshot.isNight) {
                     val distFly = rockCol - surfaceInsect.colX
                     if (distFly in 2f..8f && shoreAmphibian.tongueTimer <= 0f) {
                         shoreAmphibian.tongueTimer = 0.28f
                     }
-                    if (shoreAmphibian.tongueTimer > 0f) {
-                        drawStringAtGrid(rockCol - 4, splitRow - 1, "*---", pal.fishCoral)
-                    }
                 }
             }
-
-            // Drifting Paper Boat or Leaf (bobs on waves!)
             surfaceDrifter.colX += surfaceDrifter.vx * clampedDt
             if (surfaceDrifter.colX > cols - 18) surfaceDrifter.vx = -1.2f
             if (surfaceDrifter.colX < 8f) surfaceDrifter.vx = 1.2f
-            val driftC = (surfaceDrifter.colX + pShiftCols * 0.4f).roundToInt()
-            val driftBob = if (waveHeight[driftC.coerceIn(0, cols - 1)] > 0.50f) -1 else 0
-            if (surfaceDrifter.isPaperBoat) {
-                drawStringAtGrid(driftC, splitRow - 1 + driftBob, " /\\ ", pal.fishFoam)
-                drawStringAtGrid(driftC, splitRow + driftBob,     "\\__/", pal.fishFoam)
-            } else {
-                drawStringAtGrid(driftC, splitRow + driftBob, "~*", pal.fishCoral)
-            }
         }
 
-        // Receding perspective water-surface shimmer
-        val perspHorizonColor = TimeOfDayPalette.lerpColor(pal.skyHorizonBg, pal.meniscusWaveFg, if (calmScrim) 0.22f else 0.36f)
-        for (c in 6 until cols - 13 step 4) {
-            val shimmerShift = ((c + wavePhase) % 5 == 0)
-            if (shimmerShift) {
-                setCell(c, splitRow - 2, '·', perspHorizonColor)
-            } else if ((c + wavePhase) % 3 == 0) {
-                setCell(c, splitRow - 1, '~', perspHorizonColor)
-            }
-        }
-
-        // Far Abyssal Submerged Canyon Ridge
-        val canyonBaseRow = (splitRow + (underwaterRows * 0.62f) + pShiftRowsFloat * 0.15f).roundToInt().coerceIn(splitRow + 6, floorRow - 8)
-        val canyonColor = TimeOfDayPalette.lerpColor(pal.waterBgDeep, pal.pebbleFg, if (calmScrim) 0.16f else 0.28f)
-        val canyonShift = (pShiftCols * 0.15f).roundToInt()
-        val canyonPattern = "__..--~~^^~~--..____..--~~^~~--..__"
-        for (c in 0 until cols) {
-            val patCh = canyonPattern[(c - canyonShift).mod(canyonPattern.length)]
-            val rOff = if (patCh == '^' || patCh == '~') -1 else 0
-            setCell(c, canyonBaseRow + rOff, patCh, canyonColor)
-        }
-
-        // Midground Submerged Reef Shelf
-        val shelfBaseRow = (floorRow - 7 + pShiftRowsFloat * 0.38f).roundToInt().coerceIn(splitRow + 10, floorRow - 4)
-        val shelfColor = TimeOfDayPalette.lerpColor(pal.waterBgDeep, pal.pebbleFg, if (calmScrim) 0.24f else 0.46f)
-        val shelfShift = (pShiftCols * 0.38f).roundToInt()
-        val shelfPattern = "  .._.-~-._..      .._.-~-._..  "
-        for (c in 0 until cols) {
-            val sCh = shelfPattern[(c - shelfShift).mod(shelfPattern.length)]
-            if (sCh != ' ') {
-                setCell(c, shelfBaseRow, sCh, shelfColor)
-            }
-        }
-
-        // Deep background volumetric sunbeams
-        if (!snapshot.isNight && config.waterClarity > 0.45f) {
-            val bgRayColor = TimeOfDayPalette.lerpColor(pal.waterBgTop, pal.sunRayFg, if (calmScrim) 0.20f else 0.38f)
-            val rayCount = if (config.waterClarity > 0.78f) 4 else 2
-            for (rayIdx in 0 until rayCount) {
-                val startCol = (cols * (0.14f + rayIdx * 0.24f) + sin(simTime * 0.35f + rayIdx) * 2f).roundToInt()
-                val maxRayDepth = ((rows - splitRow) * 0.72f).toInt()
-                for (d in 2 until maxRayDepth step 3) {
-                    val rc = startCol + (d / 2)
-                    val rr = splitRow + d
-                    if (rr < floorRow - 5 && (d + wavePhase) % 2 == 0) {
-                        setCell(rc, rr, if (d % 6 == 0) ':' else '/', bgRayColor)
-                    }
-                }
-            }
-        }
-
-        // =========================================================================
-        // 4. SEABED COBBLES, PERSPECTIVE GRID, STONE LANTERN & REACTIVE KELP
-        // =========================================================================
-        val pebbleUpper = "  .   ..o..   .    .o.   "
-        val pebbleMid   = " .o. ..ooO.. .o. _.oOo._ "
-        val pebbleLower = "..ooO.._.oOo._..ooO.._..o"
-        for (c in 0 until cols) {
-            val uCh = pebbleUpper[(c - pShiftInt).mod(pebbleUpper.length)]
-            val mCh = pebbleMid[(c - pShiftInt).mod(pebbleMid.length)]
-            val lCh = pebbleLower[(c - pShiftInt).mod(pebbleLower.length)]
-            if (uCh != ' ') setCell(c, floorRow - 3, uCh, pal.cloudReedFg)
-            if (mCh != ' ') setCell(c, floorRow - 1, mCh, pal.pebbleFg)
-            setCell(c, floorRow, lCh, pal.pebbleFg)
-            setCell(c, subFloorRow, '~', pal.cloudReedFg)
-        }
-
-        val perspGridColor = TimeOfDayPalette.lerpColor(pal.waterBgDeep, pal.pebbleFg, if (calmScrim) 0.18f else 0.36f)
-        val centerCol = cols / 2 - pShiftInt / 2
-        for (beam in -4..4) {
-            for (rOff in 0..4) {
-                val cPos = centerCol + beam * (6 + rOff * 2)
-                val rPos = floorRow - 4 + rOff
-                val gridCh = when {
-                    beam < -1 -> '/'
-                    beam > 1  -> '\\'
-                    beam == 0 -> '|'
-                    else      -> ':'
-                }
-                setCell(cPos, rPos, gridCh, perspGridColor)
-            }
-        }
-
-        // Ocean Biome: Foreground Coral Reef, Swaying Sea Anemones & Bubbling Giant Clam!
-        if (isOceanBiome) {
-            val coralColor = TimeOfDayPalette.lerpColor(pal.fishCoral, pal.waterBgDeep, if (calmScrim) 0.55f else 0.30f)
-            val anemColor = TimeOfDayPalette.lerpColor(pal.fishRose, pal.waterBgDeep, if (calmScrim) 0.52f else 0.26f)
-            val anemSway = if (sin(simTime * 1.9f + oceanCurrent) > 0f) ") ) )" else "( ( ("
-            val leftCoralC = (2 + (pShiftCols * 0.72f).roundToInt()).coerceIn(1, 10)
-            drawStringAtGrid(leftCoralC, floorRow - 4, " \\|/ ", coralColor)
-            drawStringAtGrid(leftCoralC, floorRow - 3, " (Y) ", coralColor)
-            drawStringAtGrid(leftCoralC + 5, floorRow - 3, anemSway, anemColor)
-            drawStringAtGrid(leftCoralC + 5, floorRow - 2, "\\___/", anemColor)
-
-            val rightCoralC = (cols - 12 + (pShiftCols * 0.72f).roundToInt()).coerceIn(cols - 15, cols - 7)
-            drawStringAtGrid(rightCoralC, floorRow - 4, " \\Y/ ", coralColor)
-            drawStringAtGrid(rightCoralC, floorRow - 3, " /#\\ ", coralColor)
-
-            // Giant Seabed Clam opening & puffing occasional sparkling bubbles!
-            clamOpenPhase = (clamOpenPhase + clampedDt * 0.45f) % 6.2831855f
-            val clamCol = (cols * 0.72f + pShiftCols * 0.45f).roundToInt().coerceIn(12, cols - 14)
-            val clamOpen = sin(clamOpenPhase) > 0.65f
-            drawStringAtGrid(clamCol, floorRow - 1, if (clamOpen) "<=o=>" else "<===>", pal.pebbleFg)
-            if (clamOpen && sin(clamOpenPhase * 12f) > 0.96f) {
-                emitMouthBubble(clamCol + 2f, (floorRow - 2).toFloat(), 0.42f)
-            }
-        }
-
-        val lmCol = (landmarkColFrac * (cols - 12) + 4 + pShiftInt * 0.3f).roundToInt()
-        drawStringAtGrid(lmCol, floorRow - 3, " .^. ", pal.pebbleFg)
-        val lanternMid = if (!config.enableBatteryLantern) {
-            " [o] "
-        } else {
-            when {
-                batteryPercent >= 50 -> " [o] "
-                batteryPercent >= 20 -> " [*] "
-                else -> if (wavePhase % 2 == 0) " [!] " else " [.] "
-            }
-        }
-        val lanternCol = if (!config.enableBatteryLantern || batteryPercent >= 50) {
-            pal.fishGold
-        } else if (batteryPercent >= 20) {
-            pal.fishCoral
-        } else {
-            pal.bloodCore
-        }
-        drawStringAtGrid(lmCol, floorRow - 2, lanternMid, lanternCol)
-        drawStringAtGrid(lmCol, floorRow - 1, " /_\\ ", pal.pebbleFg)
-
-        // Reactive underwater kelp (swaying with unified oceanCurrent + parting for fish/predators!)
+        // Reactive underwater kelp physics (swaying with oceanCurrent + parting for fish/predators!)
         val activeHero = if (isBatterySaver) (config.heroFishCount - 2).coerceAtLeast(2) else config.heroFishCount
         val activeSchool = if (isBatterySaver) 2 else maxSchoolFish
         val kelpDamp = exp(-3.4f * clampedDt)
@@ -1661,31 +1364,9 @@ class PondSimulation {
             val kAccel = -14.0f * ks.bendOffset + pushForce
             ks.bendVel = ((ks.bendVel + kAccel * clampedDt) * kelpDamp).coerceIn(-8f, 8f)
             ks.bendOffset = (ks.bendOffset + ks.bendVel * clampedDt).coerceIn(-3.2f, 3.2f)
-
-            val kParallax = 0.85f - ks.zDepth * 0.62f
-            val kelpFade = (ks.zDepth * 0.64f + (if (calmScrim) 0.24f else 0f)).coerceAtMost(0.88f)
-            val kColor = TimeOfDayPalette.lerpColor(pal.kelpFg, pal.waterBgDeep, kelpFade)
-            val maxH = ks.heightRows.coerceAtMost((rootRow - splitRow - 4).coerceAtLeast(3))
-            for (h in 0 until maxH) {
-                val frac = (h + 1).toFloat() / maxH.toFloat()
-                val currentSway = sin(simTime * 1.25f + ks.phase - h * 0.42f) * (0.55f + frac * 0.95f)
-                val totalShift = (currentSway + ks.bendOffset * frac * frac).roundToInt()
-                val kc = (baseCol + pShiftCols * kParallax).roundToInt() + totalShift
-                val kr = rootRow - h
-                val ch = when {
-                    h == maxH - 1 -> if (totalShift >= 0) '/' else '\\'
-                    totalShift > 0 -> ')'
-                    totalShift < 0 -> '('
-                    (h + wavePhase) % 2 == 0 -> '|'
-                    else -> 'S'
-                }
-                setCell(kc, kr, ch, kColor)
-            }
         }
 
-        // =========================================================================
-        // 5. RISING BUBBLES, MARINE SNOW & SINKING PELLETS / HEAVY ALGAE WAFERS
-        // =========================================================================
+        // Update Rising Bubbles, Marine Snow & Sinking Pellets / Heavy Algae Wafers
         val activeBubbles = if (isBatterySaver) 10 else bubbles.size
         for (i in 0 until activeBubbles) {
             val b = bubbles[i]
@@ -1745,21 +1426,16 @@ class PondSimulation {
                 if (pel.active) {
                     activeWaferCol = pel.colX
                     activeWaferZ = pel.zDepth
-                    val wCol = TimeOfDayPalette.lerpColor(pal.lilyPadFg, pal.waterBgDeep, pel.zDepth * 0.55f)
-                    drawStringAtGrid(pel.colX.roundToInt() - 1, pel.rowY.roundToInt(), "[@]", wCol)
                 }
             } else {
                 pel.rowY += 3.2f * sinkScale * clampedDt
                 if (pel.rowY >= targetFloorAtZ) {
                     pel.active = false
-                } else {
-                    val pCol = TimeOfDayPalette.lerpColor(pal.fishGold, pal.waterBgDeep, pel.zDepth * 0.55f)
-                    setCell(pel.colX.roundToInt(), pel.rowY.roundToInt(), '*', pCol)
                 }
             }
         }
 
-        // Flush static background grid to Canvas (trims trailing spaces for leaner Skia glyph layout)
+        // Flush atmospheric ASCII particle grid (stars, glitter, weather, bubbles) to Canvas
         for (r in 0 until rows) {
             if (r < topCalmRow && isWallpaperMode && r % 2 == 1) continue
             val yPx = r * cellHeightPx + baselineOffsetPx
@@ -1795,6 +1471,225 @@ class PondSimulation {
                     canvas.drawText(rowCharScratch, 0, lastNonSpaceLen, runStart * cellWidthPx, yPx, textPaint)
                 }
             }
+        }
+
+        // =========================================================================
+        // 3. SCULPTED + MONOSPACE ASCII SCENE LAYER (Matching Fish Aesthetic!)
+        // =========================================================================
+        val refPx = refSpanPx()
+        val waterLinePx = splitRow * cellHeightPx + baselineOffsetPx * 0.35f
+        val floorLinePx = floorRow * cellHeightPx + baselineOffsetPx * 0.2f
+
+        // 3A. Sky: Sun / Lunar Moon, Drifting Clouds, Seabirds, Sailboat, Lighthouse & Whale Spout
+        val celX = celestialColFloat * cellWidthPx
+        val celY = celestialRowFloat * cellHeightPx
+        val celRadius = refPx * 0.044f
+        if (snapshot.isNight) {
+            sceneRenderer.drawMoon(
+                canvas, textPaint, celX, celY, celRadius, snapshot.lunarPhaseIndex,
+                pal.celestialGlyph, pal.skyBg, pal.isLightSurface, isTrueBlackOled, calmScrim
+            )
+        } else {
+            sceneRenderer.drawSun(
+                canvas, textPaint, celX, celY, celRadius,
+                pal.celestialGlyph, pal.skyBg, simTime, pal.isLightSurface, isTrueBlackOled, calmScrim
+            )
+        }
+
+        val cloudWrapSpan = canvas.width + refPx * 0.36f
+        val cloud1X = ((simTime * cellWidthPx * 0.9f + refPx * 0.14f + pShiftCols * cellWidthPx) % cloudWrapSpan) - refPx * 0.18f
+        val cloud1Y = (splitRow * 0.32f).coerceIn(2.5f, (splitRow - 4).toFloat()) * cellHeightPx
+        sceneRenderer.drawCloud(
+            canvas, textPaint, cloud1X, cloud1Y, refPx * 0.17f,
+            pal.cloudReedFg, pal.skyBg, pal.isLightSurface, isTrueBlackOled, calmScrim
+        )
+
+        val cloud2X = ((simTime * cellWidthPx * 0.55f + canvas.width * 0.58f + pShiftCols * cellWidthPx) % cloudWrapSpan) - refPx * 0.18f
+        val cloud2Y = (splitRow * 0.54f).coerceIn(3.5f, (splitRow - 3).toFloat()) * cellHeightPx
+        sceneRenderer.drawCloud(
+            canvas, textPaint, cloud2X, cloud2Y, refPx * 0.14f,
+            pal.cloudReedFg, pal.skyBg, pal.isLightSurface, isTrueBlackOled, calmScrim
+        )
+
+        if (isOceanBiome) {
+            if (!snapshot.isNight) {
+                val birdCount = if (isBatterySaver) 2 else seabirds.size
+                for (bIdx in 0 until birdCount) {
+                    val bird = seabirds[bIdx]
+                    val bx = (bird.colX + pShiftCols * 0.35f) * cellWidthPx
+                    val by = (splitRow * bird.rowFrac + sin(bird.flapPhase * 0.45f) * 0.85f).coerceIn(2f, (splitRow - 3.5f)) * cellHeightPx
+                    sceneRenderer.drawSeabird(
+                        canvas, bx, by, refPx * (0.042f - bIdx * 0.005f),
+                        bird.flapPhase, pal.cloudReedFg, calmScrim
+                    )
+                }
+            }
+            val boatX = (distantBoatCol + pShiftCols * 0.18f) * cellWidthPx
+            val boatColor = TimeOfDayPalette.lerpColor(pal.skyHorizonBg, pal.cloudReedFg, 0.82f)
+            sceneRenderer.drawSailboat(
+                canvas, textPaint, boatX, waterLinePx, refPx * 0.068f,
+                boatColor, pal.fishFoam, pal.skyHorizonBg, simTime, isTrueBlackOled
+            )
+
+            val lhX = ((cols - 8f) + pShiftCols * 0.12f).coerceIn(cols - 12f, cols - 4f) * cellWidthPx
+            val isDuskOrNight = snapshot.isNight || pal.phaseName == "dusk" || pal.phaseName == "sunset" || pal.phaseName == "twilight"
+            val beaconOn = isDuskOrNight && sin(simTime * 1.85f) > 0.15f
+            sceneRenderer.drawLighthouse(
+                canvas, textPaint, lhX, waterLinePx, refPx * 0.082f,
+                pal.cloudReedFg, pal.fishGold, pal.skyHorizonBg, beaconOn, simTime, isTrueBlackOled
+            )
+        } else {
+            sceneRenderer.drawShorelineReeds(canvas, cellWidthPx * 4.5f, waterLinePx, refPx * 0.075f, simTime, pal.kelpFg)
+            sceneRenderer.drawShorelineReeds(canvas, canvas.width - cellWidthPx * 4.5f, waterLinePx, refPx * 0.075f, simTime + 1.4f, pal.kelpFg)
+        }
+
+        // Whale surface blowhole water spout arc!
+        if (oceanVisitor.spoutTimer > 0f) {
+            oceanVisitor.spoutTimer = (oceanVisitor.spoutTimer - clampedDt).coerceAtLeast(0f)
+            val spX = (oceanVisitor.spoutCol + pShiftCols * 0.4f).coerceIn(4f, (cols - 5).toFloat()) * cellWidthPx
+            val frac = 1f - (oceanVisitor.spoutTimer / 2.2f).coerceIn(0f, 1f)
+            sceneRenderer.drawWhaleSpout(canvas, textPaint, spX, waterLinePx, refPx * 0.12f, frac, pal.bubbleFg)
+        }
+
+        // 3B. Underwater Landscape: Abyssal Canyon Ridge, Reef Shelf & Volumetric Sunbeams
+        val canyonBaseY = (splitRow + underwaterRows * 0.62f + pShiftRowsFloat * 0.15f).coerceIn(splitRow + 6f, floorRow - 8f) * cellHeightPx
+        sceneRenderer.drawSubmergedTerrainRidge(
+            canvas, canyonBaseY, refPx * 0.032f, 8.5f, -pShiftCols * 0.04f,
+            pal.pebbleFg, pal.waterBgDeep, if (calmScrim) 0.14f else 0.22f, isTrueBlackOled
+        )
+        val shelfBaseY = (floorRow - 7f + pShiftRowsFloat * 0.38f).coerceIn(splitRow + 10f, floorRow - 4f) * cellHeightPx
+        sceneRenderer.drawSubmergedTerrainRidge(
+            canvas, shelfBaseY, refPx * 0.022f, 12.0f, -pShiftCols * 0.09f + 1.8f,
+            pal.pebbleFg, pal.waterBgDeep, if (calmScrim) 0.22f else 0.34f, isTrueBlackOled
+        )
+
+        if (!snapshot.isNight && config.waterClarity > 0.45f) {
+            val rayCount = if (config.waterClarity > 0.78f) 4 else 2
+            sceneRenderer.drawSunbeamRibbons(
+                canvas, waterLinePx, floorLinePx, simTime, rayCount,
+                pal.sunRayFg, calmScrim, pal.isLightSurface, isTrueBlackOled
+            )
+        }
+
+        // 3C. Continuous Spring-Wave Meniscus & Zen Pond Floating Elements
+        sceneRenderer.drawMeniscusWave(
+            canvas, textPaint, cols, cellWidthPx, waterLinePx, cellHeightPx,
+            waveHeight, simTime, pal.meniscusWaveFg, pal.waterBgTop, pal.isLightSurface, isTrueBlackOled
+        )
+
+        if (!isOceanBiome) {
+            val pad1Col = (cols * 0.22f + sin(simTime * 0.6f) * 1.5f + pShiftCols)
+            val pad1BobPx = -waveHeight[pad1Col.roundToInt().coerceIn(0, cols - 1)] * cellHeightPx * 0.35f
+            sceneRenderer.drawLilyPadAndLotus(
+                canvas, textPaint, pad1Col * cellWidthPx, waterLinePx + pad1BobPx, refPx * 0.11f,
+                hasLotus = true, simTime, pal.lilyPadFg, pal.lotusFlowerFg, pal.waterBgTop, isTrueBlackOled
+            )
+            val pad2Col = (cols * 0.62f + cos(simTime * 0.5f) * 1.5f + pShiftCols)
+            val pad2BobPx = -waveHeight[pad2Col.roundToInt().coerceIn(0, cols - 1)] * cellHeightPx * 0.35f
+            sceneRenderer.drawLilyPadAndLotus(
+                canvas, textPaint, pad2Col * cellWidthPx, waterLinePx + pad2BobPx, refPx * 0.095f,
+                hasLotus = false, simTime + 1.5f, pal.lilyPadFg, pal.lotusFlowerFg, pal.waterBgTop, isTrueBlackOled
+            )
+
+            val rockX = (cols - 10.5f) * cellWidthPx
+            sceneRenderer.drawShoreRockAndAmphibian(
+                canvas, textPaint, rockX, waterLinePx, refPx * 0.105f,
+                isTurtle = shoreAmphibian.isTurtle,
+                isBlinking = sin(shoreAmphibian.blinkPhase) > 0.92f,
+                isHidden = shoreAmphibian.diveHideTimer > 0f,
+                showSplash = shoreAmphibian.diveHideTimer > 8.2f,
+                tongueOut = shoreAmphibian.tongueTimer > 0f,
+                rockColor = pal.pebbleFg,
+                amphColor = pal.lilyPadFg,
+                accentColor = pal.fishCoral,
+                eyeColor = pal.fishFoam,
+                skyBg = pal.skyHorizonBg,
+                isTrueBlackOled = isTrueBlackOled
+            )
+
+            val driftC = (surfaceDrifter.colX + pShiftCols * 0.4f)
+            val driftBobPx = -waveHeight[driftC.roundToInt().coerceIn(0, cols - 1)] * cellHeightPx * 0.35f
+            sceneRenderer.drawSurfaceDrifter(
+                canvas, driftC * cellWidthPx, waterLinePx + driftBobPx, refPx * 0.064f,
+                surfaceDrifter.isPaperBoat,
+                if (surfaceDrifter.isPaperBoat) pal.fishFoam else pal.fishCoral,
+                pal.skyHorizonBg, isTrueBlackOled
+            )
+        }
+
+        // 3D. Seabed: Sculpted Cobbles, Ocean Corals/Anemones/Giant Clam, Stone Battery Lantern, Reactive Kelp & Food Pellets
+        sceneRenderer.drawSeabedPebbles(
+            canvas, textPaint, floorLinePx, pShiftCols * cellWidthPx * 0.65f,
+            pal.pebbleFg, pal.waterBgDeep, isTrueBlackOled
+        )
+
+        if (isOceanBiome) {
+            val coralColor = TimeOfDayPalette.lerpColor(pal.fishCoral, pal.waterBgDeep, if (calmScrim) 0.48f else 0.22f)
+            val anemColor = TimeOfDayPalette.lerpColor(pal.fishRose, pal.waterBgDeep, if (calmScrim) 0.44f else 0.20f)
+            val leftCoralX = (5f + pShiftCols * 0.72f).coerceIn(3f, 12f) * cellWidthPx
+            sceneRenderer.drawCoralCluster(canvas, textPaint, leftCoralX, floorLinePx, refPx * 0.095f, coralColor, pal.waterBgDeep, isTrueBlackOled)
+            sceneRenderer.drawSeaAnemone(
+                canvas, leftCoralX + refPx * 0.095f, floorLinePx, refPx * 0.068f,
+                simTime, oceanCurrent, anemColor, pal.fishGold, pal.waterBgDeep, isTrueBlackOled
+            )
+
+            val rightCoralX = (cols - 8f + pShiftCols * 0.72f).coerceIn(cols - 13f, cols - 4f) * cellWidthPx
+            sceneRenderer.drawCoralCluster(canvas, textPaint, rightCoralX, floorLinePx, refPx * 0.085f, coralColor, pal.waterBgDeep, isTrueBlackOled)
+
+            val clamX = (cols * 0.72f + pShiftCols * 0.45f).coerceIn(12f, (cols - 14).toFloat()) * cellWidthPx
+            val clamOpenFrac = ((sin(clamOpenPhase) - 0.15f) / 0.85f).coerceIn(0f, 1f)
+            sceneRenderer.drawGiantClam(
+                canvas, textPaint, clamX, floorLinePx - 2f, refPx * 0.088f,
+                clamOpenFrac, pal.pebbleFg, pal.fishFoam, pal.waterBgDeep, isTrueBlackOled
+            )
+        }
+
+        val lmX = (landmarkColFrac * (cols - 12) + 6f + pShiftCols * 0.3f) * cellWidthPx
+        val lanternGlowCol = if (!config.enableBatteryLantern || batteryPercent >= 50) {
+            pal.fishGold
+        } else if (batteryPercent >= 20) {
+            pal.fishCoral
+        } else {
+            pal.bloodCore
+        }
+        val lowBatBlink = config.enableBatteryLantern && batteryPercent < 20 && (wavePhase % 2 == 1)
+        sceneRenderer.drawStoneLantern(
+            canvas, textPaint, lmX, floorLinePx, refPx * 0.092f,
+            pal.pebbleFg, lanternGlowCol, pal.waterBgDeep, lowBatBlink, isTrueBlackOled
+        )
+
+        for (kIdx in 0 until kelpCount) {
+            val ks = kelpStalks[kIdx]
+            val baseCol = ks.colFrac * cols
+            val rootRow = (floorRow - 1 - (ks.zDepth * 3.5f).roundToInt()).coerceIn(splitRow + 10, floorRow - 1)
+            val kParallax = 0.85f - ks.zDepth * 0.62f
+            val kelpFade = (ks.zDepth * 0.58f + (if (calmScrim) 0.22f else 0f)).coerceAtMost(0.84f)
+            val kColor = TimeOfDayPalette.lerpColor(pal.kelpFg, pal.waterBgDeep, kelpFade)
+            val maxH = ks.heightRows.coerceAtMost((rootRow - splitRow - 4).coerceAtLeast(3))
+            sceneRenderer.drawKelpRibbon(
+                canvas, textPaint,
+                (baseCol + pShiftCols * kParallax) * cellWidthPx,
+                rootRow * cellHeightPx + baselineOffsetPx * 0.3f,
+                maxH * cellHeightPx,
+                cellWidthPx, simTime, ks.phase, ks.bendOffset,
+                kColor, pal.waterBgDeep, isBatterySaver, isTrueBlackOled
+            )
+        }
+
+        // Render active sinking Food Pellets & Heavy Algae Wafers
+        for (i in pellets.indices) {
+            val pel = pellets[i]
+            if (!pel.active) continue
+            val pParallax = 0.85f - pel.zDepth * 0.60f
+            val px = (pel.colX + pShiftCols * pParallax) * cellWidthPx
+            val py = pel.rowY * cellHeightPx + baselineOffsetPx * 0.5f
+            val pColor = if (pel.isHeavyAlgaeWafer) {
+                TimeOfDayPalette.lerpColor(pal.lilyPadFg, pal.waterBgDeep, pel.zDepth * 0.50f)
+            } else {
+                TimeOfDayPalette.lerpColor(pal.fishGold, pal.waterBgDeep, pel.zDepth * 0.45f)
+            }
+            val pRadius = (refPx * (if (pel.isHeavyAlgaeWafer) 0.011f else 0.0055f) * (1.15f - pel.zDepth * 0.45f)).coerceAtLeast(2.2f)
+            sceneRenderer.drawFoodPellet(canvas, textPaint, px, py, pRadius, pel.isHeavyAlgaeWafer, pColor, pal.waterBgDeep, isTrueBlackOled)
         }
 
         val baseTextSizePx = textPaint.textSize
@@ -1879,7 +1774,7 @@ class PondSimulation {
         }
 
         // =========================================================================
-        // 6. SURFACE-SKIMMING DRAGONFLY / NIGHT FIREFLIES
+        // 6. SURFACE-SKIMMING SCULPTED DRAGONFLY / NIGHT FIREFLIES
         // =========================================================================
         surfaceInsect.phase = (surfaceInsect.phase + clampedDt * 5.5f) % 62.831855f
         surfaceInsect.colX += surfaceInsect.vx * clampedDt
@@ -1888,14 +1783,13 @@ class PondSimulation {
         surfaceInsect.rowY = (splitRow - 2.6f) + sin(surfaceInsect.phase * 0.7f) * 0.8f
 
         val insX = (surfaceInsect.colX + pShiftCols * 0.6f) * cellWidthPx
-        val insY = surfaceInsect.rowY * cellHeightPx + baselineOffsetPx
-        val insectBuf = if (snapshot.isNight) {
-            if (sin(surfaceInsect.phase * 2f) > 0f) insectNightFrameA else insectNightFrameB
-        } else {
-            if (sin(surfaceInsect.phase * 3f) > 0f) insectDayFrameA else insectDayFrameB
-        }
-        textPaint.color = if (snapshot.isNight) pal.fishRose else pal.fishAqua
-        canvas.drawText(insectBuf, 0, 3, insX, insY, textPaint)
+        val insY = surfaceInsect.rowY * cellHeightPx + baselineOffsetPx * 0.5f
+        sceneRenderer.drawSurfaceInsect(
+            canvas, textPaint, insX, insY, refPx * 0.036f,
+            surfaceInsect.phase, surfaceInsect.vx >= 0f, snapshot.isNight,
+            if (snapshot.isNight) pal.fishRose else pal.fishAqua,
+            isTrueBlackOled
+        )
 
         // =========================================================================
         // 7. NIGHTTIME BIOLUMINESCENT MOON JELLYFISH (Physics — drawn in unified Z-sort!)

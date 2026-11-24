@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Deep coastal twilight sky to midnight-lagoon ocean gradient -->
+    <path android:pathData="M0,0 H108 V108 H0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="54"
+                android:startY="0"
+                android:endX="54"
+                android:endY="108"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#163545" />
+                <item android:offset="0.40" android:color="#102C3A" />
+                <item android:offset="0.44" android:color="#0B222E" />
+                <item android:offset="1.0" android:color="#06131C" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Whisper-soft golden solar glow near the horizon -->
+    <path
+        android:fillColor="#1FFFD166"
+        android:pathData="M67,35 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0" />
+
+    <!-- Subtle diagonal sunlit underwater volumetric shaft -->
+    <path
+        android:fillColor="#0F5EEAD4"
+        android:pathData="M56,44 L74,44 L94,108 L68,108 Z" />
+</vector>
