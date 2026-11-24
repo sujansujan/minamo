@@ -148,119 +148,120 @@ object TimeOfDayPalette {
     )
 
     // =========================================================================
-    // LIGHT POLARITY STAGES (Sunlit Sumi-e Paper & Translucent Lagoon)
+    // LIGHT POLARITY STAGES (Rich Sunlit Coastal Daylight & Sea-Glass Lagoon)
+    // Tuned to medium-light atmospheric tones so daylight looks lush & restful, never glaring white.
     // =========================================================================
 
     val DAWN_LIGHT = AsciiStageColors(
         phaseName = "morning",
         isLightSurface = true,
-        skyBg = 0xFFFFF3EB.toInt(),
-        skyHorizonBg = 0xFFFFDFC7.toInt(),
-        waterBgTop = 0xFFE2F4F0.toInt(),
-        waterBgDeep = 0xFFC1E3E2.toInt(),
-        celestialGlyph = 0xFFD45218.toInt(),
-        cloudReedFg = 0xFF8C5A4C.toInt(),
-        meniscusWaveFg = 0xFF0F766E.toInt(),
-        lilyPadFg = 0xFF1A7A4C.toInt(),
-        lotusFlowerFg = 0xFFC8344B.toInt(),
-        sunRayFg = 0xFFFFFFFF.toInt(),
-        kelpFg = 0xFF1A7A4C.toInt(),
-        pebbleFg = 0xFF4A6B72.toInt(),
-        bubbleFg = 0xFF125A66.toInt(),
-        fishCoral = 0xFFC83A16.toInt(),
-        fishAqua = 0xFF0A6B72.toInt(),
-        fishGold = 0xFF9C5E00.toInt(),
-        fishFoam = 0xFF112D38.toInt(),
-        fishRose = 0xFFB32358.toInt(),
-        fishDimBg = 0xFF5A848B.toInt(),
-        shadowTint = 0xFF77A8AD.toInt(),
-        sunbeamHighlight = 0xFF8A4B00.toInt(),
-        bloodCore = 0xFFC41E3A.toInt(),
-        bloodMist = 0xFF9E2B40.toInt()
+        skyBg = 0xFFD8C6BA.toInt(),
+        skyHorizonBg = 0xFFE6B698.toInt(),
+        waterBgTop = 0xFF9AC2C0.toInt(),
+        waterBgDeep = 0xFF6F9BA1.toInt(),
+        celestialGlyph = 0xFFB83E0E.toInt(),
+        cloudReedFg = 0xFF6E4337.toInt(),
+        meniscusWaveFg = 0xFF0A5752.toInt(),
+        lilyPadFg = 0xFF135C38.toInt(),
+        lotusFlowerFg = 0xFFA32238.toInt(),
+        sunRayFg = 0xFFEAF4F1.toInt(),
+        kelpFg = 0xFF135C38.toInt(),
+        pebbleFg = 0xFF334E55.toInt(),
+        bubbleFg = 0xFF0B424D.toInt(),
+        fishCoral = 0xFFA6280C.toInt(),
+        fishAqua = 0xFF074B54.toInt(),
+        fishGold = 0xFF7A4500.toInt(),
+        fishFoam = 0xFF0D232C.toInt(),
+        fishRose = 0xFF8F1844.toInt(),
+        fishDimBg = 0xFF476F76.toInt(),
+        shadowTint = 0xFF487078.toInt(),
+        sunbeamHighlight = 0xFF6E3B00.toInt(),
+        bloodCore = 0xFFA61630.toInt(),
+        bloodMist = 0xFF822033.toInt()
     )
 
     val NOON_LIGHT = AsciiStageColors(
         phaseName = "day",
         isLightSurface = true,
-        skyBg = 0xFFEEF9F5.toInt(),
-        skyHorizonBg = 0xFFDCF2F2.toInt(),
-        waterBgTop = 0xFFD9F2EE.toInt(),
-        waterBgDeep = 0xFFB2DDE2.toInt(),
-        celestialGlyph = 0xFFC47A00.toInt(),
-        cloudReedFg = 0xFF4F757D.toInt(),
-        meniscusWaveFg = 0xFF0B726C.toInt(),
-        lilyPadFg = 0xFF157547.toInt(),
-        lotusFlowerFg = 0xFFC4321C.toInt(),
-        sunRayFg = 0xFFFFFFFF.toInt(),
-        kelpFg = 0xFF157547.toInt(),
-        pebbleFg = 0xFF3E656E.toInt(),
-        bubbleFg = 0xFF0E5A68.toInt(),
-        fishCoral = 0xFFC43814.toInt(),
-        fishAqua = 0xFF006470.toInt(),
-        fishGold = 0xFF945800.toInt(),
-        fishFoam = 0xFF0E2A33.toInt(),
-        fishRose = 0xFFB01E55.toInt(),
-        fishDimBg = 0xFF507B84.toInt(),
-        shadowTint = 0xFF6B9CA4.toInt(),
-        sunbeamHighlight = 0xFF7A4800.toInt(),
-        bloodCore = 0xFFC41E3A.toInt(),
-        bloodMist = 0xFF9A283D.toInt()
+        skyBg = 0xFFBFD3DC.toInt(),
+        skyHorizonBg = 0xFFD0E0E4.toInt(),
+        waterBgTop = 0xFF92BFC7.toInt(),
+        waterBgDeep = 0xFF6394A3.toInt(),
+        celestialGlyph = 0xFFA66200.toInt(),
+        cloudReedFg = 0xFF3C5C66.toInt(),
+        meniscusWaveFg = 0xFF085450.toInt(),
+        lilyPadFg = 0xFF105935.toInt(),
+        lotusFlowerFg = 0xFFA32414.toInt(),
+        sunRayFg = 0xFFE2F2F5.toInt(),
+        kelpFg = 0xFF105935.toInt(),
+        pebbleFg = 0xFF2B4A54.toInt(),
+        bubbleFg = 0xFF094250.toInt(),
+        fishCoral = 0xFFA8270B.toInt(),
+        fishAqua = 0xFF054954.toInt(),
+        fishGold = 0xFF784300.toInt(),
+        fishFoam = 0xFF0A1F28.toInt(),
+        fishRose = 0xFF8F1542.toInt(),
+        fishDimBg = 0xFF3C6773.toInt(),
+        shadowTint = 0xFF3D6A78.toInt(),
+        sunbeamHighlight = 0xFF633A00.toInt(),
+        bloodCore = 0xFFA61630.toInt(),
+        bloodMist = 0xFF801E32.toInt()
     )
 
     val DUSK_LIGHT = AsciiStageColors(
         phaseName = "golden",
         isLightSurface = true,
-        skyBg = 0xFFFFEFE0.toInt(),
-        skyHorizonBg = 0xFFFFCFA8.toInt(),
-        waterBgTop = 0xFFEBE2D8.toInt(),
-        waterBgDeep = 0xFFCCBFC4.toInt(),
-        celestialGlyph = 0xFFC44200.toInt(),
-        cloudReedFg = 0xFF7D4B55.toInt(),
-        meniscusWaveFg = 0xFFB04E08.toInt(),
-        lilyPadFg = 0xFF236E45.toInt(),
-        lotusFlowerFg = 0xFFB5224B.toInt(),
-        sunRayFg = 0xFFFFF4DC.toInt(),
-        kelpFg = 0xFF236E45.toInt(),
-        pebbleFg = 0xFF5E5250.toInt(),
-        bubbleFg = 0xFF2B5260.toInt(),
-        fishCoral = 0xFFBE3210.toInt(),
-        fishAqua = 0xFF0B626B.toInt(),
-        fishGold = 0xFF8C5000.toInt(),
-        fishFoam = 0xFF1B2430.toInt(),
-        fishRose = 0xFFA61D52.toInt(),
-        fishDimBg = 0xFF6E6268.toInt(),
-        shadowTint = 0xFF867885.toInt(),
-        sunbeamHighlight = 0xFF944400.toInt(),
-        bloodCore = 0xFFBA1C34.toInt(),
-        bloodMist = 0xFF8F2638.toInt()
+        skyBg = 0xFFD0B8AC.toInt(),
+        skyHorizonBg = 0xFFDBA284.toInt(),
+        waterBgTop = 0xFFAEAAA2.toInt(),
+        waterBgDeep = 0xFF80858D.toInt(),
+        celestialGlyph = 0xFFA33300.toInt(),
+        cloudReedFg = 0xFF5E3640.toInt(),
+        meniscusWaveFg = 0xFF8A3B04.toInt(),
+        lilyPadFg = 0xFF185434.toInt(),
+        lotusFlowerFg = 0xFF94183C.toInt(),
+        sunRayFg = 0xFFEEE0CC.toInt(),
+        kelpFg = 0xFF185434.toInt(),
+        pebbleFg = 0xFF423A3B.toInt(),
+        bubbleFg = 0xFF1D3E4B.toInt(),
+        fishCoral = 0xFF9E240A.toInt(),
+        fishAqua = 0xFF084852.toInt(),
+        fishGold = 0xFF6E3D00.toInt(),
+        fishFoam = 0xFF121C26.toInt(),
+        fishRose = 0xFF86153E.toInt(),
+        fishDimBg = 0xFF525660.toInt(),
+        shadowTint = 0xFF515662.toInt(),
+        sunbeamHighlight = 0xFF753500.toInt(),
+        bloodCore = 0xFF9E152B.toInt(),
+        bloodMist = 0xFF781D2F.toInt()
     )
 
     val NIGHT_LIGHT = AsciiStageColors(
         phaseName = "moonlit",
         isLightSurface = true,
-        skyBg = 0xFFE3ECF4.toInt(),
-        skyHorizonBg = 0xFFD2E1EE.toInt(),
-        waterBgTop = 0xFFD4E2EE.toInt(),
-        waterBgDeep = 0xFFB7C9DA.toInt(),
-        celestialGlyph = 0xFF8A5D00.toInt(),
-        cloudReedFg = 0xFF4A6075.toInt(),
-        meniscusWaveFg = 0xFF185B78.toInt(),
-        lilyPadFg = 0xFF1E6A52.toInt(),
-        lotusFlowerFg = 0xFFB53348.toInt(),
-        sunRayFg = 0xFFF2F8FF.toInt(),
-        kelpFg = 0xFF1E6A52.toInt(),
-        pebbleFg = 0xFF475C70.toInt(),
-        bubbleFg = 0xFF165272.toInt(),
-        fishCoral = 0xFFB83522.toInt(),
-        fishAqua = 0xFF0C5880.toInt(),
-        fishGold = 0xFF885600.toInt(),
-        fishFoam = 0xFF142434.toInt(),
-        fishRose = 0xFF6B369E.toInt(),
-        fishDimBg = 0xFF5B7186.toInt(),
-        shadowTint = 0xFF7B90A6.toInt(),
-        sunbeamHighlight = 0xFF1A4E70.toInt(),
-        bloodCore = 0xFFB81D38.toInt(),
-        bloodMist = 0xFF8E263D.toInt()
+        skyBg = 0xFFACBDCE.toInt(),
+        skyHorizonBg = 0xFF9CB1C5.toInt(),
+        waterBgTop = 0xFF91A8BE.toInt(),
+        waterBgDeep = 0xFF6E88A3.toInt(),
+        celestialGlyph = 0xFF6E4700.toInt(),
+        cloudReedFg = 0xFF34485C.toInt(),
+        meniscusWaveFg = 0xFF10455E.toInt(),
+        lilyPadFg = 0xFF15523F.toInt(),
+        lotusFlowerFg = 0xFF962238.toInt(),
+        sunRayFg = 0xFFD4E2EE.toInt(),
+        kelpFg = 0xFF15523F.toInt(),
+        pebbleFg = 0xFF314457.toInt(),
+        bubbleFg = 0xFF0E3E59.toInt(),
+        fishCoral = 0xFF992514.toInt(),
+        fishAqua = 0xFF084062.toInt(),
+        fishGold = 0xFF6B4100.toInt(),
+        fishFoam = 0xFF0D1A28.toInt(),
+        fishRose = 0xFF51247D.toInt(),
+        fishDimBg = 0xFF425970.toInt(),
+        shadowTint = 0xFF496078.toInt(),
+        sunbeamHighlight = 0xFF123C59.toInt(),
+        bloodCore = 0xFF9B162E.toInt(),
+        bloodMist = 0xFF761E33.toInt()
     )
 
     data class TimeSnapshot(
@@ -586,17 +587,17 @@ object TimeOfDayPalette {
             PaletteFamily.LAGOON -> c
             PaletteFamily.EMBER -> if (c.isLightSurface) {
                 c.copy(
-                    skyBg = lerpColor(c.skyBg, 0xFFFCF1E6.toInt(), 0.58f),
-                    skyHorizonBg = lerpColor(c.skyHorizonBg, 0xFFFFD8B8.toInt(), 0.58f),
-                    waterBgTop = lerpColor(c.waterBgTop, 0xFFF5E3D2.toInt(), 0.50f),
-                    waterBgDeep = lerpColor(c.waterBgDeep, 0xFFE3C8B2.toInt(), 0.55f),
-                    meniscusWaveFg = 0xFFB8460C.toInt(),
-                    fishCoral = 0xFFC23B0A.toInt(),
-                    fishAqua = 0xFF286E42.toInt(),
-                    fishGold = 0xFF945600.toInt(),
-                    fishRose = 0xFFA81D4D.toInt(),
-                    fishDimBg = 0xFF7A6355.toInt(),
-                    shadowTint = 0xFFA88974.toInt()
+                    skyBg = lerpColor(c.skyBg, 0xFFD5C1B0.toInt(), 0.62f),
+                    skyHorizonBg = lerpColor(c.skyHorizonBg, 0xFFDFB294.toInt(), 0.62f),
+                    waterBgTop = lerpColor(c.waterBgTop, 0xFFBBA38F.toInt(), 0.56f),
+                    waterBgDeep = lerpColor(c.waterBgDeep, 0xFF937B6A.toInt(), 0.60f),
+                    meniscusWaveFg = 0xFF963608.toInt(),
+                    fishCoral = 0xFF9E2C06.toInt(),
+                    fishAqua = 0xFF1D5432.toInt(),
+                    fishGold = 0xFF754200.toInt(),
+                    fishRose = 0xFF8C143E.toInt(),
+                    fishDimBg = 0xFF5E4A3E.toInt(),
+                    shadowTint = 0xFF6B5343.toInt()
                 )
             } else {
                 c.copy(
@@ -614,17 +615,17 @@ object TimeOfDayPalette {
             }
             PaletteFamily.MOSS -> if (c.isLightSurface) {
                 c.copy(
-                    skyBg = lerpColor(c.skyBg, 0xFFEEF7ED.toInt(), 0.58f),
-                    skyHorizonBg = lerpColor(c.skyHorizonBg, 0xFFD9EED9.toInt(), 0.58f),
-                    waterBgTop = lerpColor(c.waterBgTop, 0xFFDCF0DE.toInt(), 0.52f),
-                    waterBgDeep = lerpColor(c.waterBgDeep, 0xFFBDDAC1.toInt(), 0.56f),
-                    meniscusWaveFg = 0xFF1E703C.toInt(),
-                    fishCoral = 0xFFBA4816.toInt(),
-                    fishAqua = 0xFF106584.toInt(),
-                    fishGold = 0xFF6B7000.toInt(),
-                    fishRose = 0xFF17704B.toInt(),
-                    fishDimBg = 0xFF56735B.toInt(),
-                    shadowTint = 0xFF7EA084.toInt()
+                    skyBg = lerpColor(c.skyBg, 0xFFBDD0BE.toInt(), 0.62f),
+                    skyHorizonBg = lerpColor(c.skyHorizonBg, 0xFFAEC7B1.toInt(), 0.62f),
+                    waterBgTop = lerpColor(c.waterBgTop, 0xFF9AB89D.toInt(), 0.58f),
+                    waterBgDeep = lerpColor(c.waterBgDeep, 0xFF73967A.toInt(), 0.62f),
+                    meniscusWaveFg = 0xFF16542C.toInt(),
+                    fishCoral = 0xFF99350E.toInt(),
+                    fishAqua = 0xFF0A4E66.toInt(),
+                    fishGold = 0xFF545900.toInt(),
+                    fishRose = 0xFF115438.toInt(),
+                    fishDimBg = 0xFF405A45.toInt(),
+                    shadowTint = 0xFF4F6E55.toInt()
                 )
             } else {
                 c.copy(
@@ -643,10 +644,10 @@ object TimeOfDayPalette {
             PaletteFamily.AMOLED -> {
                 if (c.isLightSurface && (themeMode == ThemeMode.SOLAR || themeMode == ThemeMode.LIGHT)) {
                     c.copy(
-                        skyBg = 0xFFFFFFFF.toInt(),
-                        skyHorizonBg = 0xFFF2FAF8.toInt(),
-                        waterBgTop = 0xFFF2FAF8.toInt(),
-                        waterBgDeep = 0xFFDCEEEB.toInt()
+                        skyBg = 0xFFC8D5D4.toInt(),
+                        skyHorizonBg = 0xFFBACDCB.toInt(),
+                        waterBgTop = 0xFF9AB9B8.toInt(),
+                        waterBgDeep = 0xFF75989B.toInt()
                     )
                 } else {
                     c.copy(
@@ -693,7 +694,7 @@ object TimeOfDayPalette {
             return opaqueFg
         }
         val bgLum = ColorUtils.calculateLuminance(opaqueBg)
-        val darkenTarget = bgLum > 0.36
+        val darkenTarget = bgLum > 0.28
         val hsl = FloatArray(3)
         ColorUtils.colorToHSL(opaqueFg, hsl)
 
