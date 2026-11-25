@@ -987,7 +987,6 @@ class PondSimulation {
                     val dir = if (oceanVisitor.vxDir >= 0f) 1f else -1f
                     oceanVisitor.spoutTimer = 2.4f
                     oceanVisitor.spoutCol = (centerCol + sw * 0.22f * dir).coerceIn(6f, (gridCols - 7).toFloat())
-                    oceanVisitor.hasSpouted = true
                     injectSurfaceRipple(oceanVisitor.spoutCol, 4.4f)
                     emitMouthBubble(oceanVisitor.spoutCol - 0.8f, mem.rowY - 1.5f, mem.zDepth)
                     emitMouthBubble(oceanVisitor.spoutCol + 0.8f, mem.rowY - 2.0f, mem.zDepth)
