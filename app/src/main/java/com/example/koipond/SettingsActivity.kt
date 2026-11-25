@@ -277,7 +277,7 @@ class SettingsActivity : AppCompatActivity() {
             repository.recordCrownKoiLevelUp(speciesName)
             val cGold = ContextCompat.getColor(this, R.color.ascii_accent3)
             textHuntStatus.setTextColor(cGold)
-            textHuntStatus.text = "event ... ^ " + speciesName + " leveled up to elder crown!"
+            textHuntStatus.text = "event ... * " + speciesName + " earned golden fins!"
             updateTelemetryBox()
         }
 

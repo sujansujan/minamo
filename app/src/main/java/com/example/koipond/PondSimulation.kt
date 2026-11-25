@@ -84,8 +84,8 @@ enum class OceanVisitorSpecies(
     val bodyPlan: BodyPlan,
     val marking: MarkingStyle
 ) {
-    HUMPBACK_WHALE(0, "humpback whale", 3.4f, 1, 3, 0.34f, 0.58f, false, true, 1, 0.460f, 0.26f, BodyPlan.WHALE, MarkingStyle.WHALE_PLEATS),
-    ORCA(1, "orca whale", 5.2f, 3, 1, 0.24f, 0.52f, false, true, 1, 0.330f, 0.28f, BodyPlan.ORCA, MarkingStyle.ORCA_PATCHES),
+    HUMPBACK_WHALE(0, "humpback whale", 3.4f, 1, 3, 0.34f, 0.58f, false, true, 1, 0.460f, 0.26f, BodyPlan.WHALE, MarkingStyle.NONE),
+    ORCA(1, "orca whale", 5.2f, 1, 3, 0.24f, 0.52f, false, true, 1, 0.330f, 0.28f, BodyPlan.ORCA, MarkingStyle.NONE),
     DOLPHIN_POD(2, "bottlenose dolphin pod", 9.6f, 1, 3, 0.16f, 0.38f, true, false, 3, 0.195f, 0.30f, BodyPlan.DOLPHIN, MarkingStyle.NONE),
     WHALE_SHARK(3, "whale shark", 3.8f, 1, 2, 0.30f, 0.56f, false, false, 1, 0.380f, 0.26f, BodyPlan.SHARK, MarkingStyle.SPOTS),
     GIANT_MANTA(4, "giant oceanic manta", 4.5f, 3, 1, 0.22f, 0.54f, false, false, 2, 0.265f, 0.48f, BodyPlan.RAY, MarkingStyle.NONE),
@@ -468,9 +468,6 @@ class PondSimulation {
     private val colorGrid = IntArray(maxCols * maxRows)
     private val rowCharScratch = CharArray(maxCols)
     private val singleCharBuf = CharArray(1)
-    private val shadowCharsNear = charArrayOf('.', '=', '=', '=', '.')
-    private val shadowCharsFar  = charArrayOf('.', '.', '.')
-    private val reflectChars    = charArrayOf('~', '.', '.', '~')
 
     // 1D Interactive Waterline Wave Heightfield
     private val waveHeight = FloatArray(maxCols)
@@ -514,6 +511,11 @@ class PondSimulation {
     )
     private var distantBoatCol = 18f
     private var clamOpenPhase = 0f
+    private var clamSnapTimer = 0f
+    private var lighthouseFlashTimer = 0f
+    private var lanternPulseTimer = 0f
+    private var chargingBubbleCooldown = 0f
+    private var lastIsOceanBiome = true
     private val bioPlankton = Array(28) { BioPlankton() }
     private var nextPlanktonIdx = 0
 
@@ -743,7 +745,7 @@ class PondSimulation {
             f.offscreenTimer = 0f
             if (!keepElder) {
                 f.pelletsEaten = 0
-                f.isElderCrown = (i == 0 && rand.nextFloat() < 0.25f)
+                f.isElderCrown = false
             }
             f.burstPhase = rand.nextFloat() * 6.2831855f
             f.hoverTimer = 0f
@@ -968,9 +970,57 @@ class PondSimulation {
         val c = (screenX / cellWidthPx).coerceIn(2f, (gridCols - 3).toFloat())
         val r = (screenY / cellHeightPx).coerceIn(2f, (gridRows - 4).toFloat())
 
-        if (abs(c - (gridCols - 9)) < 8f && abs(r - waterlineRow) < 6f && shoreAmphibian.diveHideTimer <= 0f) {
+        if (!lastIsOceanBiome && abs(c - (gridCols - 9)) < 8f && abs(r - waterlineRow) < 6f && shoreAmphibian.diveHideTimer <= 0f) {
             shoreAmphibian.diveHideTimer = 9.0f
             injectSurfaceRipple((gridCols - 10).toFloat(), 5.2f)
+            return
+        }
+
+        // Tactile Easter Egg 1: Tap a passing Whale or Orca to trigger an immediate blowhole spout!
+        if (oceanVisitor.active && oceanVisitor.species.canSpout) {
+            val sp = oceanVisitor.species
+            for (m in 0 until oceanVisitor.memberCount) {
+                val mem = oceanVisitor.members[m]
+                val sw = spanCols(sp.lengthFrac, mem.zDepth)
+                val centerCol = mem.colX + sw * 0.5f
+                if (abs(c - centerCol) < (sw * 0.56f + 2.0f) && abs(r - mem.rowY) < 6.0f) {
+                    val dir = if (oceanVisitor.vxDir >= 0f) 1f else -1f
+                    oceanVisitor.spoutTimer = 2.4f
+                    oceanVisitor.spoutCol = (centerCol + sw * 0.22f * dir).coerceIn(6f, (gridCols - 7).toFloat())
+                    oceanVisitor.hasSpouted = true
+                    injectSurfaceRipple(oceanVisitor.spoutCol, 4.4f)
+                    emitMouthBubble(oceanVisitor.spoutCol - 0.8f, mem.rowY - 1.5f, mem.zDepth)
+                    emitMouthBubble(oceanVisitor.spoutCol + 0.8f, mem.rowY - 2.0f, mem.zDepth)
+                    return
+                }
+            }
+        }
+
+        // Tactile Easter Egg 2: Tap the coastal Lighthouse to flash a golden beacon sweep!
+        if (lastIsOceanBiome && abs(c - (gridCols - 8f)) < 6.5f && abs(r - (waterlineRow - 2.5f)) < 6.0f) {
+            lighthouseFlashTimer = 2.8f
+            return
+        }
+
+        // Tactile Easter Egg 3: Tap the Giant Clam to snap its shell shut with a burst of pearl bubbles!
+        val tapFloorRow = (gridRows - 2).toFloat()
+        if (lastIsOceanBiome) {
+            val clamCol = (gridCols * 0.72f).coerceIn(12f, (gridCols - 14).toFloat())
+            if (abs(c - clamCol) < 6.5f && abs(r - (tapFloorRow - 1.5f)) < 5.5f) {
+                clamSnapTimer = 2.8f
+                emitMouthBubble(clamCol - 1.0f, tapFloorRow - 2.2f, 0.35f)
+                emitMouthBubble(clamCol, tapFloorRow - 2.8f, 0.30f)
+                emitMouthBubble(clamCol + 1.0f, tapFloorRow - 2.2f, 0.35f)
+                return
+            }
+        }
+
+        // Tactile Easter Egg 4: Tap the underwater Stone Lantern to emit a warm glowing pulse ring!
+        val lanternCol = landmarkColFrac * (gridCols - 12) + 6f
+        if (abs(c - lanternCol) < 6.0f && abs(r - (tapFloorRow - 2.2f)) < 6.0f) {
+            lanternPulseTimer = 1.6f
+            emitMouthBubble(lanternCol - 0.6f, tapFloorRow - 3.2f, 0.42f)
+            emitMouthBubble(lanternCol + 0.6f, tapFloorRow - 3.6f, 0.42f)
             return
         }
 
@@ -1069,7 +1119,8 @@ class PondSimulation {
         isWallpaperMode: Boolean,
         batteryPercent: Int = 85,
         isSystemDark: Boolean = true,
-        previewHourOverride: Float? = null
+        previewHourOverride: Float? = null,
+        isCharging: Boolean = false
     ) {
         val clampedDt = dt.coerceIn(0.001f, 0.05f)
         simTime += clampedDt
@@ -1107,6 +1158,18 @@ class PondSimulation {
         val underwaterRows = (rows - splitRow).coerceAtLeast(1)
         val isTrueBlackOled = (config.paletteFamily == PaletteFamily.AMOLED && !pal.isLightSurface)
         val isOceanBiome = (config.sceneBiome == SceneBiome.OCEAN)
+        lastIsOceanBiome = isOceanBiome
+        if (clamSnapTimer > 0f) clamSnapTimer = (clamSnapTimer - clampedDt).coerceAtLeast(0f)
+        if (lighthouseFlashTimer > 0f) lighthouseFlashTimer = (lighthouseFlashTimer - clampedDt).coerceAtLeast(0f)
+        if (lanternPulseTimer > 0f) lanternPulseTimer = (lanternPulseTimer - clampedDt).coerceAtLeast(0f)
+        if (isCharging && config.enableBatteryLantern) {
+            chargingBubbleCooldown -= clampedDt
+            if (chargingBubbleCooldown <= 0f) {
+                chargingBubbleCooldown = 2.6f
+                val lanternCol = landmarkColFrac * (cols - 12) + 6f
+                emitMouthBubble(lanternCol + sin(simTime) * 0.6f, (floorRow - 3.0f).toFloat(), 0.45f)
+            }
+        }
         val calmScrim = (isWallpaperMode && config.calmIconMode)
         // Unified slow ocean swell current (~38s rhythm) swaying kelp, jellies, bubbles & marine snow together
         val oceanCurrent = sin(simTime * 0.16f) * 0.75f + cos(simTime * 0.09f) * 0.45f
@@ -1555,7 +1618,8 @@ class PondSimulation {
             )
             sceneRenderer.drawLighthouse(
                 canvas, textPaint, lhX, waterLinePx, refPx * 0.070f,
-                pal.cloudReedFg, pal.fishGold, pal.skyHorizonBg, beaconOn, simTime, isTrueBlackOled
+                pal.cloudReedFg, pal.fishGold, pal.skyHorizonBg, beaconOn, simTime, isTrueBlackOled,
+                extraFlash = lighthouseFlashTimer > 0f
             )
         } else {
             sceneRenderer.drawShorelineReeds(canvas, cellWidthPx * 4.5f, waterLinePx, refPx * 0.065f, simTime, pal.kelpFg)
@@ -1625,7 +1689,7 @@ class PondSimulation {
         sceneRenderer.drawSurfaceReflections(
             canvas, waterLinePx, celX,
             if (snapshot.isNight) pal.bubbleFg else pal.celestialGlyph,
-            lhX, beaconOn, pal.fishGold,
+            lhX, beaconOn || lighthouseFlashTimer > 0f, pal.fishGold,
             refPx, simTime, calmScrim, isTrueBlackOled
         )
 
@@ -1684,7 +1748,7 @@ class PondSimulation {
 
         if (isOceanBiome) {
             val clamX = (cols * 0.72f + pShiftCols * 0.45f).coerceIn(12f, (cols - 14).toFloat()) * cellWidthPx
-            val clamOpenFrac = ((sin(clamOpenPhase) - 0.15f) / 0.85f).coerceIn(0f, 1f)
+            val clamOpenFrac = if (clamSnapTimer > 0f) 0f else ((sin(clamOpenPhase) - 0.15f) / 0.85f).coerceIn(0f, 1f)
             sceneRenderer.drawGiantClam(
                 canvas, textPaint, clamX, floorLinePx - 2f, refPx * 0.072f,
                 clamOpenFrac, pal.pebbleFg, pal.fishFoam, pal.waterBgDeep, isTrueBlackOled
@@ -1702,7 +1766,10 @@ class PondSimulation {
         val lowBatBlink = config.enableBatteryLantern && batteryPercent < 20 && (wavePhase % 2 == 1)
         sceneRenderer.drawStoneLantern(
             canvas, textPaint, lmX, floorLinePx, refPx * 0.076f,
-            pal.pebbleFg, lanternGlowCol, pal.waterBgDeep, lowBatBlink, isTrueBlackOled
+            pal.pebbleFg, lanternGlowCol, pal.waterBgDeep, lowBatBlink, isTrueBlackOled,
+            pulseFrac = (lanternPulseTimer / 1.6f).coerceIn(0f, 1f),
+            isCharging = isCharging && config.enableBatteryLantern,
+            simTime = simTime
         )
 
         // Render active sinking Food Pellets & Heavy Algae Wafers
@@ -2692,29 +2759,31 @@ class PondSimulation {
 
                     if (drawCol + sw < -2f || drawCol > cols + 2f) continue
 
-                    // 1. Cast Polarity-Aware 3D Drop-Shadow onto the Sloped Seabed
+                    // 1. Cast Sculpted Soft Seabed Drop-Shadow onto the Sloped Floor
                     val distFromFloor = floorRow - f.rowY
-                    if (distFromFloor in 2.5f..42.0f) {
-                        val shadowRowFloat = (floorRow - 0.5f - effectiveZ * 3.8f).coerceIn((floorRow - 4.5f), (floorRow - 0.4f))
+                    if (distFromFloor in 2.0f..46.0f) {
+                        val shadowRowFloat = (floorRow - 0.4f - effectiveZ * 3.6f).coerceIn((floorRow - 4.4f), (floorRow - 0.3f))
                         val sunOffsetCols = (distFromFloor * 0.14f)
-                        val shadowColFloat = (drawCol + sunOffsetCols + sw * 0.2f).coerceIn(2f, (cols - 6).toFloat())
-                        textPaint.color = TimeOfDayPalette.lerpColor(pal.waterBgDeep, pal.shadowTint, (1f - effectiveZ * 0.6f) * 0.65f)
-                        val sBuf = if (effectiveZ < 0.45f && !f.isSchooler) shadowCharsNear else shadowCharsFar
-                        canvas.drawText(sBuf, 0, sBuf.size, shadowColFloat * cellWidthPx, shadowRowFloat * cellHeightPx + baselineOffsetPx, textPaint)
+                        val shadowCx = (drawCol + sw * 0.5f + sunOffsetCols) * cellWidthPx
+                        val shadowHalfW = creatureLengthPx(f.species.lengthFrac, effectiveZ) * 0.42f * (0.55f + 0.45f * abs(cosYaw))
+                        val shadowMix = (1f - effectiveZ * 0.55f) * (1f - distFromFloor / 58.0f).coerceIn(0.25f, 1f)
+                        sceneRenderer.drawCreatureShadow(
+                            canvas, shadowCx, shadowRowFloat * cellHeightPx, shadowHalfW,
+                            pal.shadowTint, pal.waterBgDeep, shadowMix, isTrueBlackOled
+                        )
                     }
 
-                    // 2. Underside Meniscus Reflection when swimming near the surface
+                    // 2. Soft Shimmering Underside Meniscus Reflection when swimming near the surface
                     val distFromSurface = f.rowY - splitRow
-                    if (distFromSurface in 2.5f..18.0f) {
-                        val reflectRowFloat = splitRow + 1.1f + (distFromSurface * 0.08f)
-                        val reflectColFloat = (drawCol + sw * 0.2f).coerceIn(2f, (cols - 6).toFloat())
-                        val reflectAlphaMix = (1f - distFromSurface / 18.0f) * (1f - effectiveZ * 0.5f) * 0.55f
-                        textPaint.color = TimeOfDayPalette.lerpColor(
-                            pal.waterBgTop,
-                            resolveRoleColor(f.species.primaryRole),
-                            reflectAlphaMix
+                    if (distFromSurface in 2.0f..18.0f) {
+                        val reflectRowFloat = splitRow + 0.9f + (distFromSurface * 0.08f)
+                        val reflectCx = (drawCol + sw * 0.5f) * cellWidthPx
+                        val reflectHalfW = creatureLengthPx(f.species.lengthFrac, effectiveZ) * 0.38f
+                        val reflectAlphaMix = (1f - distFromSurface / 18.0f) * (1f - effectiveZ * 0.5f) * 0.65f
+                        sceneRenderer.drawCreatureSurfaceReflection(
+                            canvas, reflectCx, reflectRowFloat * cellHeightPx, reflectHalfW,
+                            resolveRoleColor(f.species.primaryRole), pal.waterBgTop, reflectAlphaMix, simTime, isTrueBlackOled
                         )
-                        canvas.drawText(reflectChars, 0, reflectChars.size, reflectColFloat * cellWidthPx, reflectRowFloat * cellHeightPx + baselineOffsetPx, textPaint)
                     }
 
                     // 3. Diagonal sunbeam shaft highlight check
@@ -2749,14 +2818,6 @@ class PondSimulation {
                         animPhase = f.animPhase
                     )
 
-                    if (f.isElderCrown) {
-                        val sh = spanRows(f.species.lengthFrac, f.species.aspectRatio, effectiveZ)
-                        val crownCol = drawCol + sw * 0.45f
-                        val crownRow = parallaxDrawRow - (sh * 0.65f) - 0.4f
-                        textPaint.color = pal.fishGold
-                        drawCharZeroAlloc(canvas, '^', crownCol * cellWidthPx, crownRow * cellHeightPx + baselineOffsetPx, textPaint)
-                    }
-
                     if (f.isEvading || f.startleTimer > 0f) {
                         val wakeCol = if (f.facingDir >= 0) drawCol - 1.5f else drawCol + sw + 0.5f
                         textPaint.color = pal.bubbleFg
@@ -2768,12 +2829,40 @@ class PondSimulation {
                     val mem = oceanVisitor.members[itemIdx]
                     val vFacingRight = oceanVisitor.vxDir >= 0f
                     val vParallax = 1.0f - mem.zDepth * 0.85f
+                    val vDrawCol = mem.colX + pShiftCols * vParallax
+                    val vDrawRow = mem.rowY + pShiftRowsFloat * vParallax
+                    val vSw = spanCols(sp.lengthFrac, mem.zDepth)
+
+                    // Majestic sweeping seabed shadow cast by Whales, Orcas, Whale Sharks, Mantas & Dolphins!
+                    if (mem.rowY > splitRow) {
+                        val vDistFloor = (floorRow - mem.rowY).coerceAtLeast(2f)
+                        val vShadowRow = (floorRow - 0.5f - mem.zDepth * 3.4f).coerceIn(floorRow - 4.2f, floorRow - 0.4f)
+                        val vShadowCx = (vDrawCol + vSw * 0.5f + vDistFloor * 0.14f) * cellWidthPx
+                        val vShadowHalfW = creatureLengthPx(sp.lengthFrac, mem.zDepth) * 0.46f
+                        val vShadowMix = (1f - mem.zDepth * 0.45f) * 0.82f
+                        sceneRenderer.drawCreatureShadow(
+                            canvas, vShadowCx, vShadowRow * cellHeightPx, vShadowHalfW,
+                            pal.shadowTint, pal.waterBgDeep, vShadowMix, isTrueBlackOled
+                        )
+                        val vDistSurf = mem.rowY - splitRow
+                        if (vDistSurf in 2.0f..18.0f) {
+                            sceneRenderer.drawCreatureSurfaceReflection(
+                                canvas, (vDrawCol + vSw * 0.5f) * cellWidthPx,
+                                (splitRow + 0.9f + vDistSurf * 0.08f) * cellHeightPx,
+                                creatureLengthPx(sp.lengthFrac, mem.zDepth) * 0.40f,
+                                resolveRoleColor(sp.bodyRole), pal.waterBgTop,
+                                (1f - vDistSurf / 18.0f) * (1f - mem.zDepth * 0.45f) * 0.55f,
+                                simTime, isTrueBlackOled
+                            )
+                        }
+                    }
+
                     // Subtle 3D yaw angle when drifting gently closer/deeper
                     val vSinYaw = (mem.vz * 12f).coerceIn(-0.45f, 0.45f)
                     val vCosYaw = if (vFacingRight) 0.92f else -0.92f
                     drawMarineCreature(
-                        colFloat = mem.colX + pShiftCols * vParallax,
-                        rowFloat = mem.rowY + pShiftRowsFloat * vParallax,
+                        colFloat = vDrawCol,
+                        rowFloat = vDrawRow,
                         lengthFrac = sp.lengthFrac,
                         aspectRatio = sp.aspectRatio,
                         plan = sp.bodyPlan,
@@ -2851,6 +2940,17 @@ class PondSimulation {
                     val legDrawRow = (legendary.rowY + pShiftRowsFloat * legParallax).coerceIn(minFishRow, maxFishRow)
                     val legFacingRight = legendary.vxDir >= 0f
 
+                    val legDistFloor = floorRow - legendary.rowY
+                    if (legDistFloor in 2.0f..56.0f) {
+                        val legShadowRow = (floorRow - 0.5f - legendary.zDepth * 3.6f).coerceIn(floorRow - 4.4f, floorRow - 0.4f)
+                        val legShadowCx = (legDrawCol + legWidth * 0.5f + legDistFloor * 0.14f) * cellWidthPx
+                        sceneRenderer.drawCreatureShadow(
+                            canvas, legShadowCx, legShadowRow * cellHeightPx,
+                            creatureLengthPx(legendary.species.lengthFrac, legendary.zDepth) * 0.44f,
+                            pal.shadowTint, pal.waterBgDeep, (1f - legendary.zDepth * 0.50f) * 0.78f, isTrueBlackOled
+                        )
+                    }
+
                     drawMarineCreature(
                         colFloat = legDrawCol,
                         rowFloat = legDrawRow,
@@ -2879,11 +2979,15 @@ class PondSimulation {
                     val predDrawRow = (predator.rowY + pShiftRowsFloat * predParallax).coerceIn(minFishRow, maxFishRow)
 
                     val pDistFloor = floorRow - predator.rowY
-                    if (pDistFloor in 2.0f..48.0f) {
-                        val pShadowRow = (floorRow - 0.5f - predator.zDepth * 3.8f).coerceIn((floorRow - 4.5f), (floorRow - 0.4f))
-                        val pShadowCol = (predDrawCol + pDistFloor * 0.14f + 3f).coerceIn(2f, (cols - 7).toFloat())
-                        textPaint.color = TimeOfDayPalette.lerpColor(pal.waterBgDeep, pal.shadowTint, (1f - predator.zDepth * 0.55f) * 0.72f)
-                        canvas.drawText(shadowCharsNear, 0, shadowCharsNear.size, pShadowCol * cellWidthPx, pShadowRow * cellHeightPx + baselineOffsetPx, textPaint)
+                    if (pDistFloor in 2.0f..52.0f) {
+                        val pSw = spanCols(predator.species.lengthFrac, predator.zDepth)
+                        val pShadowRow = (floorRow - 0.5f - predator.zDepth * 3.6f).coerceIn((floorRow - 4.4f), (floorRow - 0.4f))
+                        val pShadowCx = (predDrawCol + pSw * 0.5f + pDistFloor * 0.14f) * cellWidthPx
+                        sceneRenderer.drawCreatureShadow(
+                            canvas, pShadowCx, pShadowRow * cellHeightPx,
+                            creatureLengthPx(predator.species.lengthFrac, predator.zDepth) * 0.44f,
+                            pal.shadowTint, pal.waterBgDeep, (1f - predator.zDepth * 0.52f) * 0.80f, isTrueBlackOled
+                        )
                     }
 
                     val predBodyColor = when {

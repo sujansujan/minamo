@@ -312,30 +312,40 @@ class OceanSceneRenderer {
         skyHorizonBg: Int,
         beaconOn: Boolean,
         simTime: Float,
-        isTrueBlackOled: Boolean
+        isTrueBlackOled: Boolean,
+        extraFlash: Boolean = false
     ) {
         val baseW = heightPx * 0.92f
         val towerW = heightPx * 0.24f
         val topY = waterY - heightPx
+        val showBeacon = beaconOn || extraFlash
 
-        // Soft glowing rotating light beam cones at dusk/night!
-        if (beaconOn && !isTrueBlackOled) {
-            val beamSpread = heightPx * (1.8f + 0.35f * sin(simTime * 2.5f))
+        // Soft glowing rotating light beam cones at dusk/night (or extra vivid pulse when tapped!)
+        if (showBeacon) {
+            val beamSpread = heightPx * (if (extraFlash) 2.55f else 1.8f + 0.35f * sin(simTime * 2.5f))
             val beamY = topY + heightPx * 0.12f
-            fillPaint.color = (beaconColor and 0x00FFFFFF) or (42 shl 24)
-            shapePath.reset()
-            shapePath.moveTo(cx, beamY)
-            shapePath.lineTo(cx - beamSpread, beamY - heightPx * 0.28f)
-            shapePath.lineTo(cx - beamSpread, beamY + heightPx * 0.24f)
-            shapePath.close()
-            canvas.drawPath(shapePath, fillPaint)
+            if (!isTrueBlackOled) {
+                val beamAlpha = if (extraFlash) 76 else 42
+                fillPaint.color = (beaconColor and 0x00FFFFFF) or (beamAlpha shl 24)
+                shapePath.reset()
+                shapePath.moveTo(cx, beamY)
+                shapePath.lineTo(cx - beamSpread, beamY - heightPx * 0.30f)
+                shapePath.lineTo(cx - beamSpread, beamY + heightPx * 0.26f)
+                shapePath.close()
+                canvas.drawPath(shapePath, fillPaint)
 
-            shapePath.reset()
-            shapePath.moveTo(cx, beamY)
-            shapePath.lineTo(cx + beamSpread * 0.7f, beamY - heightPx * 0.22f)
-            shapePath.lineTo(cx + beamSpread * 0.7f, beamY + heightPx * 0.18f)
-            shapePath.close()
-            canvas.drawPath(shapePath, fillPaint)
+                shapePath.reset()
+                shapePath.moveTo(cx, beamY)
+                shapePath.lineTo(cx + beamSpread * 0.72f, beamY - heightPx * 0.24f)
+                shapePath.lineTo(cx + beamSpread * 0.72f, beamY + heightPx * 0.20f)
+                shapePath.close()
+                canvas.drawPath(shapePath, fillPaint)
+            } else if (extraFlash) {
+                strokePaint.strokeWidth = 1.25f
+                strokePaint.color = (beaconColor and 0x00FFFFFF) or (145 shl 24)
+                canvas.drawLine(cx, beamY, cx - beamSpread * 0.85f, beamY - heightPx * 0.16f, strokePaint)
+                canvas.drawLine(cx, beamY, cx - beamSpread * 0.85f, beamY + heightPx * 0.14f, strokePaint)
+            }
         }
 
         strokePaint.strokeWidth = 1.25f
@@ -367,16 +377,21 @@ class OceanSceneRenderer {
         detailPath.moveTo(cx - towerW * 0.56f, topY + heightPx * 0.20f)
         detailPath.quadTo(cx, topY - heightPx * 0.02f, cx + towerW * 0.56f, topY + heightPx * 0.20f)
         detailPath.close()
-        fillPaint.color = solidTint(skyHorizonBg, if (beaconOn) beaconColor else towerColor, 0.55f, isTrueBlackOled)
+        fillPaint.color = solidTint(skyHorizonBg, if (showBeacon) beaconColor else towerColor, 0.55f, isTrueBlackOled)
         canvas.drawPath(detailPath, fillPaint)
         canvas.drawPath(detailPath, strokePaint)
 
-        if (beaconOn) {
+        if (showBeacon) {
             val prevSize = textPaint.textSize
-            textPaint.textSize = (heightPx * 0.32f).coerceIn(8f, prevSize)
+            textPaint.textSize = (heightPx * (if (extraFlash) 0.38f else 0.32f)).coerceIn(8f, prevSize)
             textPaint.color = beaconColor
             drawChar(canvas, '*', cx - textPaint.textSize * 0.28f, topY + heightPx * 0.24f, textPaint)
             textPaint.textSize = prevSize
+            if (extraFlash) {
+                strokePaint.color = (beaconColor and 0x00FFFFFF) or (165 shl 24)
+                strokePaint.strokeWidth = 1.2f
+                canvas.drawCircle(cx, topY + heightPx * 0.14f, heightPx * 0.28f, strokePaint)
+            }
         }
     }
 
@@ -1032,20 +1047,47 @@ class OceanSceneRenderer {
         glowColor: Int,
         waterBgDeep: Int,
         isLowBatteryBlink: Boolean,
-        isTrueBlackOled: Boolean
+        isTrueBlackOled: Boolean,
+        pulseFrac: Float = 0f,
+        isCharging: Boolean = false,
+        simTime: Float = 0f
     ) {
         val hw = heightPx * 0.44f
         val roofY = floorY - heightPx * 0.72f
         val boxTopY = roofY + heightPx * 0.06f
         val boxBotY = floorY - heightPx * 0.32f
+        val chamberCy = (boxTopY + boxBotY) * 0.5f
 
         strokePaint.strokeWidth = 1.35f
         strokePaint.color = (stoneColor and 0x00FFFFFF) or (205 shl 24)
 
-        // Soft glowing underwater lantern aura
-        if (!isTrueBlackOled && !isLowBatteryBlink) {
-            fillPaint.color = (glowColor and 0x00FFFFFF) or (34 shl 24)
-            canvas.drawCircle(cx, (boxTopY + boxBotY) * 0.5f, heightPx * 0.56f, fillPaint)
+        // Soft glowing underwater lantern aura (breathes warmly while device is charging!)
+        if (!isLowBatteryBlink) {
+            val chargeBreathe = if (isCharging) (0.5f + 0.5f * sin(simTime * 2.4f)) else 0f
+            if (!isTrueBlackOled) {
+                val auraAlpha = if (isCharging) (42 + (chargeBreathe * 34f).toInt()) else 34
+                val auraRadius = heightPx * (if (isCharging) (0.62f + chargeBreathe * 0.26f) else 0.56f)
+                fillPaint.color = (glowColor and 0x00FFFFFF) or (auraAlpha shl 24)
+                canvas.drawCircle(cx, chamberCy, auraRadius, fillPaint)
+            } else if (isCharging) {
+                strokePaint.color = (glowColor and 0x00FFFFFF) or ((75 + (chargeBreathe * 65f).toInt()) shl 24)
+                strokePaint.strokeWidth = 1.15f
+                canvas.drawCircle(cx, chamberCy, heightPx * (0.42f + chargeBreathe * 0.22f), strokePaint)
+                strokePaint.color = (stoneColor and 0x00FFFFFF) or (205 shl 24)
+                strokePaint.strokeWidth = 1.35f
+            }
+        }
+
+        // Expanding golden underwater pulse ring when tapped!
+        if (pulseFrac > 0.01f) {
+            val progress = 1f - pulseFrac.coerceIn(0f, 1f)
+            val ringR = heightPx * (0.34f + progress * 1.45f)
+            val ringAlpha = (pulseFrac * 195f).toInt().coerceIn(0, 200)
+            strokePaint.color = (glowColor and 0x00FFFFFF) or (ringAlpha shl 24)
+            strokePaint.strokeWidth = (1.8f * pulseFrac).coerceAtLeast(0.8f)
+            canvas.drawCircle(cx, chamberCy, ringR, strokePaint)
+            strokePaint.color = (stoneColor and 0x00FFFFFF) or (205 shl 24)
+            strokePaint.strokeWidth = 1.35f
         }
 
         // Pedestal base
@@ -1387,5 +1429,70 @@ class OceanSceneRenderer {
                 canvas.drawOval(lhX + driftX - halfW, y - 1.8f, lhX + driftX + halfW, y + 1.8f, fillPaint)
             }
         }
+    }
+
+    /**
+     * Sculpted soft elliptical seabed drop shadow cast by fish, sharks, whales, orcas, rays & legendaries!
+     * Replaces legacy ASCII `.===.` / `...` shadow text while keeping AMOLED pure black.
+     */
+    fun drawCreatureShadow(
+        canvas: Canvas,
+        cx: Float,
+        shadowY: Float,
+        halfWidthPx: Float,
+        shadowColor: Int,
+        waterBgDeep: Int,
+        alphaMix: Float,
+        isTrueBlackOled: Boolean
+    ) {
+        if (isTrueBlackOled) return
+        val clampedMix = alphaMix.coerceIn(0f, 1f)
+        if (clampedMix <= 0.04f || halfWidthPx < 3f) return
+        val rx = halfWidthPx.coerceAtLeast(4f)
+        val ry = (rx * 0.19f).coerceIn(2.2f, 16f)
+        val tintedShadow = TimeOfDayPalette.lerpColor(waterBgDeep, shadowColor, 0.72f)
+
+        // Outer soft penumbra
+        val outerAlpha = (clampedMix * 56f).toInt().coerceIn(8, 68)
+        fillPaint.color = (tintedShadow and 0x00FFFFFF) or (outerAlpha shl 24)
+        canvas.drawOval(cx - rx * 1.18f, shadowY - ry * 1.15f, cx + rx * 1.18f, shadowY + ry * 1.15f, fillPaint)
+
+        // Inner darker umbra core
+        val innerAlpha = (clampedMix * 88f).toInt().coerceIn(12, 108)
+        fillPaint.color = (tintedShadow and 0x00FFFFFF) or (innerAlpha shl 24)
+        canvas.drawOval(cx - rx * 0.72f, shadowY - ry * 0.68f, cx + rx * 0.72f, shadowY + ry * 0.68f, fillPaint)
+    }
+
+    /**
+     * Soft wave-shimmering underside surface reflection cast by fish & dolphins swimming near the meniscus!
+     * Replaces legacy ASCII `~..~` reflection text.
+     */
+    fun drawCreatureSurfaceReflection(
+        canvas: Canvas,
+        cx: Float,
+        reflectY: Float,
+        halfWidthPx: Float,
+        bodyColor: Int,
+        waterBgTop: Int,
+        alphaMix: Float,
+        simTime: Float,
+        isTrueBlackOled: Boolean
+    ) {
+        if (isTrueBlackOled) return
+        val clampedMix = alphaMix.coerceIn(0f, 1f)
+        if (clampedMix <= 0.04f || halfWidthPx < 3f) return
+        val rx = (halfWidthPx * 0.85f).coerceAtLeast(4f)
+        val ry = (rx * 0.16f).coerceIn(1.8f, 7.5f)
+        val shimmerCol = TimeOfDayPalette.lerpColor(waterBgTop, bodyColor, 0.65f)
+        val drift1 = sin(simTime * 2.8f + cx * 0.04f) * (rx * 0.12f)
+        val drift2 = cos(simTime * 2.3f + cx * 0.05f) * (rx * 0.15f)
+
+        val a1 = (clampedMix * 68f).toInt().coerceIn(8, 76)
+        fillPaint.color = (shimmerCol and 0x00FFFFFF) or (a1 shl 24)
+        canvas.drawOval(cx + drift1 - rx, reflectY - ry, cx + drift1 + rx, reflectY + ry, fillPaint)
+
+        val a2 = (clampedMix * 42f).toInt().coerceIn(6, 48)
+        fillPaint.color = (shimmerCol and 0x00FFFFFF) or (a2 shl 24)
+        canvas.drawOval(cx + drift2 - rx * 0.68f, reflectY + ry * 1.4f, cx + drift2 + rx * 0.68f, reflectY + ry * 2.4f, fillPaint)
     }
 }

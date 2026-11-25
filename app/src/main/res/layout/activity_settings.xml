@@ -1116,7 +1116,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.9.2"
+                        android:text="minamo v2.10.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView
@@ -1151,7 +1151,7 @@ font engine ........ bundled monospace ttf"
                     android:textColor="@color/ascii_accent2" />
             </FrameLayout>
 
-            <!-- Predators Box -->
+            <!-- Interactive Controls & Easter Eggs Box -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -1172,11 +1172,14 @@ font engine ........ bundled monospace ttf"
                         style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="barracuda ....... &gt;&lt;(((===º&lt;
-reef shark ...... &gt;&lt;)))º&gt;==&lt;
-swordfish ....... &gt;&lt;(((º&gt;====--
-moray eel ....... ~^~^~==º&lt;
-jaw snap ........ &gt;&lt;(((===º={{" />
+                        android:text="tap water ....... drop pellet &amp; ripples
+long-press ...... sink algae wafer
+drag water ...... bioluminescent night wake
+tap whale/orca .. trigger blowhole spout
+tap giant clam .. snap shell &amp; pearl bubbles
+tap lighthouse .. sweep golden beacon
+tap lantern ..... underwater glow pulse
+charging ........ lantern breathes warmly" />
                 </LinearLayout>
 
                 <TextView
@@ -1187,11 +1190,11 @@ jaw snap ........ &gt;&lt;(((===º={{" />
                     android:background="@color/ascii_bg"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:text=" predators "
+                    android:text=" tactile gestures "
                     android:textColor="@color/ascii_accent" />
             </FrameLayout>
 
-            <!-- Peaceful Fish & Critters Box -->
+            <!-- Ocean Wildlife Field Guide Box -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -1211,20 +1214,15 @@ jaw snap ........ &gt;&lt;(((===º={{" />
                         style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="humpback whale .. ╭───▀▀▀▀───╮ ▓▓▒░◉
-orca whale ...... ╱│ ███░░░█ (◉)
-dolphin pod ..... ╱│ ╰─══▒▒▒▒◉══▶ (breaches!)
-whale shark ..... ▶═(░·░·░·░·◉│═══
-giant manta ..... ≈≈≈≈≈◀▒▓▓▓▓▓▒◉▶
-sea turtle ...... ╭▓▓▒▒▓▓╮◉▶
-eagle ray ....... ≈≈≈≈≈◀▒▓▓▓▒◉▶
-moorish idol .... ≈──╮╱│ ◀│▓█▓█◉▶
-yellowfin tuna .. ▶══▓▓▒▒░◉▶
-spotted puffer .. ≈(░·░·░◉▶
-reef lionfish ... ≈╲│▓│▒│▓◉▶
-emperor angel ... ▶│▓═▒▒═◉▶
-reef crab ....... (\\/)(°_°)(\\/)
-moon jellyfish .. ( °° ) /||\\" />
+                        android:text="humpback whale .. deep visitor · blowhole spout
+orca whale ...... tall fin · theme-matched blaze
+dolphin pod ..... leaping acrobatic breaches
+whale shark ..... gentle spotted ocean giant
+giant manta ..... sweeping wingbeat glider
+predators ....... reef shark · swordfish · barracuda · moray
+reef swimmers ... moorish idol · angel · tang · lionfish · tuna
+seabed crew ..... reef crab · shrimp · sand goby · sea conch
+nocturnal ....... moon jellyfish · giant squid · fireflies" />
                 </LinearLayout>
 
                 <TextView
@@ -1235,7 +1233,7 @@ moon jellyfish .. ( °° ) /||\\" />
                     android:background="@color/ascii_bg"
                     android:paddingStart="4dp"
                     android:paddingEnd="4dp"
-                    android:text=" fish &amp; critters "
+                    android:text=" ocean field guide "
                     android:textColor="@color/ascii_accent2" />
             </FrameLayout>
         </LinearLayout>

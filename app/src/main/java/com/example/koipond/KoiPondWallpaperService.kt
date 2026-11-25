@@ -60,6 +60,8 @@ class KoiPondWallpaperService : WallpaperService() {
         private var isDreaming = false
         @Volatile
         private var currentBatteryPct = 85
+        @Volatile
+        private var isDeviceCharging = false
 
         @Volatile
         private var scrollOffsetX = 0.5f
@@ -106,7 +108,9 @@ class KoiPondWallpaperService : WallpaperService() {
                 when (intent?.action) {
                     PowerManager.ACTION_POWER_SAVE_MODE_CHANGED,
                     Intent.ACTION_BATTERY_LOW,
-                    Intent.ACTION_BATTERY_OKAY -> {
+                    Intent.ACTION_BATTERY_OKAY,
+                    Intent.ACTION_POWER_CONNECTED,
+                    Intent.ACTION_POWER_DISCONNECTED -> {
                         updatePowerStates()
                         updateSensorRegistration()
                     }
@@ -223,7 +227,8 @@ class KoiPondWallpaperService : WallpaperService() {
                             isBatterySaver = effectiveEco,
                             isWallpaperMode = true,
                             batteryPercent = currentBatteryPct,
-                            isSystemDark = systemDark
+                            isSystemDark = systemDark,
+                            isCharging = isDeviceCharging
                         )
                     } finally {
                         try {
@@ -368,6 +373,8 @@ class KoiPondWallpaperService : WallpaperService() {
                     addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
                     addAction(Intent.ACTION_BATTERY_LOW)
                     addAction(Intent.ACTION_BATTERY_OKAY)
+                    addAction(Intent.ACTION_POWER_CONNECTED)
+                    addAction(Intent.ACTION_POWER_DISCONNECTED)
                     addAction(Intent.ACTION_SCREEN_OFF)
                     addAction(Intent.ACTION_SCREEN_ON)
                     addAction(Intent.ACTION_DREAMING_STARTED)
@@ -619,6 +626,7 @@ class KoiPondWallpaperService : WallpaperService() {
             if (pct in 1..100) {
                 currentBatteryPct = pct
             }
+            isDeviceCharging = batteryManager?.isCharging == true
         }
 
         private fun updateSensorRegistration() {

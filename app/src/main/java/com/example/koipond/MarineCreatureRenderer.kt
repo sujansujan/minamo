@@ -40,8 +40,6 @@ enum class MarkingStyle {
     KOI_PATCHES,   // Organic saddle patches
     SPOTS,         // Constellation of pale dots (puffer, eagle ray, whale shark)
     TANG_MASK,     // Bright tail accent + dorsal highlight
-    ORCA_PATCHES,  // Iconic white eye patch + dorsal saddle + light belly
-    WHALE_PLEATS,  // Ventral throat grooves + dappled back
     TURTLE_SCUTES, // Mosaic carapace plates
     MANDARIN_SWIRL // Wavy bands
 }
@@ -212,8 +210,9 @@ class MarineCreatureRenderer {
                 isTrueBlackOled, isBatterySaver
             )
             BodyPlan.ORCA -> drawOrca(
-                canvas, textPaint, lengthPx, halfH, foggedBody, foggedAccent, localWaterBg, fogFactor,
-                outlineAlpha, animPhase, glyphSize, glyphHalfH, isTrueBlackOled, isBatterySaver
+                canvas, textPaint, lengthPx, halfH, foggedBody, foggedAccent, bellyColor, foggedEye,
+                solidBodyFill, localWaterBg, fogFactor, markAlpha, outlineAlpha, animPhase,
+                glyphSize, glyphHalfH, isLightSurface, isTrueBlackOled, isBatterySaver
             )
             BodyPlan.WHALE -> drawHumpbackWhale(
                 canvas, textPaint, lengthPx, halfH, foggedBody, foggedAccent, bellyColor, foggedEye,
@@ -263,8 +262,8 @@ class MarineCreatureRenderer {
     }
 
     /**
-     * Draws any spined ocean swimmer (baitfish, reef fish, tuna, dolphin, orca, humpback whale,
-     * shark, whale shark, swordfish, lionfish, puffer, eel, sand goby) along a real traveling S-wave spine!
+     * Draws any spined ocean swimmer (baitfish, reef fish, tuna, shark, whale shark,
+     * swordfish, lionfish, puffer, eel, sand goby) along a real traveling S-wave spine!
      * Local coordinate frame: nose is at +halfL (right), tail is at -halfL (left).
      */
     private fun drawSpinedSwimmer(
@@ -293,15 +292,11 @@ class MarineCreatureRenderer {
         val halfL = lengthPx * 0.5f
         val waveFreq = when (plan) {
             BodyPlan.EEL -> 8.2f
-            BodyPlan.WHALE -> 3.0f
-            BodyPlan.DOLPHIN, BodyPlan.ORCA -> 3.6f
             BodyPlan.PUFFER, BodyPlan.GOBY -> 2.8f
             else -> 4.2f
         }
         val waveAmp = when (plan) {
             BodyPlan.EEL -> halfH * 1.15f
-            BodyPlan.WHALE -> halfH * 0.36f
-            BodyPlan.DOLPHIN, BodyPlan.ORCA -> halfH * 0.44f
             BodyPlan.PUFFER -> halfH * 0.14f
             BodyPlan.GOBY -> halfH * 0.22f
             BodyPlan.BAITFISH -> halfH * 0.42f
@@ -311,7 +306,6 @@ class MarineCreatureRenderer {
         // 1. Evaluate smooth undulating spine and upper/lower anatomical profile
         val tailStart = when (plan) {
             BodyPlan.EEL -> 0.94f
-            BodyPlan.WHALE, BodyPlan.ORCA, BodyPlan.DOLPHIN -> 0.80f
             BodyPlan.PUFFER -> 0.78f
             else -> 0.74f
         }
@@ -345,7 +339,6 @@ class MarineCreatureRenderer {
         if (hasTailNotch) {
             val notchDepth = when (plan) {
                 BodyPlan.PELAGIC_FAST, BodyPlan.SWORDFISH -> lengthPx * 0.11f
-                BodyPlan.WHALE, BodyPlan.ORCA, BodyPlan.DOLPHIN -> lengthPx * 0.085f
                 BodyPlan.SHARK -> lengthPx * 0.095f
                 else -> lengthPx * 0.055f
             }
@@ -402,7 +395,6 @@ class MarineCreatureRenderer {
                 val localH = ((lowerY[i] - upperY[i]) * 0.5f).coerceAtLeast(1f)
                 val bodyChar = when {
                     i >= spineCount - 3 -> if (sin(animPhase) > 0f) '}' else '>'
-                    plan == BodyPlan.WHALE || plan == BodyPlan.ORCA -> if (i % 4 == 0) '=' else '~'
                     plan == BodyPlan.EEL -> '~'
                     marking == MarkingStyle.SPOTS -> if (i % 4 == 0) '·' else ':'
                     else -> if (i % 4 == 0) ')' else ':'
@@ -415,7 +407,7 @@ class MarineCreatureRenderer {
                 drawChar(canvas, bodyChar, sx - glyphSize * 0.3f, sy + glyphHalfH, textPaint)
                 if (localH > glyphSize * 1.05f) {
                     textPaint.color = bellyColor
-                    drawChar(canvas, if (plan == BodyPlan.WHALE) '=' else '.', sx - glyphSize * 0.3f, sy + localH * 0.45f + glyphHalfH, textPaint)
+                    drawChar(canvas, '.', sx - glyphSize * 0.3f, sy + localH * 0.45f + glyphHalfH, textPaint)
                 }
             }
         }
@@ -443,11 +435,7 @@ class MarineCreatureRenderer {
             strokePaint.strokeWidth = (lengthPx * 0.012f).coerceIn(1.1f, 2.2f)
             canvas.drawPath(finPath, strokePaint)
         } else {
-            val eyeStation = when (plan) {
-                BodyPlan.WHALE -> 2
-                BodyPlan.DOLPHIN, BodyPlan.SWORDFISH -> 3
-                else -> 2
-            }
+            val eyeStation = if (plan == BodyPlan.SWORDFISH) 3 else 2
             val eyeX = spineX[eyeStation] + lengthPx * (0.05f * approachFactor)
             val eyeY = spineY[eyeStation] - ((lowerY[eyeStation] - upperY[eyeStation]) * 0.14f)
             textPaint.color = eyeColor
@@ -488,8 +476,6 @@ class MarineCreatureRenderer {
             val t = ((s - tailStart) / (1f - tailStart)).coerceIn(0f, 1f)
             val tailFlare = when (plan) {
                 BodyPlan.PELAGIC_FAST, BodyPlan.SWORDFISH -> (0.20f + 0.98f * t.pow(0.85f))
-                BodyPlan.WHALE -> (0.22f + 0.88f * t.pow(0.9f))
-                BodyPlan.ORCA, BodyPlan.DOLPHIN -> (0.20f + 0.78f * t.pow(0.9f))
                 BodyPlan.SHARK -> (0.18f + 0.92f * t.pow(0.85f))
                 BodyPlan.PUFFER -> (0.24f + 0.40f * t)
                 else -> (0.22f + 0.65f * t.pow(0.9f))
@@ -499,25 +485,6 @@ class MarineCreatureRenderer {
         } else {
             val u = (s / tailStart).coerceIn(0f, 1f)
             when (plan) {
-                BodyPlan.WHALE -> {
-                    topR = halfH * (0.24f + 0.78f * sin(u.pow(0.68f) * PI.toFloat()))
-                    botR = halfH * (0.22f + 0.88f * sin(u.pow(0.62f) * PI.toFloat()))
-                }
-                BodyPlan.ORCA -> {
-                    val arch = sin(u.pow(0.75f) * PI.toFloat())
-                    topR = halfH * (0.16f + 0.86f * arch)
-                    botR = halfH * (0.14f + 0.76f * arch)
-                }
-                BodyPlan.DOLPHIN -> {
-                    val melon = if (u < 0.16f) {
-                        0.22f + (u / 0.16f) * 0.25f
-                    } else {
-                        0.20f + 0.82f * sin(((u - 0.08f) / 0.92f).coerceIn(0f, 1f).pow(0.75f) * PI.toFloat())
-                    }
-                    val belly = 0.16f + 0.72f * sin(u.pow(0.80f) * PI.toFloat())
-                    topR = halfH * melon
-                    botR = halfH * belly
-                }
                 BodyPlan.SHARK -> {
                     topR = halfH * (0.16f + 0.88f * sin(u.pow(0.74f) * PI.toFloat()))
                     botR = halfH * (0.14f + 0.68f * sin(u.pow(0.78f) * PI.toFloat()))
@@ -605,43 +572,6 @@ class MarineCreatureRenderer {
         }
 
         when (plan) {
-            BodyPlan.ORCA -> {
-                finPath.reset()
-                finPath.moveTo(upperX[5], upperY[5] + 2f)
-                finPath.quadTo(upperX[7] + lengthPx * 0.04f, upperY[6] - halfH * 1.45f, upperX[8] - lengthPx * 0.05f, upperY[6] - halfH * 1.55f)
-                finPath.quadTo(upperX[8], upperY[7] - halfH * 0.55f, upperX[9], upperY[9] + 2f)
-                finPath.close()
-                canvas.drawPath(finPath, fillPaint)
-                canvas.drawPath(finPath, strokePaint)
-
-                finPath.reset()
-                finPath.moveTo(lowerX[4], lowerY[4] - 2f)
-                finPath.quadTo(lowerX[6], lowerY[5] + halfH * 0.95f + flutter * 3f, lowerX[7], lowerY[6] + 1f)
-                finPath.close()
-                canvas.drawPath(finPath, fillPaint)
-                canvas.drawPath(finPath, strokePaint)
-            }
-            BodyPlan.WHALE -> {
-                finPath.reset()
-                finPath.moveTo(lowerX[4], lowerY[4] - halfH * 0.15f)
-                finPath.quadTo(
-                    lowerX[7] + lengthPx * 0.04f,
-                    lowerY[6] + halfH * 1.35f + flutter * halfH * 0.18f,
-                    lowerX[9],
-                    lowerY[8] + halfH * 0.95f + flutter * halfH * 0.22f
-                )
-                finPath.quadTo(lowerX[7], lowerY[6] + halfH * 0.25f, lowerX[6], lowerY[5] - halfH * 0.1f)
-                finPath.close()
-                canvas.drawPath(finPath, fillPaint)
-                canvas.drawPath(finPath, strokePaint)
-
-                finPath.reset()
-                finPath.moveTo(upperX[9], upperY[9] + 2f)
-                finPath.quadTo(upperX[10], upperY[10] - halfH * 0.36f, upperX[11], upperY[11] + 2f)
-                finPath.close()
-                canvas.drawPath(finPath, fillPaint)
-                canvas.drawPath(finPath, strokePaint)
-            }
             BodyPlan.SHARK -> {
                 // Iconic tall triangular primary dorsal fin + smaller second dorsal fin
                 val dHeight = halfH * 1.28f
@@ -819,18 +749,6 @@ class MarineCreatureRenderer {
                     canvas.drawLine(upperX[st] + 2f, upperY[st] + 3f, lowerX[st - 1], lowerY[st - 1] - 3f, strokePaint)
                 }
             }
-            MarkingStyle.ORCA_PATCHES -> {
-                // Iconic white Orca eye patch & saddle behind dorsal fin!
-                if (markAlpha > 0) {
-                    fillPaint.color = (eyeColor and 0x00FFFFFF) or (markAlpha shl 24)
-                    val ex = spineX[3] - lengthPx * 0.02f
-                    val ey = spineY[3] - halfH * 0.14f
-                    canvas.drawOval(ex - lengthPx * 0.045f, ey - halfH * 0.16f, ex + lengthPx * 0.045f, ey + halfH * 0.16f, fillPaint)
-                    val sx = spineX[9]
-                    val sy = upperY[9] + halfH * 0.25f
-                    canvas.drawOval(sx - lengthPx * 0.06f, sy - halfH * 0.22f, sx + lengthPx * 0.06f, sy + halfH * 0.22f, fillPaint)
-                }
-            }
             MarkingStyle.KOI_PATCHES -> {
                 if (markAlpha > 0) {
                     fillPaint.color = (accentColor and 0x00FFFFFF) or (markAlpha shl 24)
@@ -846,15 +764,6 @@ class MarineCreatureRenderer {
                         drawChar(canvas, '·', spineX[st] - glyphSize * 0.25f, spineY[st] - rH + glyphHalfH, textPaint)
                         drawChar(canvas, '·', spineX[st] + glyphSize * 0.15f, spineY[st] + rH * 0.5f + glyphHalfH, textPaint)
                     }
-                }
-            }
-            MarkingStyle.WHALE_PLEATS -> {
-                // Fine ventral throat pleats under the humpback's chin
-                strokePaint.color = (bellyColor and 0x00FFFFFF) or ((markAlpha + 45).coerceAtMost(160) shl 24)
-                strokePaint.strokeWidth = 1.2f
-                for (row in 0..2) {
-                    val yOff = row * (halfH * 0.14f)
-                    canvas.drawLine(spineX[1], spineY[1] + halfH * 0.25f + yOff, spineX[6], spineY[6] + halfH * 0.30f + yOff, strokePaint)
                 }
             }
             else -> Unit
@@ -986,11 +895,18 @@ class MarineCreatureRenderer {
         drawChar(canvas, '◉', halfL * 0.62f - glyphSize * 0.30f, halfH * 0.06f + glyphHalfH, textPaint)
     }
 
+    private fun scaleRgb(color: Int, factor: Float): Int {
+        val r = (((color shr 16) and 0xFF) * factor).toInt().coerceIn(0, 255)
+        val g = (((color shr 8) and 0xFF) * factor).toInt().coerceIn(0, 255)
+        val b = ((color and 0xFF) * factor).toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
     /**
-     * Unmistakable Orca (Killer Whale):
-     * - Deep obsidian-charcoal body with high-contrast bright-white markings!
-     * - Towering iconic tall dorsal fin (nearly 1.8x body height) + pale dorsal saddle patch
-     * - Bold bright-white oval eye patch + sweeping white chin/belly/rear flank blaze
+     * Unmistakable Theme-Harmonized Orca (Killer Whale):
+     * - Deep theme-tinted obsidian torso derived from the active water/palette (pure #000000 on AMOLED!)
+     * - Towering iconic tall dorsal fin (nearly 1.8x body height) + subtle dorsal saddle patch
+     * - Softly water-harmonized oval eye patch + sweeping chin/belly/rear flank blaze (luminous contour on AMOLED)
      * - Broad rounded oval pectoral paddle + horizontal crescent tail flukes
      */
     private fun drawOrca(
@@ -1000,12 +916,17 @@ class MarineCreatureRenderer {
         halfH: Float,
         rimColor: Int,
         accentColor: Int,
+        bellyColor: Int,
+        eyeColor: Int,
+        solidBodyFill: Int,
         localWaterBg: Int,
         fogFactor: Float,
+        markAlpha: Int,
         outlineAlpha: Int,
         animPhase: Float,
         glyphSize: Float,
         glyphHalfH: Float,
+        isLightSurface: Boolean,
         isTrueBlackOled: Boolean,
         isBatterySaver: Boolean
     ) {
@@ -1016,15 +937,24 @@ class MarineCreatureRenderer {
         val flukeTilt = cos(animPhase) * halfH * 0.32f
         val lineW = (lengthPx * 0.013f).coerceIn(1.2f, 2.3f)
 
-        // Deep dramatic Killer Whale obsidian-ink fill vs crisp polar-white markings!
-        val orcaBlackFill = if (isTrueBlackOled) {
+        // Theme-harmonized deep torso & soft foam-tinted markings:
+        // - Preserves each palette's exact warmth/hue (Lagoon, Ember, Moss, Light, Dark)
+        // - Keeps AMOLED true-black interiors #000000 with crisp luminous outlines for markings!
+        val orcaDarkFill = if (isTrueBlackOled) {
             0xFF000000.toInt()
         } else {
-            TimeOfDayPalette.lerpColor(0xFF0A161F.toInt(), localWaterBg, fogFactor * 0.45f) or (0xFF shl 24)
+            val shadeScale = if (isLightSurface) 0.54f else 0.44f
+            val deepThemeInk = scaleRgb(TimeOfDayPalette.lerpColor(localWaterBg, solidBodyFill, 0.36f), shadeScale)
+            TimeOfDayPalette.lerpColor(deepThemeInk, localWaterBg, fogFactor * 0.36f) or (0xFF shl 24)
         }
-        val orcaWhitePatch = TimeOfDayPalette.lerpColor(0xFFF3F8FB.toInt(), localWaterBg, fogFactor * 0.38f) or (0xFF shl 24)
-        val orcaSaddleGray = TimeOfDayPalette.lerpColor(0xFF9CB5C2.toInt(), localWaterBg, fogFactor * 0.45f) or (0xFF shl 24)
+        val foamBase = TimeOfDayPalette.lerpColor(eyeColor, bellyColor, 0.28f)
+        val orcaPatchFill = TimeOfDayPalette.lerpColor(
+            orcaDarkFill,
+            foamBase,
+            (if (isLightSurface) 0.72f else 0.62f) * (1f - fogFactor * 0.34f)
+        ) or (0xFF shl 24)
         val outlineCol = (rimColor and 0x00FFFFFF) or (outlineAlpha shl 24)
+        val patchContourCol = (eyeColor and 0x00FFFFFF) or ((outlineAlpha * 0.86f).toInt().coerceIn(60, 210) shl 24)
 
         // 1. Towering Iconic Orca Tall Dorsal Fin!
         finPath.reset()
@@ -1032,7 +962,7 @@ class MarineCreatureRenderer {
         finPath.quadTo(halfL * 0.02f, -halfH * 2.45f + midFlex * 0.35f, -halfL * 0.09f, -halfH * 2.62f + midFlex * 0.35f)
         finPath.quadTo(-halfL * 0.12f, -halfH * 1.48f + midFlex * 0.35f, -halfL * 0.18f, -halfH * 0.80f + midFlex * 0.35f)
         finPath.close()
-        fillPaint.color = orcaBlackFill
+        fillPaint.color = orcaDarkFill
         canvas.drawPath(finPath, fillPaint)
         strokePaint.color = outlineCol
         strokePaint.strokeWidth = lineW
@@ -1047,7 +977,7 @@ class MarineCreatureRenderer {
         finPath.quadTo(pedX - halfL * 0.14f, tailY + halfH * 0.58f - flukeTilt * 0.3f, -halfL * 1.02f, tailY + halfH * 0.74f - flukeTilt)
         finPath.quadTo(pedX - halfL * 0.06f, tailY + halfH * 0.32f, pedX, tailY + halfH * 0.14f)
         finPath.close()
-        fillPaint.color = orcaBlackFill
+        fillPaint.color = orcaDarkFill
         canvas.drawPath(finPath, fillPaint)
         canvas.drawPath(finPath, strokePaint)
 
@@ -1060,11 +990,11 @@ class MarineCreatureRenderer {
         bodyPath.quadTo(-halfL * 0.22f, halfH * 0.80f + midFlex * 0.45f, halfL * 0.38f, halfH * 0.84f + midFlex * 0.15f)
         bodyPath.quadTo(halfL * 0.88f, halfH * 0.72f, halfL * 1.02f, halfH * 0.18f)
         bodyPath.close()
-        fillPaint.color = orcaBlackFill
+        fillPaint.color = orcaDarkFill
         canvas.drawPath(bodyPath, fillPaint)
 
-        // 4. Iconic High-Contrast Orca White Markings!
-        //    4a. Sweeping White Chin -> Belly -> Upward Rear Flank Blaze!
+        // 4. Iconic Orca Markings (Theme-harmonized soft fills, or luminous contours on AMOLED!)
+        //    4a. Sweeping Chin -> Belly -> Upward Rear Flank Blaze
         accentPath.reset()
         accentPath.moveTo(halfL * 0.96f, halfH * 0.34f)
         accentPath.quadTo(halfL * 0.62f, halfH * 0.38f, halfL * 0.36f, halfH * 0.58f + midFlex * 0.15f)
@@ -1073,10 +1003,16 @@ class MarineCreatureRenderer {
         accentPath.quadTo(-halfL * 0.18f, halfH * 0.74f + midFlex * 0.45f, halfL * 0.38f, halfH * 0.80f + midFlex * 0.15f)
         accentPath.quadTo(halfL * 0.80f, halfH * 0.70f, halfL * 0.96f, halfH * 0.34f)
         accentPath.close()
-        fillPaint.color = orcaWhitePatch
-        canvas.drawPath(accentPath, fillPaint)
+        if (isTrueBlackOled) {
+            strokePaint.color = patchContourCol
+            strokePaint.strokeWidth = lineW * 0.82f
+            canvas.drawPath(accentPath, strokePaint)
+        } else {
+            fillPaint.color = orcaPatchFill
+            canvas.drawPath(accentPath, fillPaint)
+        }
 
-        //    4b. Iconic Bold Oval White Eye Patch behind & above eye!
+        //    4b. Iconic Oval Eye Patch behind & above eye
         accentPath.reset()
         val epx = halfL * 0.56f
         val epy = -halfH * 0.18f
@@ -1085,16 +1021,26 @@ class MarineCreatureRenderer {
             epx + lengthPx * 0.068f, epy + halfH * 0.16f,
             Path.Direction.CW
         )
-        fillPaint.color = orcaWhitePatch
-        canvas.drawPath(accentPath, fillPaint)
+        if (isTrueBlackOled) {
+            strokePaint.color = patchContourCol
+            strokePaint.strokeWidth = lineW * 0.88f
+            canvas.drawPath(accentPath, strokePaint)
+        } else {
+            fillPaint.color = orcaPatchFill
+            canvas.drawPath(accentPath, fillPaint)
+        }
 
-        //    4c. Subtle Gray-White Dorsal Saddle Patch behind Dorsal Fin
-        if (!isTrueBlackOled) {
-            accentPath.reset()
-            accentPath.moveTo(-halfL * 0.14f, -halfH * 0.80f + midFlex * 0.35f)
-            accentPath.quadTo(-halfL * 0.34f, -halfH * 0.28f + midFlex * 0.45f, -halfL * 0.46f, -halfH * 0.68f + midFlex * 0.48f)
-            accentPath.close()
-            fillPaint.color = (orcaSaddleGray and 0x00FFFFFF) or (135 shl 24)
+        //    4c. Subtle Dorsal Saddle Patch behind Dorsal Fin
+        accentPath.reset()
+        accentPath.moveTo(-halfL * 0.14f, -halfH * 0.80f + midFlex * 0.35f)
+        accentPath.quadTo(-halfL * 0.34f, -halfH * 0.28f + midFlex * 0.45f, -halfL * 0.46f, -halfH * 0.68f + midFlex * 0.48f)
+        accentPath.close()
+        if (isTrueBlackOled) {
+            strokePaint.color = (accentColor and 0x00FFFFFF) or ((outlineAlpha * 0.55f).toInt().coerceIn(45, 130) shl 24)
+            strokePaint.strokeWidth = lineW * 0.72f
+            canvas.drawPath(accentPath, strokePaint)
+        } else if (markAlpha > 0) {
+            fillPaint.color = (bellyColor and 0x00FFFFFF) or ((markAlpha * 0.72f).toInt().coerceIn(36, 108) shl 24)
             canvas.drawPath(accentPath, fillPaint)
         }
 
@@ -1109,17 +1055,17 @@ class MarineCreatureRenderer {
         finPath.quadTo(halfL * 0.34f, halfH * 1.48f + midFlex * 0.25f, halfL * 0.06f, halfH * 1.32f + midFlex * 0.25f)
         finPath.quadTo(halfL * 0.12f, halfH * 0.72f + midFlex * 0.20f, halfL * 0.26f, halfH * 0.54f + midFlex * 0.20f)
         finPath.close()
-        fillPaint.color = orcaBlackFill
+        fillPaint.color = orcaDarkFill
         canvas.drawPath(finPath, fillPaint)
         canvas.drawPath(finPath, strokePaint)
 
-        // 6. Monospace ASCII Flank Texture + Crisp Eye ahead of White Patch
+        // 6. Monospace ASCII Flank Texture + Crisp Eye ahead of Eye Patch
         textPaint.color = accentColor
         drawChar(canvas, '=', halfL * 0.06f - glyphSize * 0.28f, -halfH * 0.34f + midFlex * 0.25f + glyphHalfH, textPaint)
         if (!isBatterySaver) {
             drawChar(canvas, '~', -halfL * 0.28f - glyphSize * 0.28f, -halfH * 0.28f + midFlex * 0.42f + glyphHalfH, textPaint)
         }
-        textPaint.color = orcaWhitePatch
+        textPaint.color = eyeColor
         drawChar(canvas, '°', halfL * 0.72f - glyphSize * 0.25f, halfH * 0.02f + glyphHalfH, textPaint)
     }
 
