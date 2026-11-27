@@ -68,6 +68,15 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnBiomeOcean: TextView
     private lateinit var btnBiomePond: TextView
     private lateinit var btnBiomeAquarium: TextView
+    private lateinit var btnSummonPredator: TextView
+    private lateinit var textSceneSettingsTitle: TextView
+    private lateinit var groupOutdoorOnly: LinearLayout
+    private lateinit var groupAquariumOnly: LinearLayout
+    private lateinit var btnBettaCount2: TextView
+    private lateinit var btnBettaCount3: TextView
+    private lateinit var textCatVisitorSwitch: TextView
+    private lateinit var textBottomFeedersLabel: TextView
+    private lateinit var textBatteryLanternLabel: TextView
 
     private lateinit var btnCycleAuto: TextView
     private lateinit var btnCycleDawn: TextView
@@ -106,9 +115,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnPerfBalanced: TextView
     private lateinit var btnPerfSmooth: TextView
 
-    private lateinit var btnGridCozy: TextView
-    private lateinit var btnGridBalanced: TextView
-    private lateinit var btnGridDense: TextView
     private lateinit var textCalmIconsSwitch: TextView
     private lateinit var textGyroSwitch: TextView
 
@@ -213,6 +219,15 @@ class SettingsActivity : AppCompatActivity() {
         btnBiomeOcean = findViewById(R.id.btnBiomeOcean)
         btnBiomePond = findViewById(R.id.btnBiomePond)
         btnBiomeAquarium = findViewById(R.id.btnBiomeAquarium)
+        btnSummonPredator = findViewById(R.id.btnSummonPredator)
+        textSceneSettingsTitle = findViewById(R.id.textSceneSettingsTitle)
+        groupOutdoorOnly = findViewById(R.id.groupOutdoorOnly)
+        groupAquariumOnly = findViewById(R.id.groupAquariumOnly)
+        btnBettaCount2 = findViewById(R.id.btnBettaCount2)
+        btnBettaCount3 = findViewById(R.id.btnBettaCount3)
+        textCatVisitorSwitch = findViewById(R.id.textCatVisitorSwitch)
+        textBottomFeedersLabel = findViewById(R.id.textBottomFeedersLabel)
+        textBatteryLanternLabel = findViewById(R.id.textBatteryLanternLabel)
 
         btnCycleAuto = findViewById(R.id.btnCycleAuto)
         btnCycleDawn = findViewById(R.id.btnCycleDawn)
@@ -252,9 +267,6 @@ class SettingsActivity : AppCompatActivity() {
         btnPerfBalanced = findViewById(R.id.btnPerfBalanced)
         btnPerfSmooth = findViewById(R.id.btnPerfSmooth)
 
-        btnGridCozy = findViewById(R.id.btnGridCozy)
-        btnGridBalanced = findViewById(R.id.btnGridBalanced)
-        btnGridDense = findViewById(R.id.btnGridDense)
         textCalmIconsSwitch = findViewById(R.id.textCalmIconsSwitch)
         textGyroSwitch = findViewById(R.id.textGyroSwitch)
     }
@@ -327,6 +339,9 @@ class SettingsActivity : AppCompatActivity() {
             setOnClickListener {
                 haptic(it)
                 if (currentConfig.sceneBiome == SceneBiome.AQUARIUM) {
+                    if (!currentConfig.enableCatVisitor) {
+                        updateConfig(currentConfig.copy(enableCatVisitor = true))
+                    }
                     val catEvent = asciiPondView.summonPredatorNow()
                     textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_warn))
                     textHuntStatus.text = "aquarium ... ! " + catEvent
@@ -466,14 +481,11 @@ class SettingsActivity : AppCompatActivity() {
             applyMoodPreset(
                 "amoled minimal",
                 currentConfig.copy(
-                    sceneBiome = SceneBiome.OCEAN,
                     paletteFamily = PaletteFamily.AMOLED,
                     themeMode = ThemeMode.DARK,
                     timeCycleMode = TimeCycleMode.AUTO_REALTIME,
                     weatherMode = WeatherMode.CLEAR,
-                    heroFishCount = 5,
-                    waterClarity = 0.70f,
-                    waterlinePercent = 34,
+                    waterClarity = 0.72f,
                     calmIconMode = true
                 )
             )
@@ -578,9 +590,12 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        btnGridCozy.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.COZY)) }
-        btnGridBalanced.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.BALANCED)) }
-        btnGridDense.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(gridDensity = GridDensity.DENSE)) }
+        btnBettaCount2.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(heroFishCount = 3)) }
+        btnBettaCount3.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(heroFishCount = 6)) }
+        findViewById<LinearLayout>(R.id.rowCatVisitorSwitch).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(enableCatVisitor = !currentConfig.enableCatVisitor))
+        }
         findViewById<LinearLayout>(R.id.rowCalmIconsSwitch).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(calmIconMode = !currentConfig.calmIconMode))
@@ -728,7 +743,22 @@ class SettingsActivity : AppCompatActivity() {
     private fun refreshAsciiUi() {
         asciiPondView.config = currentConfig
         updateSolarScrubberUi()
-        textBiomeStatus.text = "biome ... " + asciiPondView.simulation.activeSpeciesSummary
+        val isAquarium = currentConfig.sceneBiome == SceneBiome.AQUARIUM
+        textBiomeStatus.text = if (isAquarium) {
+            "aquarium ... bettas · rasboras · glass cat · kuhli · cleaners"
+        } else {
+            "biome ... " + asciiPondView.simulation.activeSpeciesSummary
+        }
+        btnSummonPredator.text = if (isAquarium) "[cat]" else getString(R.string.action_summon_predator)
+        textSceneSettingsTitle.text = when (currentConfig.sceneBiome) {
+            SceneBiome.OCEAN -> " 1. ocean settings "
+            SceneBiome.ZEN_POND -> " 1. zen pond settings "
+            SceneBiome.AQUARIUM -> " 1. betta tank settings "
+        }
+        groupOutdoorOnly.visibility = if (isAquarium) View.GONE else View.VISIBLE
+        groupAquariumOnly.visibility = if (isAquarium) View.VISIBLE else View.GONE
+        textBottomFeedersLabel.text = if (isAquarium) "tank cleaners & critters" else "bottom-feeder critters"
+        textBatteryLanternLabel.text = if (isAquarium) "charging lamp LED" else "battery level stone lantern"
         updateTelemetryBox()
 
         val cAccent = ContextCompat.getColor(this, R.color.ascii_accent)
@@ -809,18 +839,32 @@ class SettingsActivity : AppCompatActivity() {
         val wlPct = currentConfig.waterlinePercent.coerceIn(25, 65)
         val wlFilled = (((wlPct - 25) / 40f) * 10f).roundToInt().coerceIn(1, 10)
         val wlBarStr = "[" + "#".repeat(wlFilled) + "-".repeat(10 - wlFilled) + "] " + wlPct.toString() + "%"
-        textWaterlineBar.text = "line: " + wlBarStr
-        textWaterlineBar.contentDescription = "Waterline split position: " + wlPct.toString() + " percent from top"
+        textWaterlineBar.text = (if (isAquarium) "tank: " else "line: ") + wlBarStr
+        textWaterlineBar.contentDescription = if (isAquarium) {
+            "Tank rim height position: " + wlPct.toString() + " percent from top"
+        } else {
+            "Waterline split position: " + wlPct.toString() + " percent from top"
+        }
 
         val clarityPct = (currentConfig.waterClarity * 100f).roundToInt()
         val clarityFilled = ((currentConfig.waterClarity * 10f).roundToInt()).coerceIn(1, 10)
         val clarityBarStr = "[" + "#".repeat(clarityFilled) + "-".repeat(10 - clarityFilled) + "] " + clarityPct.toString() + "%"
-        textClarityBar.text = "rays: " + clarityBarStr
-        textClarityBar.contentDescription = "Water clarity and sun rays: " + clarityPct.toString() + " percent"
+        textClarityBar.text = (if (isAquarium) "led:  " else "rays: ") + clarityBarStr
+        textClarityBar.contentDescription = if (isAquarium) {
+            "Overhead LED light rays intensity: " + clarityPct.toString() + " percent"
+        } else {
+            "Water clarity and sun rays: " + clarityPct.toString() + " percent"
+        }
 
-        styleRadio(btnGridCozy, currentConfig.gridDensity == GridDensity.COZY, "68c")
-        styleRadio(btnGridBalanced, currentConfig.gridDensity == GridDensity.BALANCED, "82c")
-        styleRadio(btnGridDense, currentConfig.gridDensity == GridDensity.DENSE, "96c")
+        val isThreeBettas = currentConfig.heroFishCount > 4
+        styleRadio(btnBettaCount2, !isThreeBettas, "2 bettas")
+        styleRadio(btnBettaCount3, isThreeBettas, "3 bettas")
+        styleSwitch(
+            textCatVisitorSwitch,
+            findViewById(R.id.rowCatVisitorSwitch),
+            currentConfig.enableCatVisitor,
+            "Occasional curious cat visits"
+        )
         styleSwitch(
             textCalmIconsSwitch,
             findViewById(R.id.rowCalmIconsSwitch),

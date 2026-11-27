@@ -114,6 +114,7 @@ data class WallpaperConfig(
     val enableBatteryLantern: Boolean = true,
     val huntMode: HuntMode = HuntMode.NATURAL,
     val enableBottomFeeders: Boolean = true,
+    val enableCatVisitor: Boolean = true,
     val calmIconMode: Boolean = false
 )
 
@@ -160,6 +161,7 @@ class WallpaperSettingsRepository(context: Context) {
             enableBatteryLantern = prefs.getBoolean(KEY_BATTERY_LANTERN, true),
             huntMode = migratedHunt,
             enableBottomFeeders = prefs.getBoolean(KEY_ENABLE_BOTTOM_FEEDERS, true),
+            enableCatVisitor = prefs.getBoolean(KEY_ENABLE_CAT_VISITOR, true),
             calmIconMode = prefs.getBoolean(KEY_CALM_ICON_MODE, false)
         )
     }
@@ -180,6 +182,7 @@ class WallpaperSettingsRepository(context: Context) {
             .putBoolean(KEY_BATTERY_LANTERN, config.enableBatteryLantern)
             .putInt(KEY_HUNT_MODE, config.huntMode.id)
             .putBoolean(KEY_ENABLE_BOTTOM_FEEDERS, config.enableBottomFeeders)
+            .putBoolean(KEY_ENABLE_CAT_VISITOR, config.enableCatVisitor)
             .putBoolean(KEY_CALM_ICON_MODE, config.calmIconMode)
             .remove(KEY_LEGACY_ENABLE_PREDATORS)
             .apply()
@@ -285,6 +288,7 @@ class WallpaperSettingsRepository(context: Context) {
         const val KEY_BATTERY_LANTERN = "battery_lantern"
         const val KEY_HUNT_MODE = "hunt_mode"
         const val KEY_ENABLE_BOTTOM_FEEDERS = "enable_bottom_feeders"
+        const val KEY_ENABLE_CAT_VISITOR = "enable_cat_visitor"
         const val KEY_QUICK_TILE_SEQ = "quick_tile_seq"
         const val KEY_STAT_CATCHES = "stat_catches"
         const val KEY_STAT_ESCAPES = "stat_escapes"
