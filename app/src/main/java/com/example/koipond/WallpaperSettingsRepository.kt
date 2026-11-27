@@ -167,6 +167,7 @@ class WallpaperSettingsRepository(context: Context) {
     }
 
     fun saveConfig(config: WallpaperConfig) {
+        val p = scenePrefix(config.sceneBiome)
         prefs.edit()
             .putInt(KEY_SCENE_BIOME, config.sceneBiome.id)
             .putInt(KEY_THEME_MODE, config.themeMode.id)
@@ -184,9 +185,94 @@ class WallpaperSettingsRepository(context: Context) {
             .putBoolean(KEY_ENABLE_BOTTOM_FEEDERS, config.enableBottomFeeders)
             .putBoolean(KEY_ENABLE_CAT_VISITOR, config.enableCatVisitor)
             .putBoolean(KEY_CALM_ICON_MODE, config.calmIconMode)
+            // Persist per-scene visual & ecosystem profile so switching worlds never overwrites another scene!
+            .putBoolean(p + "saved", true)
+            .putInt(p + KEY_PALETTE_FAMILY, config.paletteFamily.id)
+            .putInt(p + KEY_WEATHER_MODE, config.weatherMode.id)
+            .putInt(p + KEY_WATERLINE_PCT, config.waterlinePercent.coerceIn(25, 65))
+            .putInt(p + KEY_FISH_COUNT, config.heroFishCount.coerceIn(2, 9))
+            .putFloat(p + KEY_WATER_CLARITY, config.waterClarity.coerceIn(0.35f, 1.0f))
+            .putBoolean(p + KEY_BATTERY_LANTERN, config.enableBatteryLantern)
+            .putInt(p + KEY_HUNT_MODE, config.huntMode.id)
+            .putBoolean(p + KEY_ENABLE_BOTTOM_FEEDERS, config.enableBottomFeeders)
+            .putBoolean(p + KEY_ENABLE_CAT_VISITOR, config.enableCatVisitor)
+            .putBoolean(p + KEY_CALM_ICON_MODE, config.calmIconMode)
             .remove(KEY_LEGACY_ENABLE_PREDATORS)
             .apply()
     }
+
+    /**
+     * Switches cleanly to [targetScene] while restoring that scene's saved custom profile
+     * (or smart scene-tailored defaults if never customized yet) and preserving global settings.
+     */
+    fun switchScenePreservingProfile(current: WallpaperConfig, targetScene: SceneBiome): WallpaperConfig {
+        if (current.sceneBiome == targetScene) return current
+        saveConfig(current)
+        val p = scenePrefix(targetScene)
+        if (!prefs.getBoolean(p + "saved", false)) {
+            return when (targetScene) {
+                SceneBiome.OCEAN -> current.copy(
+                    sceneBiome = SceneBiome.OCEAN,
+                    paletteFamily = if (current.paletteFamily == PaletteFamily.AMOLED) PaletteFamily.AMOLED else PaletteFamily.LAGOON,
+                    weatherMode = WeatherMode.AUTO,
+                    waterlinePercent = 36,
+                    heroFishCount = 6,
+                    waterClarity = 0.85f
+                )
+                SceneBiome.ZEN_POND -> current.copy(
+                    sceneBiome = SceneBiome.ZEN_POND,
+                    paletteFamily = if (current.paletteFamily == PaletteFamily.AMOLED) PaletteFamily.AMOLED else PaletteFamily.MOSS,
+                    weatherMode = WeatherMode.CLEAR,
+                    waterlinePercent = 38,
+                    heroFishCount = 5,
+                    waterClarity = 0.85f
+                )
+                SceneBiome.AQUARIUM -> current.copy(
+                    sceneBiome = SceneBiome.AQUARIUM,
+                    paletteFamily = if (current.paletteFamily == PaletteFamily.AMOLED) PaletteFamily.AMOLED else PaletteFamily.LAGOON,
+                    waterlinePercent = 38,
+                    heroFishCount = 6,
+                    waterClarity = 0.85f,
+                    enableBottomFeeders = true,
+                    enableCatVisitor = true
+                )
+            }
+        }
+        return current.copy(
+            sceneBiome = targetScene,
+            paletteFamily = PaletteFamily.fromId(prefs.getInt(p + KEY_PALETTE_FAMILY, current.paletteFamily.id)),
+            weatherMode = WeatherMode.fromId(prefs.getInt(p + KEY_WEATHER_MODE, current.weatherMode.id)),
+            waterlinePercent = prefs.getInt(p + KEY_WATERLINE_PCT, current.waterlinePercent).coerceIn(25, 65),
+            heroFishCount = prefs.getInt(p + KEY_FISH_COUNT, current.heroFishCount).coerceIn(2, 9),
+            waterClarity = prefs.getFloat(p + KEY_WATER_CLARITY, current.waterClarity).coerceIn(0.35f, 1.0f),
+            enableBatteryLantern = prefs.getBoolean(p + KEY_BATTERY_LANTERN, current.enableBatteryLantern),
+            huntMode = HuntMode.fromId(prefs.getInt(p + KEY_HUNT_MODE, current.huntMode.id)),
+            enableBottomFeeders = prefs.getBoolean(p + KEY_ENABLE_BOTTOM_FEEDERS, current.enableBottomFeeders),
+            enableCatVisitor = prefs.getBoolean(p + KEY_ENABLE_CAT_VISITOR, current.enableCatVisitor),
+            calmIconMode = prefs.getBoolean(p + KEY_CALM_ICON_MODE, current.calmIconMode)
+        )
+    }
+
+    fun clearAllSceneProfiles() {
+        val editor = prefs.edit()
+        for (biome in SceneBiome.entries) {
+            val p = scenePrefix(biome)
+            editor.remove(p + "saved")
+                .remove(p + KEY_PALETTE_FAMILY)
+                .remove(p + KEY_WEATHER_MODE)
+                .remove(p + KEY_WATERLINE_PCT)
+                .remove(p + KEY_FISH_COUNT)
+                .remove(p + KEY_WATER_CLARITY)
+                .remove(p + KEY_BATTERY_LANTERN)
+                .remove(p + KEY_HUNT_MODE)
+                .remove(p + KEY_ENABLE_BOTTOM_FEEDERS)
+                .remove(p + KEY_ENABLE_CAT_VISITOR)
+                .remove(p + KEY_CALM_ICON_MODE)
+        }
+        editor.apply()
+    }
+
+    private fun scenePrefix(biome: SceneBiome): String = "scene_" + biome.id.toString() + "_"
 
     fun triggerQuickTileCommand(): Int {
         val nextSeq = prefs.getInt(KEY_QUICK_TILE_SEQ, 0) + 1

@@ -39,6 +39,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnUndoReset: TextView
 
     private lateinit var screenPond: LinearLayout
+    private lateinit var rowPreviewSceneBar: LinearLayout
+    private lateinit var btnPreviewOcean: TextView
+    private lateinit var btnPreviewPond: TextView
+    private lateinit var btnPreviewAquarium: TextView
     private lateinit var pondBoxContainer: LinearLayout
     private lateinit var textPondBoxTitle: TextView
     private lateinit var pondActionBar: View
@@ -196,6 +200,10 @@ class SettingsActivity : AppCompatActivity() {
         btnUndoReset = findViewById(R.id.btnUndoReset)
 
         screenPond = findViewById(R.id.screenPond)
+        rowPreviewSceneBar = findViewById(R.id.rowPreviewSceneBar)
+        btnPreviewOcean = findViewById(R.id.btnPreviewOcean)
+        btnPreviewPond = findViewById(R.id.btnPreviewPond)
+        btnPreviewAquarium = findViewById(R.id.btnPreviewAquarium)
         pondBoxContainer = findViewById(R.id.pondBoxContainer)
         textPondBoxTitle = findViewById(R.id.textPondBoxTitle)
         pondActionBar = findViewById(R.id.pondActionBar)
@@ -403,10 +411,18 @@ class SettingsActivity : AppCompatActivity() {
             setFullscreenPreview(!isFullscreenPreview)
         }
 
-        // Card 1: Scene selection (single unambiguous world switcher!)
-        btnBiomeOcean.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.OCEAN)) }
-        btnBiomePond.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.ZEN_POND)) }
-        btnBiomeAquarium.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.AQUARIUM)) }
+        // Scene selection (both Preview quick bar & Settings Scene card remember per-scene profiles!)
+        fun switchScene(target: SceneBiome) {
+            val next = repository.switchScenePreservingProfile(currentConfig, target)
+            updateConfig(next)
+            repository.applyAppNightMode(next.themeMode, next.timeCycleMode)
+        }
+        btnPreviewOcean.setOnClickListener { haptic(it); switchScene(SceneBiome.OCEAN) }
+        btnPreviewPond.setOnClickListener { haptic(it); switchScene(SceneBiome.ZEN_POND) }
+        btnPreviewAquarium.setOnClickListener { haptic(it); switchScene(SceneBiome.AQUARIUM) }
+        btnBiomeOcean.setOnClickListener { haptic(it); switchScene(SceneBiome.OCEAN) }
+        btnBiomePond.setOnClickListener { haptic(it); switchScene(SceneBiome.ZEN_POND) }
+        btnBiomeAquarium.setOnClickListener { haptic(it); switchScene(SceneBiome.AQUARIUM) }
 
         // Card 1: Lighting Presets (cleanly apply to whichever scene is active!)
         fun applyLightingPreset(label: String, preset: WallpaperConfig) {
@@ -553,10 +569,11 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.btnResetDefaults).setOnClickListener {
             haptic(it)
             previousConfigForUndo = currentConfig
+            repository.clearAllSceneProfiles()
             val defaults = WallpaperConfig()
             updateConfig(defaults)
             repository.applyAppNightMode(defaults.themeMode, defaults.timeCycleMode)
-            showUndoBanner("ok: reset all settings to defaults.")
+            showUndoBanner("ok: reset all scenes & settings to defaults.")
         }
         btnUndoReset.setOnClickListener {
             haptic(it)
@@ -573,6 +590,7 @@ class SettingsActivity : AppCompatActivity() {
         val chromeVis = if (isFullscreenPreview) View.GONE else View.VISIBLE
         headerBar.visibility = chromeVis
         headerDivider.visibility = chromeVis
+        rowPreviewSceneBar.visibility = chromeVis
         textPondBoxTitle.visibility = chromeVis
         textBiomeStatus.visibility = chromeVis
         textHuntStatus.visibility = chromeVis
@@ -581,21 +599,15 @@ class SettingsActivity : AppCompatActivity() {
         bottomNavBar.visibility = chromeVis
 
         val padPx = if (isFullscreenPreview) 0 else (12f * resources.displayMetrics.density).roundToInt()
-        val boxPadPx = if (isFullscreenPreview) 0 else (2f * resources.displayMetrics.density).roundToInt()
-        val boxTopMarginPx = if (isFullscreenPreview) 0 else (9f * resources.displayMetrics.density).roundToInt()
+        val boxPadPx = if (isFullscreenPreview) 0 else (4f * resources.displayMetrics.density).roundToInt()
         screenPond.setPadding(padPx, padPx, padPx, padPx)
         pondBoxContainer.setPadding(boxPadPx, boxPadPx, boxPadPx, boxPadPx)
-        val lp = pondBoxContainer.layoutParams as? android.widget.FrameLayout.LayoutParams
-        if (lp != null) {
-            lp.topMargin = boxTopMarginPx
-            pondBoxContainer.layoutParams = lp
-        }
         if (isFullscreenPreview) {
             pondBoxContainer.background = null
         } else {
-            pondBoxContainer.setBackgroundResource(R.drawable.bg_ascii_box)
+            pondBoxContainer.setBackgroundResource(R.drawable.bg_card)
         }
-        btnFullscreenPreview.text = if (isFullscreenPreview) "[exit]" else "[full]"
+        btnFullscreenPreview.text = if (isFullscreenPreview) "exit" else "full"
     }
 
     private fun switchTab(tab: Int) {
@@ -688,7 +700,12 @@ class SettingsActivity : AppCompatActivity() {
         } else {
             "biome ... " + asciiPondView.simulation.activeSpeciesSummary
         }
-        btnSummonPredator.text = if (isAquarium) "[cat]" else getString(R.string.action_summon_predator)
+        textPondBoxTitle.text = when (currentConfig.sceneBiome) {
+            SceneBiome.OCEAN -> "OCEAN WINDOW · tap water to feed"
+            SceneBiome.ZEN_POND -> "ZEN POND · tap water to feed"
+            SceneBiome.AQUARIUM -> "BETTA TANK · tap water to feed · rim for cat"
+        }
+        btnSummonPredator.text = if (isAquarium) "cat" else "predator"
         textSceneDesc.text = when (currentConfig.sceneBiome) {
             SceneBiome.OCEAN -> "coral reef, whales, rays & open ocean horizon"
             SceneBiome.ZEN_POND -> "koi pond, blooming lotus pads & shoreline reeds"
@@ -744,7 +761,10 @@ class SettingsActivity : AppCompatActivity() {
             row.contentDescription = spoken + ", " + (if (enabled) "on" else "off")
         }
 
-        // Card 1: Scene + Highlight active lighting preset if matched
+        // Card 1 & Preview Scene Bar: Scene + Highlight active lighting preset if matched
+        stylePill(btnPreviewOcean, currentConfig.sceneBiome == SceneBiome.OCEAN, "Ocean scene")
+        stylePill(btnPreviewPond, currentConfig.sceneBiome == SceneBiome.ZEN_POND, "Zen Pond scene")
+        stylePill(btnPreviewAquarium, currentConfig.sceneBiome == SceneBiome.AQUARIUM, "Betta Tank scene")
         stylePill(btnBiomeOcean, currentConfig.sceneBiome == SceneBiome.OCEAN, "Ocean scene")
         stylePill(btnBiomePond, currentConfig.sceneBiome == SceneBiome.ZEN_POND, "Zen Pond scene")
         stylePill(btnBiomeAquarium, currentConfig.sceneBiome == SceneBiome.AQUARIUM, "Betta Tank scene")

@@ -42,7 +42,7 @@ import kotlin.random.Random
 class AquariumBiotopeEngine {
 
     private enum class BettaVariety { HALFMOON, CROWNTAIL, DUMBO_VEIL, PLAKAT }
-    private enum class BettaState { CRUISE, HOVER, HIDE, REST, BREATH, INSPECT, ESCAPE }
+    private enum class BettaState { CRUISE, HOVER, HIDE, REST, BREATH, INSPECT, CHASE, ESCAPE }
     private enum class CatState { HIDDEN, PEEKING, STALKING, DIPPING, RETRACT, LEAVING }
     private enum class SurfacePlane { FRONT_GLASS, BACK_GLASS, LEFT_GLASS, RIGHT_GLASS, WOOD, STONE, TRANSIT }
 
@@ -76,6 +76,9 @@ class AquariumBiotopeEngine {
         var flare = 0f
         var zDepth = 0.45f
         var smoothFacing = 1f
+        var chaseTargetKind = 0 // 0=Betta, 1=Rasbora, 2=GlassCatfish
+        var chaseTargetIdx = 0
+        var chaseCooldown = 9f
     }
 
     private class OtoCleaner(
@@ -404,6 +407,12 @@ class AquariumBiotopeEngine {
     private var catBlinkTimer = 2.4f
     private var catBlinkDur = 0f
     private var catHeadTiltDeg = 0f
+    private var catCalmWatchOnly = false
+
+    // Active sunken wafer coordinates (so Cherry Shrimps gather around it too!)
+    private var activeWaferPxX = -1f
+    private var activeWaferPxY = -1f
+    private var activeWaferZ = 0.32f
 
     // Living Betta Surface Bubble Nest state (grows when Halfmoon Betta blows fresh bubbles!)
     private var bubbleNestCount = 9
@@ -415,7 +424,7 @@ class AquariumBiotopeEngine {
         get() = catState != CatState.HIDDEN ||
             lampPulseTimer > 0f ||
             pellets.any { it.active } ||
-            bettas.any { it.state == BettaState.ESCAPE || it.state == BettaState.BREATH }
+            bettas.any { it.state == BettaState.ESCAPE || it.state == BettaState.CHASE || it.state == BettaState.BREATH }
 
     // Reusable Zero-Alloc Paints & Paths
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
@@ -475,12 +484,15 @@ class AquariumBiotopeEngine {
     // PUBLIC INTERACTION & LIFECYCLE HOOKS
     // =========================================================================
 
-    fun summonCatVisitNow(): String {
+    fun summonCatVisitNow(): String = startCatVisit(allowCalmWatch = false)
+
+    private fun startCatVisit(allowCalmWatch: Boolean): String {
         if (catState == CatState.HIDDEN) {
             catSide = if (rand.nextFloat() < 0.65f) 1f else -1f
             catState = CatState.PEEKING
             catTimer = 0f
-            catSwipesLeft = 1 + if (rand.nextFloat() < 0.45f) 1 else 0
+            catCalmWatchOnly = allowCalmWatch && rand.nextFloat() < 0.34f
+            catSwipesLeft = if (catCalmWatchOnly) 0 else (1 + if (rand.nextFloat() < 0.45f) 1 else 0)
             catSplashFired = false
             catActionIsGlassPat = rand.nextFloat() < 0.45f
             catBlinkTimer = 1.6f + rand.nextFloat() * 1.8f
@@ -889,6 +901,7 @@ class AquariumBiotopeEngine {
             b.swimPhase = idx * 2.1f
             b.pecPhase = idx * 1.4f
             b.breathTimer = 14f + idx * 9f
+            b.chaseCooldown = 7f + idx * 6f
             b.targetX = p[0]; b.targetY = p[1]; b.targetZ = hz
         }
 
@@ -1009,6 +1022,7 @@ class AquariumBiotopeEngine {
         2 -> tankX + tankW * 0.24f // Foreground mossy stone (z=0.18)
         3 -> tankX + tankW * 0.58f // Midground stone moss (z=0.44)
         4 -> tankX + tankW * 0.84f // Background moss cushion (z=0.78)
+        6 -> if (activeWaferPxX > 0f) activeWaferPxX + (t - 0.5f) * tankW * 0.045f else tankX + tankW * 0.38f
         else -> tankX + tankW * 0.38f // Fallen Catappa leaf (z=0.28)
     }
 
@@ -1018,6 +1032,7 @@ class AquariumBiotopeEngine {
         2 -> sandY - tankH * 0.036f
         3 -> sandY - tankH * 0.056f
         4 -> sandY - tankH * 0.095f
+        6 -> if (activeWaferPxY > 0f) activeWaferPxY - tankH * 0.006f else sandY + tankH * 0.018f
         else -> sandY + tankH * 0.018f
     }
 
@@ -1027,7 +1042,18 @@ class AquariumBiotopeEngine {
         2 -> 0.18f
         3 -> 0.44f
         4 -> 0.78f
+        6 -> activeWaferZ
         else -> 0.28f
+    }
+
+    /** Returns true when a fish is gliding inside one of the open sunlit overhead LED light shafts! */
+    private fun isInLightShaft(worldX: Float): Boolean {
+        if (aqPal.isAmoled || tankW <= 1f) return false
+        val u = (worldX - tankX) / tankW
+        val leftEnd = floaterLiveFracs[2] + 0.024f
+        val rightStart = floaterLiveFracs[3] - 0.024f
+        val rightEnd = floaterLiveFracs[5] + 0.024f
+        return u < (floaterLiveFracs[0] - 0.020f) || (u in leftEnd..rightStart) || u > rightEnd
     }
 
     /** Sand floor Y rises smoothly from front glass (z=0) toward back wall (z=1) for Amano depth! */
@@ -1154,12 +1180,15 @@ class AquariumBiotopeEngine {
                 catRise = 0f; catPawDip = 0f; catHeadTiltDeg = 0f
                 if (enableCatVisitor) {
                     catTimer -= dt
-                    if (catTimer <= 0f) summonCatVisitNow()
+                    if (catTimer <= 0f) startCatVisit(allowCalmWatch = true)
                 }
             }
             CatState.PEEKING -> {
                 catRise = (catRise + dt * 0.72f).coerceAtMost(1f)
-                if (catRise >= 1f) { catState = CatState.STALKING; catTimer = 1.6f + rand.nextFloat() * 0.8f }
+                if (catRise >= 1f) {
+                    catState = CatState.STALKING
+                    catTimer = if (catCalmWatchOnly) (3.6f + rand.nextFloat() * 1.6f) else (1.6f + rand.nextFloat() * 0.8f)
+                }
             }
             CatState.STALKING -> {
                 catTimer -= dt
@@ -1172,7 +1201,15 @@ class AquariumBiotopeEngine {
                 catHeadTiltDeg += (desiredTilt - catHeadTiltDeg) * (dt * 3.2f).coerceAtMost(1f)
                 catGlassPatYFrac = ((tb.ny[0] - waterY) / waterSpanY).coerceIn(0.10f, 0.35f)
                 if (rand.nextFloat() < dt * 0.55f) catEarTwitch = 0.7f
-                if (catTimer <= 0f) { catState = CatState.DIPPING; catSplashFired = false }
+                if (catTimer <= 0f) {
+                    if (catCalmWatchOnly) {
+                        catState = CatState.LEAVING
+                        catTimer = 0.7f
+                    } else {
+                        catState = CatState.DIPPING
+                        catSplashFired = false
+                    }
+                }
             }
             CatState.DIPPING -> {
                 catPawDip = (catPawDip + dt * 2.65f).coerceAtMost(1f)
@@ -1247,6 +1284,7 @@ class AquariumBiotopeEngine {
             b.flare = (b.flare - dt * 0.48f).coerceAtLeast(0f)
             b.breathTimer -= dt
             if (b.hideCooldown > 0f) b.hideCooldown -= dt
+            if (b.chaseCooldown > 0f) b.chaseCooldown -= dt
 
             // Variety-authentic swim agility (Plakat is swift & agile; Halfmoon/Dumbo are serene & deliberate!)
             val varietySpdMult = when (b.variety) {
@@ -1257,7 +1295,7 @@ class AquariumBiotopeEngine {
             }
 
             var foodPellet: TankPellet? = null
-            if (b.state != BettaState.ESCAPE) {
+            if (b.state != BettaState.ESCAPE && b.state != BettaState.CHASE) {
                 var bestD = tankW * 0.54f
                 for (p in pellets) {
                     if (!p.active || p.isWafer) continue
@@ -1282,6 +1320,74 @@ class AquariumBiotopeEngine {
                         if (b.stateTimer <= 0f) {
                             b.state = BettaState.HIDE
                             b.stateTimer = 3.2f + rand.nextFloat() * 3.0f
+                        }
+                    }
+                    BettaState.CHASE -> {
+                        // Territorial Betta flaring gill-beard & chasing an intruder out of its turf!
+                        b.stateTimer -= dt
+                        b.flare = (b.flare + dt * 2.4f).coerceAtMost(1f)
+                        var targetDistPx = 0f
+                        when (b.chaseTargetKind) {
+                            0 -> {
+                                val tIdx = b.chaseTargetIdx.coerceIn(0, activeBettaCount - 1)
+                                if (tIdx == idx) {
+                                    b.stateTimer = 0f
+                                } else {
+                                    val o = bettas[tIdx]
+                                    b.targetX = ((o.nx[0] - tankX) / tankW).coerceIn(0.08f, 0.92f)
+                                    b.targetY = ((o.ny[0] - waterY) / waterSpanY).coerceIn(0.08f, 0.88f)
+                                    b.targetZ = o.nz[0]
+                                    targetDistPx = hypot(o.nx[0] - hx, o.ny[0] - hy)
+                                    if (targetDistPx < tankW * 0.23f && o.state != BettaState.ESCAPE) {
+                                        o.state = BettaState.ESCAPE
+                                        o.stateTimer = 1.45f + rand.nextFloat() * 0.55f
+                                        o.flare = 0.85f
+                                        val fleeDir = if (o.nx[0] >= hx) 1f else -1f
+                                        o.targetX = ((o.nx[0] - tankX) / tankW + fleeDir * 0.36f).coerceIn(0.09f, 0.91f)
+                                        o.targetY = (0.28f + rand.nextFloat() * 0.46f)
+                                        o.targetZ = (0.22f + rand.nextFloat() * 0.62f)
+                                    }
+                                    if (targetDistPx > tankW * 0.44f && b.stateTimer < 1.1f) b.stateTimer = 0f
+                                }
+                            }
+                            1 -> {
+                                val r = rasboras[b.chaseTargetIdx.coerceIn(0, rasboras.size - 1)]
+                                b.targetX = ((r.x - tankX) / tankW).coerceIn(0.08f, 0.92f)
+                                b.targetY = ((r.y - waterY) / waterSpanY).coerceIn(0.08f, 0.82f)
+                                b.targetZ = r.z
+                                targetDistPx = hypot(r.x - hx, r.y - hy)
+                                if (targetDistPx < tankW * 0.22f) {
+                                    val fleeDir = if (r.x >= hx) 1f else -1f
+                                    rasboraGoalX = ((r.x - tankX) / tankW + fleeDir * 0.42f).coerceIn(0.12f, 0.88f)
+                                    rasboraGoalY = (0.18f + rand.nextFloat() * 0.44f)
+                                    rasboraGoalTimer = 2.8f
+                                    for (rs in rasboras) {
+                                        rs.dartTimer = 1.4f
+                                        rs.vx += fleeDir * tankW * 0.16f
+                                        rs.vy += (rand.nextFloat() - 0.5f) * tankH * 0.08f
+                                    }
+                                    if (b.stateTimer < 0.8f) b.stateTimer = 0f
+                                }
+                            }
+                            else -> {
+                                val g = glassCats[b.chaseTargetIdx.coerceIn(0, glassCats.size - 1)]
+                                val gx = tankX + g.normX * tankW
+                                val gy = waterY + g.normY * waterSpanY
+                                b.targetX = g.normX
+                                b.targetY = g.normY
+                                b.targetZ = g.zDepth
+                                targetDistPx = hypot(gx - hx, gy - hy)
+                                if (targetDistPx < tankW * 0.20f) {
+                                    g.spookOffset = 1.0f
+                                    b.stateTimer = (b.stateTimer - dt * 2.5f).coerceAtLeast(0f)
+                                }
+                            }
+                        }
+                        if (b.stateTimer <= 0f) {
+                            // Proud victorious hover with fading gill-beard flare after driving intruder away!
+                            b.state = BettaState.HOVER
+                            b.stateTimer = 1.6f + rand.nextFloat() * 1.2f
+                            b.chaseCooldown = 13f + rand.nextFloat() * 15f
                         }
                     }
                     BettaState.BREATH -> {
@@ -1312,8 +1418,32 @@ class AquariumBiotopeEngine {
                         } else if (b.stateTimer <= 0f) {
                             val roll = rand.nextFloat()
                             when {
+                                // Territorial burst: randomly flare & chase a Rasbora, another Betta, or Glass Catfish!
+                                roll < (if (aqPal.isNight) 0.08f else 0.18f) && b.chaseCooldown <= 0f && catState == CatState.HIDDEN -> {
+                                    b.state = BettaState.CHASE
+                                    b.stateTimer = 1.65f + rand.nextFloat() * 0.85f
+                                    b.flare = 1.0f
+                                    val pick = rand.nextFloat()
+                                    if (pick < 0.55f) {
+                                        // Chase nearest Harlequin Rasbora!
+                                        var bestR = 0; var bestD = Float.MAX_VALUE
+                                        for (ri in rasboras.indices) {
+                                            val d = hypot(rasboras[ri].x - hx, rasboras[ri].y - hy)
+                                            if (d < bestD) { bestD = d; bestR = ri }
+                                        }
+                                        b.chaseTargetKind = 1; b.chaseTargetIdx = bestR
+                                    } else if (pick < 0.85f && activeBettaCount > 1) {
+                                        // Chase another Betta out of its territory!
+                                        var otherIdx = (idx + 1) % activeBettaCount
+                                        if (activeBettaCount > 2 && rand.nextBoolean()) otherIdx = (idx + 2) % activeBettaCount
+                                        b.chaseTargetKind = 0; b.chaseTargetIdx = otherIdx
+                                    } else {
+                                        // Chase a hovering Glass Catfish!
+                                        b.chaseTargetKind = 2; b.chaseTargetIdx = rand.nextInt(glassCats.size)
+                                    }
+                                }
                                 // Hide behind foreground Vallisneria or tucked under spiderwood cave arch!
-                                roll < (if (aqPal.isNight) 0.28f else 0.20f) && b.hideCooldown <= 0f -> {
+                                roll < (if (aqPal.isNight) 0.30f else 0.34f) && b.hideCooldown <= 0f -> {
                                     b.state = BettaState.HIDE
                                     b.stateTimer = 4.5f + rand.nextFloat() * 4.5f
                                     b.hideCooldown = 14f + rand.nextFloat() * 10f
@@ -1324,7 +1454,7 @@ class AquariumBiotopeEngine {
                                     }
                                 }
                                 // Lounge on broad Java Fern / Anubias hammock leaves or under frogbit roots!
-                                roll < (if (aqPal.isNight) 0.54f else 0.36f) -> {
+                                roll < (if (aqPal.isNight) 0.56f else 0.48f) -> {
                                     b.state = BettaState.REST
                                     b.stateTimer = 4.0f + rand.nextFloat() * 3.8f
                                     when (b.restAnchorIdx) {
@@ -1334,7 +1464,7 @@ class AquariumBiotopeEngine {
                                     }
                                 }
                                 // Curiously inspect a shrimp or front-glass Otocinclus!
-                                roll < 0.50f && enableCleaners -> {
+                                roll < 0.60f && enableCleaners -> {
                                     b.state = BettaState.INSPECT
                                     b.stateTimer = 2.6f + rand.nextFloat() * 1.8f
                                     val sh = shrimps[rand.nextInt(shrimps.size)]
@@ -1344,7 +1474,7 @@ class AquariumBiotopeEngine {
                                     b.targetY = ((sy - waterY) / waterSpanY - 0.08f).coerceIn(0.16f, 0.82f)
                                     b.targetZ = evalShrimpHomeZ(sh.homeKind).coerceIn(0.16f, 0.76f)
                                 }
-                                roll < 0.66f -> {
+                                roll < 0.72f -> {
                                     b.state = BettaState.HOVER
                                     b.stateTimer = 2.2f + rand.nextFloat() * 2.4f
                                 }
@@ -1370,11 +1500,24 @@ class AquariumBiotopeEngine {
             val personalSpace = tankW * 0.19f
             for (j in 0 until activeBettaCount) {
                 if (j == idx) continue
+                // Skip repulsion against the Betta we're actively chasing so territorial pursuit feels real!
+                if (b.state == BettaState.CHASE && b.chaseTargetKind == 0 && b.chaseTargetIdx == j) continue
                 val o = bettas[j]
                 val rx = hx - o.nx[0]; val ry = hy - o.ny[0]; val rz = (hz - o.nz[0]) * zScalePx
                 val rd = sqrtSafe(rx * rx + ry * ry + rz * rz)
                 if (rd < personalSpace && rd > 1f) {
                     b.flare = (b.flare + dt * 1.45f).coerceAtMost(1f)
+                    // Close territorial encounter can spontaneously spark a chase!
+                    if (b.state != BettaState.ESCAPE && b.state != BettaState.CHASE && b.state != BettaState.BREATH &&
+                        b.chaseCooldown <= 0f && o.state != BettaState.ESCAPE && catState == CatState.HIDDEN &&
+                        rand.nextFloat() < dt * 0.55f
+                    ) {
+                        b.state = BettaState.CHASE
+                        b.stateTimer = 1.6f + rand.nextFloat() * 0.7f
+                        b.chaseTargetKind = 0
+                        b.chaseTargetIdx = j
+                        b.flare = 1.0f
+                    }
                     val push = (personalSpace - rd) * 0.62f
                     repX += (rx / rd) * push; repY += (ry / rd) * push; repZ += (rz / rd) * push
                 }
@@ -1382,6 +1525,7 @@ class AquariumBiotopeEngine {
 
             val baseSpd = tankW * when {
                 b.state == BettaState.ESCAPE -> 0.36f
+                b.state == BettaState.CHASE -> 0.255f
                 foodPellet != null -> 0.175f
                 b.state == BettaState.BREATH -> 0.105f
                 b.state == BettaState.HOVER -> 0.015f
@@ -1390,7 +1534,11 @@ class AquariumBiotopeEngine {
                 else -> 0.084f
             } * varietySpdMult * nightCalm
 
-            val steerRate = if (b.state == BettaState.ESCAPE) 5.6f else 1.72f
+            val steerRate = when (b.state) {
+                BettaState.ESCAPE -> 5.6f
+                BettaState.CHASE -> 4.3f
+                else -> 1.72f
+            }
             var desVx = b.vx * 0.9f; var desVy = b.vy * 0.9f; var desVzPx = b.vz * zScalePx * 0.9f
 
             if ((b.state == BettaState.HOVER || ((b.state == BettaState.HIDE || b.state == BettaState.REST) && dist3D < tankW * 0.045f)) && foodPellet == null) {
@@ -1499,7 +1647,11 @@ class AquariumBiotopeEngine {
     private fun updateCommunitySpecies(dt: Float, waterSpanY: Float, nightCalm: Float) {
         val zScalePx = tankW * 0.56f
 
-        // A. Schooling Harlequin Rasboras (Tight cohesive 3D Boids shoal!)
+        // A. Schooling Harlequin Rasboras (Tight cohesive 3D Boids shoal + darting eagerly for floating pellets!)
+        var rasboraPellet: TankPellet? = null
+        for (p in pellets) {
+            if (p.active && !p.isWafer) { rasboraPellet = p; break }
+        }
         rasboraGoalTimer -= dt
         if (rasboraGoalTimer <= 0f) {
             rasboraGoalTimer = 4.2f + rand.nextFloat() * 4.5f
@@ -1507,8 +1659,9 @@ class AquariumBiotopeEngine {
             rasboraGoalY = 0.18f + rand.nextFloat() * 0.44f
             rasboraGoalZ = 0.18f + rand.nextFloat() * 0.56f
         }
-        val goalPxX = tankX + rasboraGoalX * tankW
-        val goalPxY = waterY + rasboraGoalY * waterSpanY
+        val goalPxX = rasboraPellet?.x ?: (tankX + rasboraGoalX * tankW)
+        val goalPxY = rasboraPellet?.y ?: (waterY + rasboraGoalY * waterSpanY)
+        val goalZ = rasboraPellet?.z ?: rasboraGoalZ
         var cx = 0f; var cy = 0f; var cz = 0f
         var avx = 0f; var avy = 0f; var avz = 0f
         for (r in rasboras) { cx += r.x; cy += r.y; cz += r.z; avx += r.vx; avy += r.vy; avz += r.vz }
@@ -1520,6 +1673,11 @@ class AquariumBiotopeEngine {
         for (i in rasboras.indices) {
             val r = rasboras[i]
             if (r.dartTimer > 0f) r.dartTimer = (r.dartTimer - dt).coerceAtLeast(0f)
+            if (rasboraPellet != null && rasboraPellet.active && hypot(rasboraPellet.x - r.x, rasboraPellet.y - r.y) < tankW * 0.032f) {
+                rasboraPellet.active = false
+                spawnBubble(r.x, r.y - 3f, 1)
+                injectRipple(r.x, 8f)
+            }
             var sx = 0f; var sy = 0f; var sz = 0f
             for (j in rasboras.indices) {
                 if (i == j) continue
@@ -1544,18 +1702,19 @@ class AquariumBiotopeEngine {
             }
 
             // Combine Goal + Cohesion + Alignment + Separation
-            val gdx = goalPxX - r.x; val gdy = goalPxY - r.y; val gdz = rasboraGoalZ - r.z
-            val steerX = gdx * 0.55f + (cx - r.x) * 0.95f + (avx - r.vx) * 1.15f + sx
-            val steerY = gdy * 0.55f + (cy - r.y) * 0.95f + (avy - r.vy) * 1.15f + sy
+            val gdx = goalPxX - r.x; val gdy = goalPxY - r.y; val gdz = goalZ - r.z
+            val goalWeight = if (rasboraPellet != null) 1.35f else 0.55f
+            val steerX = gdx * goalWeight + (cx - r.x) * 0.95f + (avx - r.vx) * 1.15f + sx
+            val steerY = gdy * goalWeight + (cy - r.y) * 0.95f + (avy - r.vy) * 1.15f + sy
             val steerZ = gdz * 0.65f + (cz - r.z) * 0.90f + (avz - r.vz) * 1.05f + sz
 
-            val blend = (dt * (if (r.dartTimer > 0f) 4.2f else 2.2f)).coerceAtMost(1f)
+            val blend = (dt * (if (r.dartTimer > 0f || rasboraPellet != null) 4.2f else 2.2f)).coerceAtMost(1f)
             r.vx += steerX * blend
             r.vy += steerY * blend
             r.vz += steerZ * blend
 
             // Clamp speed to lively silky schooling pace
-            val maxSpd = tankW * (if (r.dartTimer > 0f) 0.28f else 0.105f) * nightCalm
+            val maxSpd = tankW * (if (r.dartTimer > 0f) 0.28f else if (rasboraPellet != null) 0.175f else 0.105f) * nightCalm
             val minSpd = tankW * 0.036f * nightCalm
             val spd = hypot(r.vx, r.vy).coerceAtLeast(0.01f)
             if (spd > maxSpd) { r.vx = (r.vx / spd) * maxSpd; r.vy = (r.vy / spd) * maxSpd }
@@ -1691,11 +1850,16 @@ class AquariumBiotopeEngine {
 
     private fun updateCleanersAndCritters(dt: Float, activeBettaCount: Int) {
         var activeWaferX = -1f
-        var activeWaferZ = 0.32f
+        var activeWaferZLocal = 0.32f
+        activeWaferPxX = -1f
+        activeWaferPxY = -1f
         for (p in pellets) {
             if (p.active && p.isWafer && p.y >= sandFloorYAtZ(p.z) - tankH * 0.05f) {
                 activeWaferX = ((p.x - tankX) / tankW).coerceIn(0.10f, 0.90f)
-                activeWaferZ = p.z
+                activeWaferZLocal = p.z
+                activeWaferPxX = p.x
+                activeWaferPxY = p.y
+                activeWaferZ = p.z.coerceIn(0.16f, 0.68f)
                 break
             }
         }
@@ -1852,7 +2016,7 @@ class AquariumBiotopeEngine {
 
             if (activeWaferX > 0f) {
                 c.targetX = activeWaferX
-                c.targetZ = activeWaferZ.coerceIn(0.14f, 0.68f)
+                c.targetZ = activeWaferZLocal.coerceIn(0.14f, 0.68f)
             } else {
                 c.pauseTimer -= dt
                 if (c.pauseTimer <= 0f) {
@@ -1915,8 +2079,9 @@ class AquariumBiotopeEngine {
             }
         }
 
-        // E. Red Cherry Shrimps (3D depth-scaled grazing & hopping across stones, spiderwood & moss!)
-        for (s in shrimps) {
+        // E. Red Cherry Shrimps (3D depth-scaled grazing, hopping & gathering around sunken algae wafers!)
+        for (sIdx in shrimps.indices) {
+            val s = shrimps[sIdx]
             s.phase += dt * 6.0f
             if (s.hopProgress > 0f) {
                 s.hopProgress += dt * 1.25f
@@ -1931,13 +2096,36 @@ class AquariumBiotopeEngine {
 
             val sx = evalShrimpHomeX(s.homeKind, s.t)
             val sy = evalShrimpHomeY(s.homeKind, s.t)
+            // Gather 3 shrimps eagerly around any sunken algae wafer on the sand bed!
+            if (activeWaferPxX > 0f && sIdx < 3 && s.homeKind != 6 && rand.nextFloat() < dt * 1.6f) {
+                s.hopStartX = sx; s.hopStartY = sy; s.hopStartZ = s.zDepth
+                s.homeKind = 6
+                s.t = 0.25f + sIdx * 0.25f
+                s.hopEndX = evalShrimpHomeX(6, s.t)
+                s.hopEndY = evalShrimpHomeY(6, s.t)
+                s.hopEndZ = evalShrimpHomeZ(6)
+                s.dir = if (s.hopEndX >= s.hopStartX) 1f else -1f
+                s.hopProgress = 0.01f
+                continue
+            } else if (activeWaferPxX <= 0f && s.homeKind == 6) {
+                s.hopStartX = sx; s.hopStartY = sy; s.hopStartZ = s.zDepth
+                s.homeKind = rand.nextInt(6)
+                s.t = 0.25f + rand.nextFloat() * 0.50f
+                s.hopEndX = evalShrimpHomeX(s.homeKind, s.t)
+                s.hopEndY = evalShrimpHomeY(s.homeKind, s.t)
+                s.hopEndZ = evalShrimpHomeZ(s.homeKind)
+                s.dir = if (s.hopEndX >= s.hopStartX) 1f else -1f
+                s.hopProgress = 0.01f
+                continue
+            }
+
             var startled = false
             for (i in 0 until activeBettaCount) {
                 if (hypot(bettas[i].nx[0] - sx, bettas[i].ny[0] - sy) < tankW * 0.085f) {
                     startled = true; break
                 }
             }
-            if (startled || rand.nextFloat() < dt * 0.055f) {
+            if (startled || (s.homeKind != 6 && rand.nextFloat() < dt * 0.055f)) {
                 s.hopStartX = sx; s.hopStartY = sy; s.hopStartZ = s.zDepth
                 if ((s.homeKind == 0 || s.homeKind == 1) && rand.nextFloat() < 0.6f) {
                     s.t = (s.t + (if (rand.nextBoolean()) 0.20f else -0.20f)).coerceIn(0.16f, 0.84f)
@@ -2922,13 +3110,15 @@ class AquariumBiotopeEngine {
         val spdNorm = b.speed / tankW.coerceAtLeast(1f)
         val billow = (1.16f - (spdNorm * 0.9f).coerceAtMost(0.32f)) + b.flare * 0.28f
         val veilAlpha = if (aqPal.isAmoled) 186 else 192
+        val inShaft = isInLightShaft(b.nx[2])
+        val sunBoost = if (inShaft) (if (aqPal.isNight) 0.16f else 0.26f) else 0f
         val finBaseCol = withAlpha(TimeOfDayPalette.lerpColor(b.finBase, aqPal.fogColor, fogAmt), veilAlpha)
-        val finMidCol = withAlpha(TimeOfDayPalette.lerpColor(b.finMid, aqPal.fogColor, fogAmt), veilAlpha - 10)
-        val finTipCol = withAlpha(TimeOfDayPalette.lerpColor(b.finTip, aqPal.fogColor, fogAmt), veilAlpha + 14)
-        val bodyCol = TimeOfDayPalette.lerpColor(b.bodyCol, aqPal.fogColor, fogAmt) or (0xFF shl 24)
-        val bodyHiCol = TimeOfDayPalette.lerpColor(b.bodyHi, aqPal.fogColor, fogAmt) or (0xFF shl 24)
+        val finMidCol = withAlpha(TimeOfDayPalette.lerpColor(TimeOfDayPalette.lerpColor(b.finMid, aqPal.lampGlow, sunBoost * 0.55f), aqPal.fogColor, fogAmt), veilAlpha - 10)
+        val finTipCol = withAlpha(TimeOfDayPalette.lerpColor(TimeOfDayPalette.lerpColor(b.finTip, aqPal.lampGlow, sunBoost), aqPal.fogColor, fogAmt), veilAlpha + 14)
+        val bodyCol = TimeOfDayPalette.lerpColor(TimeOfDayPalette.lerpColor(b.bodyCol, aqPal.lampGlow, sunBoost * 0.45f), aqPal.fogColor, fogAmt) or (0xFF shl 24)
+        val bodyHiCol = TimeOfDayPalette.lerpColor(TimeOfDayPalette.lerpColor(b.bodyHi, aqPal.lampGlow, sunBoost * 0.85f), aqPal.fogColor, fogAmt) or (0xFF shl 24)
         val spotCol = TimeOfDayPalette.lerpColor(b.spotCol, aqPal.fogColor, fogAmt) or (0xFF shl 24)
-        val rimLineCol = withAlpha(TimeOfDayPalette.lerpColor(b.finTip, aqPal.fogColor, fogAmt * 0.5f), if (aqPal.isAmoled) 155 else 102)
+        val rimLineCol = withAlpha(TimeOfDayPalette.lerpColor(b.finTip, aqPal.fogColor, fogAmt * 0.5f), if (aqPal.isAmoled) 155 else if (inShaft) 142 else 102)
 
         // Variety-specific fin dimensions!
         val dorsalScale = when (b.variety) {
@@ -3307,7 +3497,9 @@ class AquariumBiotopeEngine {
     private fun drawHarlequinRasbora(canvas: Canvas, r: HarlequinRasbora) {
         val sc = (tankW * 0.0022f).coerceIn(0.75f, 2.25f) * perspScale(r.z)
         val fog = depthFog(r.z)
-        val copperCol = TimeOfDayPalette.lerpColor(0xFFEA8A54.toInt(), aqPal.fogColor, fog) or (0xFF shl 24)
+        val sunBoost = if (isInLightShaft(r.x)) (if (aqPal.isNight) 0.14f else 0.28f) else 0f
+        val copperLit = TimeOfDayPalette.lerpColor(0xFFEA8A54.toInt(), aqPal.lampGlow, sunBoost)
+        val copperCol = TimeOfDayPalette.lerpColor(copperLit, aqPal.fogColor, fog) or (0xFF shl 24)
         val silverBelly = TimeOfDayPalette.lerpColor(0xFFF6DEC8.toInt(), aqPal.fogColor, fog) or (0xFF shl 24)
         val wedgeCol = TimeOfDayPalette.lerpColor(0xFF1D1D24.toInt(), aqPal.fogColor, fog) or (0xFF shl 24)
         val finCol = withAlpha(TimeOfDayPalette.lerpColor(0xFFFFA86C.toInt(), aqPal.fogColor, fog), 178)
