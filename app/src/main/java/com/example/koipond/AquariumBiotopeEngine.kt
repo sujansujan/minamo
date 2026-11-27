@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.Shader
 import kotlin.math.PI
 import kotlin.math.abs
@@ -341,6 +342,17 @@ class AquariumBiotopeEngine {
     private var catTargetBetta = 0
     private var catEarTwitch = 0f
     private var catSplashFired = false
+    private var catActionIsGlassPat = false
+    private var catGlassPatYFrac = 0.42f
+    private var catBlinkTimer = 2.4f
+    private var catBlinkDur = 0f
+    private var catHeadTiltDeg = 0f
+
+    // Living Betta Surface Bubble Nest state (grows when Halfmoon Betta blows fresh bubbles!)
+    private var bubbleNestCount = 9
+    private var bubbleNestDecayTimer = 28f
+    private val floaterBaseFracs = floatArrayOf(0.18f, 0.24f, 0.29f, 0.58f, 0.65f, 0.73f)
+    private val floaterLiveFracs = floatArrayOf(0.18f, 0.24f, 0.29f, 0.58f, 0.65f, 0.73f)
 
     val isHighMotion: Boolean
         get() = catState != CatState.HIDDEN ||
@@ -374,6 +386,10 @@ class AquariumBiotopeEngine {
     private var cachedSandY0 = -1f; private var cachedSandY1 = -1f
     private var cachedSandTop = 0; private var cachedSandBot = 0
     private var sandGrad: LinearGradient? = null
+    private var cachedHaloX = -1f; private var cachedHaloY = -1f; private var cachedHaloR = -1f; private var cachedHaloCol = 0
+    private var wallHaloGrad: RadialGradient? = null
+    private var cachedVigX = -1f; private var cachedVigY = -1f; private var cachedVigR = -1f
+    private var interiorVignetteGrad: RadialGradient? = null
 
     // Betta 3D Spine Scratch Buffers (Zero-Allocation!)
     private val projX = FloatArray(SPINE_N)
@@ -409,6 +425,10 @@ class AquariumBiotopeEngine {
             catTimer = 0f
             catSwipesLeft = 1 + if (rand.nextFloat() < 0.45f) 1 else 0
             catSplashFired = false
+            catActionIsGlassPat = rand.nextFloat() < 0.45f
+            catBlinkTimer = 1.6f + rand.nextFloat() * 1.8f
+            catBlinkDur = 0f
+            catHeadTiltDeg = 0f
             val rimX = if (catSide > 0f) tankX + tankW * 0.76f else tankX + tankW * 0.24f
             var best = 0
             var bestD = Float.MAX_VALUE
@@ -642,12 +662,14 @@ class AquariumBiotopeEngine {
         canvas.save()
         canvas.clipRect(tankX, tankY, tankX + tankW, tankY + tankH)
 
-        // 3A. Back Water Volume, Dappled Overhead Light Rays & Distant Rotala + Vallisneria Canopy
+        // 3A. Back Water Volume, 3D Glass Interior Perspective, Floating-Linked Dappled Rays & Distant Canopy
         drawWaterAndDappledRays(canvas, config.waterClarity, isBatterySaver)
+        drawUndersideMeniscusReflections(canvas, activeBettaCount)
         drawBackgroundFlora(canvas, isBatterySaver)
 
-        // 3B. Sloped Takashi Amano Aquasoil-to-Sand Substrate + Web Caustics + Back Stones
+        // 3B. Sloped Takashi Amano Aquasoil-to-Sand Substrate + Web Caustics + Fish Cast Sand Shadows
         drawGradedSubstrateAndCaustics(canvas, isBatterySaver)
+        drawCreatureSandShadows(canvas, activeBettaCount, config.enableBottomFeeders)
 
         // 3C. Unified Painter's Algorithm Z-Sorted Layer (Back Glass -> Deep Fish -> Hardscape/Wood -> Mid Fish -> Foreground Plants -> Front Glass!)
         var qCount = 0
@@ -704,16 +726,19 @@ class AquariumBiotopeEngine {
             }
         }
 
-        // 3D. Floating Frogbit/Salvinia Canopy, Bubble Nest, Diffuser Bubbles, Pellets & Meniscus
+        // 3D. Floating Frogbit/Salvinia Canopy, Bubble Nest, Diffuser Bubbles, ADA Hardware, Interior Vignette & Meniscus
         drawSandPuffs(canvas)
         drawFloatingCanopyAndBubbleNest(canvas)
         drawBubblesAndPellets(canvas)
+        drawAdaGlassHardware(canvas)
+        drawInteriorDepthVignette(canvas)
         drawMeniscusHighlight(canvas)
 
         canvas.restore()
 
-        // 4. Low-Iron Rimless Glass Frame, Diagonal Specular Glint & Dipping Cat Paw
+        // 4. Low-Iron Rimless Glass Frame, Diagonal Specular Glint, Swishing Cat Tail & Dipping/Patting Paw
         drawGlassFrame(canvas)
+        drawCatTailPeek(canvas)
         drawCatPawOverlay(canvas)
     }
 
@@ -919,6 +944,19 @@ class AquariumBiotopeEngine {
         if (catEarTwitch > 0f) catEarTwitch = (catEarTwitch - dt * 2.5f).coerceAtLeast(0f)
         if (snail.retractTimer > 0f) snail.retractTimer = (snail.retractTimer - dt).coerceAtLeast(0f)
 
+        // Live gentle circular lily-pipe drift on the floating frogbit canopy (drives dappled light rays too!)
+        for (i in floaterBaseFracs.indices) {
+            floaterLiveFracs[i] = (floaterBaseFracs[i] + sin(simTime * 0.34f + i * 0.85f) * 0.015f).coerceIn(0.10f, 0.88f)
+        }
+        // Gradual natural popping of extra bubble-nest bubbles so Halfmoon Betta keeps refreshing it
+        if (bubbleNestCount > 8) {
+            bubbleNestDecayTimer -= dt
+            if (bubbleNestDecayTimer <= 0f) {
+                bubbleNestCount--
+                bubbleNestDecayTimer = 26f + rand.nextFloat() * 18f
+            }
+        }
+
         // 1. 1D Spring-Wave Water Surface
         val damp = exp(-2.7f * dt)
         for (i in 1 until waveN - 1) {
@@ -988,12 +1026,23 @@ class AquariumBiotopeEngine {
             }
         }
 
-        // 3. Rare Cat Visitor State Machine
+        // 3. Rare Cat Visitor State Machine (Water Paw-Dip OR Front-Glass Curiosity Paw-Pat + Blink + Head Tilt!)
         val rimX = if (catSide > 0f) tankX + tankW * 0.76f else tankX + tankW * 0.24f
         val pawDipX = rimX - catSide * (tankW * 0.082f)
+        if (catState != CatState.HIDDEN) {
+            if (catBlinkDur > 0f) {
+                catBlinkDur = (catBlinkDur - dt).coerceAtLeast(0f)
+            } else {
+                catBlinkTimer -= dt
+                if (catBlinkTimer <= 0f) {
+                    catBlinkDur = 0.16f
+                    catBlinkTimer = 2.4f + rand.nextFloat() * 2.6f
+                }
+            }
+        }
         when (catState) {
             CatState.HIDDEN -> {
-                catRise = 0f; catPawDip = 0f
+                catRise = 0f; catPawDip = 0f; catHeadTiltDeg = 0f
                 catTimer -= dt
                 if (catTimer <= 0f) summonCatVisitNow()
             }
@@ -1008,29 +1057,37 @@ class AquariumBiotopeEngine {
                 val targetLookY = ((tb.ny[0] - waterY) / (waterSpanY * 0.8f)).coerceIn(-0.2f, 1f)
                 catEyeLookX += (targetLookX - catEyeLookX) * (dt * 4.2f).coerceAtMost(1f)
                 catEyeLookY += (targetLookY - catEyeLookY) * (dt * 4.2f).coerceAtMost(1f)
+                val desiredTilt = (targetLookX * -8.5f * catSide).coerceIn(-10f, 10f)
+                catHeadTiltDeg += (desiredTilt - catHeadTiltDeg) * (dt * 3.2f).coerceAtMost(1f)
+                catGlassPatYFrac = ((tb.ny[0] - waterY) / waterSpanY).coerceIn(0.18f, 0.54f)
                 if (rand.nextFloat() < dt * 0.55f) catEarTwitch = 0.7f
                 if (catTimer <= 0f) { catState = CatState.DIPPING; catSplashFired = false }
             }
             CatState.DIPPING -> {
-                catPawDip = (catPawDip + dt * 2.75f).coerceAtMost(1f)
+                catPawDip = (catPawDip + dt * 2.65f).coerceAtMost(1f)
                 if (catPawDip >= 0.82f && !catSplashFired) {
                     catSplashFired = true
-                    injectRipple(pawDipX, 30f)
-                    spawnBubble(pawDipX - tankW * 0.012f, waterY + tankH * 0.028f, 1)
-                    spawnBubble(pawDipX + tankW * 0.014f, waterY + tankH * 0.036f, 1)
+                    if (!catActionIsGlassPat) {
+                        injectRipple(pawDipX, 30f)
+                        spawnBubble(pawDipX - tankW * 0.012f, waterY + tankH * 0.028f, 1)
+                        spawnBubble(pawDipX + tankW * 0.014f, waterY + tankH * 0.036f, 1)
+                    } else {
+                        injectRipple(pawDipX, 8f) // tiny glass vibration ripple!
+                    }
+                    val patY = if (catActionIsGlassPat) (waterY + catGlassPatYFrac * waterSpanY) else waterY
                     for (i in 0 until activeBettaCount) {
                         val b = bettas[i]
-                        if (hypot(b.nx[0] - pawDipX, b.ny[0] - waterY) < tankW * 0.64f) {
+                        if (hypot(b.nx[0] - pawDipX, b.ny[0] - patY) < tankW * 0.64f) {
                             b.state = BettaState.ESCAPE
                             b.stateTimer = 2.0f + rand.nextFloat() * 0.7f
-                            b.flare = 0.92f
+                            b.flare = 0.95f
                             b.targetX = if (catSide > 0f) (0.10f + rand.nextFloat() * 0.16f) else (0.74f + rand.nextFloat() * 0.16f)
                             b.targetY = 0.44f + rand.nextFloat() * 0.34f
                             b.targetZ = 0.80f + rand.nextFloat() * 0.10f
                         }
                     }
                 }
-                if (catPawDip >= 1f) { catState = CatState.RETRACT; catTimer = 0.65f }
+                if (catPawDip >= 1f) { catState = CatState.RETRACT; catTimer = if (catActionIsGlassPat) 0.95f else 0.65f }
             }
             CatState.RETRACT -> {
                 catTimer -= dt
@@ -1038,13 +1095,18 @@ class AquariumBiotopeEngine {
                     catPawDip = (catPawDip - dt * 2.1f).coerceAtLeast(0f)
                     if (catPawDip <= 0f) {
                         catSwipesLeft--
-                        if (catSwipesLeft > 0) { catState = CatState.STALKING; catTimer = 1.8f }
-                        else { catState = CatState.LEAVING; catTimer = 0.9f }
+                        if (catSwipesLeft > 0) {
+                            catActionIsGlassPat = !catActionIsGlassPat // Alternate behavior on 2nd swipe!
+                            catState = CatState.STALKING; catTimer = 1.8f
+                        } else {
+                            catState = CatState.LEAVING; catTimer = 0.9f
+                        }
                     }
                 }
             }
             CatState.LEAVING -> {
                 catTimer -= dt
+                catHeadTiltDeg *= exp(-3f * dt)
                 if (catTimer <= 0f) {
                     catRise = (catRise - dt * 0.62f).coerceAtLeast(0f)
                     if (catRise <= 0f) { catState = CatState.HIDDEN; catTimer = 60f + rand.nextFloat() * 52f }
@@ -1106,6 +1168,11 @@ class AquariumBiotopeEngine {
                             injectRipple(hx, 11f)
                             spawnBubble(hx - tankW * 0.008f, waterY + tankH * 0.022f, 1)
                             spawnBubble(hx + tankW * 0.008f, waterY + tankH * 0.030f, 1)
+                            // Halfmoon Betta blows fresh shimmering bubbles into its floating bubble nest!
+                            if (idx == 0 && hx > tankX + tankW * 0.50f) {
+                                bubbleNestCount = (bubbleNestCount + 2).coerceAtMost(16)
+                                bubbleNestDecayTimer = 30f
+                            }
                             b.breathTimer = 24f + rand.nextFloat() * 18f
                             b.state = BettaState.CRUISE; b.stateTimer = 3.2f
                             b.targetX = 0.16f + rand.nextFloat() * 0.68f
@@ -1719,9 +1786,23 @@ class AquariumBiotopeEngine {
             }
             gradPaint.shader = roomGrad
             canvas.drawRect(0f, 0f, w, h, gradPaint)
+
+            // Soft Ambient LED Wall Halo glowing behind the lamp & upper rim (keeps clock space serene!)
+            val haloX = w * 0.5f
+            val haloY = (lampY + tankY) * 0.52f
+            val haloR = (tankW * 0.78f).coerceAtLeast(140f)
+            val haloCol = withAlpha(aqPal.lampGlow, if (aqPal.isNight) 38 else if (aqPal.isDaylight) 44 else 52)
+            if (wallHaloGrad == null || abs(cachedHaloX - haloX) > 2f || abs(cachedHaloY - haloY) > 2f ||
+                abs(cachedHaloR - haloR) > 2f || cachedHaloCol != haloCol
+            ) {
+                cachedHaloX = haloX; cachedHaloY = haloY; cachedHaloR = haloR; cachedHaloCol = haloCol
+                wallHaloGrad = RadialGradient(haloX, haloY, haloR, haloCol, 0x00000000, Shader.TileMode.CLAMP)
+            }
+            gradPaint.shader = wallHaloGrad
+            canvas.drawCircle(haloX, haloY, haloR, gradPaint)
         }
 
-        // Minimalist warm wood tabletop shelf with subtle grain lines & contact shadow under tank
+        // Minimalist warm wood tabletop shelf with subtle grain lines, contact shadow & glowing tank light bounce!
         val shelfTopY = tankY + tankH - 2f
         val shelfThick = (h * 0.019f).coerceIn(10f, 22f)
         fillPaint.color = aqPal.shelfTop
@@ -1732,8 +1813,11 @@ class AquariumBiotopeEngine {
             strokePaint.color = aqPal.shelfGrain
             strokePaint.strokeWidth = 1.0f
             canvas.drawLine(0f, shelfTopY + shelfThick * 0.48f, w, shelfTopY + shelfThick * 0.48f, strokePaint)
-            fillPaint.color = 0x30000000
-            canvas.drawRect(tankX + 3f, shelfTopY, tankX + tankW - 3f, shelfTopY + 5f, fillPaint)
+            // Soft tabletop light bounce cast by the illuminated aquarium onto the polished wood shelf!
+            fillPaint.color = withAlpha(aqPal.waterTop, if (aqPal.isNight) 44 else 34)
+            canvas.drawOval(tankX + tankW * 0.04f, shelfTopY + 1f, tankX + tankW * 0.96f, shelfTopY + shelfThick * 1.15f, fillPaint)
+            fillPaint.color = 0x36000000
+            canvas.drawRect(tankX + 2f, shelfTopY, tankX + tankW - 2f, shelfTopY + 4.5f, fillPaint)
         }
 
         // Suspended Twin-Wire Architectural LED Bar + Volumetric Light Cone
@@ -1816,23 +1900,51 @@ class AquariumBiotopeEngine {
             canvas.drawRect(tankX, waterY, tankX + tankW, botY, fillPaint)
         }
 
-        // Dappled Underwater Sun/Moon Shafts filtering between the Floating Plant Gaps!
+        // 3D Interior Back-Glass Perspective Lines (receding rimless silicone corner seams!)
+        val backInsetX = tankW * 0.052f
+        val backTopY = tankY + tankH * 0.020f
+        val backBotY = sandY - tankH * 0.072f
+        strokePaint.color = withAlpha(aqPal.glassEdge, if (aqPal.isAmoled) 48 else 62)
+        strokePaint.strokeWidth = 1.05f
+        // Recessed rear top glass rim + corner perspective diagonals + faint rear vertical silicone seams
+        canvas.drawLine(tankX + backInsetX, backTopY, tankX + tankW - backInsetX, backTopY, strokePaint)
+        canvas.drawLine(tankX, tankY, tankX + backInsetX, backTopY, strokePaint)
+        canvas.drawLine(tankX + tankW, tankY, tankX + tankW - backInsetX, backTopY, strokePaint)
+        strokePaint.color = withAlpha(aqPal.glassEdge, if (aqPal.isAmoled) 32 else 42)
+        canvas.drawLine(tankX + backInsetX, backTopY, tankX + backInsetX, backBotY, strokePaint)
+        canvas.drawLine(tankX + tankW - backInsetX, backTopY, tankX + tankW - backInsetX, backBotY, strokePaint)
+
+        // Dappled Underwater Sun/Moon Shafts linked dynamically to the open gaps between drifting Floating Frogbit!
         if (!aqPal.isAmoled && waterClarity > 0.42f) {
-            val shaftAlpha = if (aqPal.isNight) 15 else if (aqPal.isDaylight) 28 else 22
+            val shaftAlpha = if (aqPal.isNight) 16 else if (aqPal.isDaylight) 30 else 24
             fillPaint.color = (if (aqPal.isNight) 0x0082DAF0 else 0x00FFFAE0) or (shaftAlpha shl 24)
-            val gapX = floatArrayOf(0.08f, 0.36f, 0.49f, 0.83f)
-            val rayCount = if (isBatterySaver) 2 else gapX.size
+            // Compute open sunlit windows between the 2 floating frogbit clusters (left gap, center open window, right gap)
+            val leftClusterEnd = floaterLiveFracs[2] + 0.032f
+            val rightClusterStart = floaterLiveFracs[3] - 0.032f
+            val rightClusterEnd = floaterLiveFracs[5] + 0.032f
+            val rayStarts = floatArrayOf(0.06f, leftClusterEnd, (leftClusterEnd + rightClusterStart) * 0.5f, rightClusterEnd)
+            val rayWidths = floatArrayOf(0.075f, (rightClusterStart - leftClusterEnd) * 0.42f, (rightClusterStart - leftClusterEnd) * 0.36f, 0.085f)
+            val rayCount = if (isBatterySaver) 2 else rayStarts.size
             for (r in 0 until rayCount) {
-                val rx = tankX + tankW * gapX[r] + sin(simTime * 0.45f + r * 1.3f) * (tankW * 0.018f)
-                val topW = tankW * (0.055f + (r % 2) * 0.025f)
+                val rx = tankX + tankW * rayStarts[r]
+                val topW = (tankW * rayWidths[r]).coerceIn(tankW * 0.04f, tankW * 0.14f)
+                val slant = (rayStarts[r] - 0.48f) * tankW * 0.22f
                 shapePath.reset()
                 shapePath.moveTo(rx, waterY)
                 shapePath.lineTo(rx + topW, waterY)
-                shapePath.lineTo(rx + topW * 2.1f + tankW * 0.05f, sandY)
-                shapePath.lineTo(rx + tankW * 0.02f, sandY)
+                shapePath.lineTo(rx + topW * 1.65f + slant, sandY)
+                shapePath.lineTo(rx + slant * 0.65f, sandY)
                 shapePath.close()
                 canvas.drawPath(shapePath, fillPaint)
             }
+            // Subtle shaded bands directly beneath the two dense floating Frogbit canopies!
+            fillPaint.color = 0x16000000
+            val sh1L = tankX + tankW * (floaterLiveFracs[0] - 0.02f)
+            val sh1R = tankX + tankW * (floaterLiveFracs[2] + 0.02f)
+            canvas.drawRect(sh1L, waterY, sh1R, sandY, fillPaint)
+            val sh2L = tankX + tankW * (floaterLiveFracs[3] - 0.02f)
+            val sh2R = tankX + tankW * (floaterLiveFracs[5] + 0.02f)
+            canvas.drawRect(sh2L, waterY, sh2R, sandY, fillPaint)
         }
 
         if (!isBatterySaver) {
@@ -1842,6 +1954,135 @@ class AquariumBiotopeEngine {
                 canvas.drawCircle(tankX + m.nx * tankW, waterY + m.ny * waterSpan, m.r, fillPaint)
             }
         }
+    }
+
+    /**
+     * Silvery Underside Meniscus Reflection (Total Internal Reflection!)
+     * Shows the shimmering water-surface underside plane between rear meniscus & front meniscus,
+     * softly mirroring upper-swimming Bettas & floating pads!
+     */
+    private fun drawUndersideMeniscusReflections(canvas: Canvas, activeBettaCount: Int) {
+        if (aqPal.isAmoled) return
+        val backInsetX = tankW * 0.052f
+        val backWaterY = waterY - tankH * 0.017f
+        shapePath.reset()
+        shapePath.moveTo(tankX + backInsetX, backWaterY)
+        shapePath.lineTo(tankX + tankW - backInsetX, backWaterY)
+        shapePath.lineTo(tankX + tankW, waterY)
+        shapePath.lineTo(tankX, waterY)
+        shapePath.close()
+        fillPaint.color = withAlpha(aqPal.lampGlow, if (aqPal.isNight) 28 else 42)
+        canvas.drawPath(shapePath, fillPaint)
+
+        // Shimmering inverted reflections of Bettas gliding near the top surface!
+        val waterSpan = (sandY - waterY).coerceAtLeast(60f)
+        for (i in 0 until activeBettaCount) {
+            val b = bettas[i]
+            val distSurf = (b.ny[0] - waterY) / waterSpan
+            if (distSurf in 0.01f..0.30f) {
+                val alpha = (((1f - distSurf / 0.30f) * 58f).toInt()).coerceIn(8, 62)
+                val rx = tankW * 0.052f * perspScale(b.zDepth)
+                val ry = (tankH * 0.008f).coerceIn(2f, 5.5f)
+                val drift = sin(simTime * 2.6f + i * 1.5f) * (rx * 0.14f)
+                val ryPos = waterY + distSurf * tankH * 0.032f
+                fillPaint.color = withAlpha(b.finMid, alpha)
+                canvas.drawOval(b.nx[2] + drift - rx, ryPos - ry, b.nx[2] + drift + rx, ryPos + ry, fillPaint)
+            }
+        }
+    }
+
+    /**
+     * Soft Sculpted Sand Drop-Shadows beneath every swimming Betta & Corydoras!
+     * Offset subtly away from the overhead LED center and softening with elevation above the sand.
+     */
+    private fun drawCreatureSandShadows(canvas: Canvas, activeBettaCount: Int, enableCleaners: Boolean) {
+        if (aqPal.isAmoled) return
+        val centerX = tankX + tankW * 0.5f
+        val waterSpan = (sandY - waterY).coerceAtLeast(60f)
+
+        for (i in 0 until activeBettaCount) {
+            val b = bettas[i]
+            val floorY = sandFloorYAtZ(b.zDepth)
+            val heightFrac = ((floorY - b.ny[2]) / waterSpan).coerceIn(0f, 1f)
+            val shadowX = b.nx[2] + (b.nx[2] - centerX) * heightFrac * 0.16f
+            val rx = tankW * 0.055f * perspScale(b.zDepth) * (1.0f + heightFrac * 0.32f)
+            val ry = rx * 0.21f
+            val alpha = ((1f - heightFrac * 0.68f) * (1f - b.zDepth * 0.35f) * 52f).toInt().coerceIn(8, 56)
+            fillPaint.color = alpha shl 24
+            canvas.drawOval(shadowX - rx, floorY - ry, shadowX + rx, floorY + ry, fillPaint)
+        }
+
+        if (enableCleaners) {
+            for (c in corys) {
+                if (c.dashPhase > 0.15f && c.dashPhase < 0.85f) continue
+                val cx = tankX + c.normX * tankW
+                val floorY = sandFloorYAtZ(c.zDepth)
+                val rx = tankW * 0.030f * perspScale(c.zDepth)
+                val ry = rx * 0.24f
+                fillPaint.color = 0x36000000
+                canvas.drawOval(cx - rx, floorY - ry, cx + rx, floorY + ry, fillPaint)
+            }
+        }
+    }
+
+    /** Subtle Radial Depth Vignette & Shadowed Spiderwood Arch Hollow for Backlit Diorama Pop! */
+    private fun drawInteriorDepthVignette(canvas: Canvas) {
+        if (aqPal.isAmoled) return
+        val vx = tankX + tankW * 0.50f
+        val vy = tankY + tankH * 0.38f
+        val vr = max(tankW, tankH) * 0.78f
+        if (interiorVignetteGrad == null || abs(cachedVigX - vx) > 2f || abs(cachedVigY - vy) > 2f || abs(cachedVigR - vr) > 2f) {
+            cachedVigX = vx; cachedVigY = vy; cachedVigR = vr
+            interiorVignetteGrad = RadialGradient(
+                vx, vy, vr,
+                intArrayOf(0x00000000, 0x00000000, 0x3A040C12),
+                floatArrayOf(0f, 0.58f, 1f),
+                Shader.TileMode.CLAMP
+            )
+        }
+        gradPaint.shader = interiorVignetteGrad
+        canvas.drawRect(tankX, tankY, tankX + tankW, tankY + tankH, gradPaint)
+    }
+
+    /** Minimalist Authentic ADA Nature Aquarium Hardware: Glass Lily-Pipe Outflow & Slim Thermometer! */
+    private fun drawAdaGlassHardware(canvas: Canvas) {
+        // 1. Curved Glass Lily-Pipe Outflow over the upper-left rim (creates the gentle circular tank flow!)
+        val pipeX = tankX + tankW * 0.048f
+        val pipeDipY = waterY + tankH * 0.072f
+        val glassStroke = withAlpha(aqPal.glassEdge, if (aqPal.isAmoled) 110 else 135)
+        strokePaint.color = glassStroke
+        strokePaint.strokeWidth = (tankW * 0.008f).coerceIn(2.6f, 5.5f)
+        detailPath.reset()
+        detailPath.moveTo(pipeX, tankY)
+        detailPath.lineTo(pipeX, pipeDipY)
+        detailPath.quadTo(pipeX, pipeDipY + tankH * 0.032f, pipeX + tankW * 0.042f, pipeDipY + tankH * 0.022f)
+        canvas.drawPath(detailPath, strokePaint)
+
+        // Flared translucent tulip lily-pipe mouth
+        val mouthX = pipeX + tankW * 0.056f
+        val mouthY = pipeDipY + tankH * 0.018f
+        val mrX = tankW * 0.018f; val mrY = tankH * 0.015f
+        fillPaint.color = withAlpha(aqPal.glassEdge, 48)
+        canvas.drawOval(mouthX - mrX, mouthY - mrY, mouthX + mrX, mouthY + mrY, fillPaint)
+        strokePaint.strokeWidth = 1.15f
+        canvas.drawOval(mouthX - mrX, mouthY - mrY, mouthX + mrX, mouthY + mrY, strokePaint)
+
+        // 2. Subtle Slim Glass Hang-On Thermometer on upper-right inner glass pane
+        val thX = tankX + tankW * 0.948f
+        val thTop = tankY + tankH * 0.05f
+        val thBot = waterY + tankH * 0.16f
+        val thHw = (tankW * 0.0055f).coerceIn(1.8f, 3.8f)
+        fillPaint.color = withAlpha(aqPal.glassEdge, 58)
+        canvas.drawRoundRect(thX - thHw, thTop, thX + thHw, thBot, thHw, thHw, fillPaint)
+        strokePaint.color = withAlpha(aqPal.glassEdge, 125)
+        strokePaint.strokeWidth = 0.9f
+        canvas.drawRoundRect(thX - thHw, thTop, thX + thHw, thBot, thHw, thHw, strokePaint)
+        // Tiny red alcohol bulb + thin column
+        fillPaint.color = 0xCCD84C42.toInt()
+        canvas.drawCircle(thX, thBot - thHw * 1.1f, thHw * 0.85f, fillPaint)
+        strokePaint.color = 0xBBD84C42.toInt()
+        strokePaint.strokeWidth = (thHw * 0.45f).coerceAtLeast(0.9f)
+        canvas.drawLine(thX, thBot - thHw * 1.5f, thX, thTop + (thBot - thTop) * 0.45f, strokePaint)
     }
 
     /**
@@ -2185,7 +2426,7 @@ class AquariumBiotopeEngine {
         fillPaint.color = aqPal.stoneDark
         canvas.drawPath(shapePath, fillPaint)
 
-        // Midtone facet & sunlit top ridge highlight
+        // Midtone facet, sunlit top ridge highlight & delicate Seiryu quartz mineral vein!
         detailPath.reset()
         detailPath.moveTo(cx - rx * 0.75f, cy + ry * 0.08f)
         detailPath.quadTo(cx - rx * 0.25f, cy - ry * 0.92f, cx + rx * 0.58f, cy - ry * 0.58f)
@@ -2193,6 +2434,12 @@ class AquariumBiotopeEngine {
         detailPath.close()
         fillPaint.color = aqPal.stoneHi
         canvas.drawPath(detailPath, fillPaint)
+
+        // Fine hand-inked quartz mineral vein & facet crack
+        strokePaint.color = withAlpha(aqPal.glassEdge, if (aqPal.isAmoled) 68 else 86)
+        strokePaint.strokeWidth = 0.85f
+        canvas.drawLine(cx - rx * 0.32f, cy - ry * 0.72f, cx + rx * 0.14f, cy + ry * 0.42f, strokePaint)
+        canvas.drawLine(cx + rx * 0.04f, cy - ry * 0.42f, cx + rx * 0.54f, cy + ry * 0.18f, strokePaint)
 
         strokePaint.color = aqPal.contour
         strokePaint.strokeWidth = 1.0f
@@ -2218,13 +2465,30 @@ class AquariumBiotopeEngine {
         fillPaint.color = fillCol
         canvas.drawPath(shapePath, fillPaint)
 
-        // Subtle sunlit upper bark highlight & grain striation!
+        // Subtle sunlit upper bark highlight & hand-inked longitudinal bark grain + knot!
         detailPath.reset()
         detailPath.moveTo(woodRX[1], woodRY[1])
         for (i in 2 until woodSteps) detailPath.lineTo(woodRX[i], woodRY[i])
-        strokePaint.color = withAlpha(aqPal.woodRim, 145)
+        strokePaint.color = withAlpha(aqPal.woodRim, 155)
         strokePaint.strokeWidth = (rStart * 0.22f).coerceIn(1.0f, 2.6f)
         canvas.drawPath(detailPath, strokePaint)
+
+        // Hand-inked center wood-grain striation line + subtle knot oval on main arch
+        detailPath.reset()
+        for (i in 1 until woodSteps - 1) {
+            val gx = (woodLX[i] * 0.62f + woodRX[i] * 0.38f)
+            val gy = (woodLY[i] * 0.62f + woodRY[i] * 0.38f)
+            if (i == 1) detailPath.moveTo(gx, gy) else detailPath.lineTo(gx, gy)
+        }
+        strokePaint.color = withAlpha(aqPal.woodDark, 145)
+        strokePaint.strokeWidth = 0.9f
+        canvas.drawPath(detailPath, strokePaint)
+        if (curveId == 0) {
+            val kx = (woodLX[5] + woodRX[5]) * 0.5f
+            val ky = (woodLY[5] + woodRY[5]) * 0.5f
+            val kr = (rStart * 0.28f).coerceAtLeast(2.2f)
+            canvas.drawOval(kx - kr * 1.4f, ky - kr * 0.65f, kx + kr * 1.4f, ky + kr * 0.65f, strokePaint)
+        }
 
         strokePaint.color = aqPal.contour
         strokePaint.strokeWidth = 1.05f
@@ -2236,6 +2500,13 @@ class AquariumBiotopeEngine {
         canvas.drawOval(cx - r * 1.15f, cy - r * 0.72f, cx + r * 1.15f, cy + r * 0.72f, fillPaint)
         fillPaint.color = aqPal.mossHi
         canvas.drawOval(cx - r * 0.78f, cy - r * 0.64f, cx + r * 0.56f, cy + r * 0.08f, fillPaint)
+        // Velvety hand-inked moss stipple highlights!
+        fillPaint.color = withAlpha(aqPal.anubiasHi, 165)
+        for (dot in -2..2) {
+            val dx = cx + dot * r * 0.34f
+            val dy = cy - r * (0.28f - (abs(dot) % 2) * 0.22f)
+            canvas.drawCircle(dx, dy, (r * 0.075f).coerceIn(1.0f, 2.2f), fillPaint)
+        }
         strokePaint.color = aqPal.contour
         strokePaint.strokeWidth = 0.9f
         canvas.drawOval(cx - r * 1.15f, cy - r * 0.72f, cx + r * 1.15f, cy + r * 0.72f, strokePaint)
@@ -2445,6 +2716,18 @@ class AquariumBiotopeEngine {
             )
         }
 
+        // 5B. Flaring Operculum Gill-Beard Collar when crossing paths with another Betta or escaping!
+        if (b.flare > 0.22f) {
+            val beardR = unitLen * (0.09f + b.flare * 0.06f) * projS[1]
+            fillPaint.color = withAlpha(spotCol, (b.flare * 215f).toInt().coerceIn(45, 225))
+            canvas.drawCircle(
+                projX[1] - upX[1] * unitLen * 0.085f * projS[1],
+                projY[1] - upY[1] * unitLen * 0.085f * projS[1],
+                beardR,
+                fillPaint
+            )
+        }
+
         // 6. Crisp Expressive Eye
         if (b.vz < 0.16f) {
             val ex = projX[1] + tangX[1] * unitLen * 0.036f * projS[1] + upX[1] * unitLen * 0.032f * projS[1]
@@ -2499,6 +2782,18 @@ class AquariumBiotopeEngine {
         veilPath.close()
         fillPaint.color = fillCol
         canvas.drawPath(veilPath, fillPaint)
+        // Luminous backlit inner silk highlight wash along fin core!
+        if (variety != BettaVariety.CROWNTAIL) {
+            detailPath.reset()
+            for (i in startI..endI) {
+                val mx = projX[i] + (outX[i] - projX[i]) * 0.62f
+                val my = projY[i] + (outY[i] - projY[i]) * 0.62f
+                if (i == startI) detailPath.moveTo(mx, my) else detailPath.lineTo(mx, my)
+            }
+            strokePaint.color = withAlpha(tipCol, 95)
+            strokePaint.strokeWidth = (unitLen * 0.09f).coerceIn(1.8f, 5.2f)
+            canvas.drawPath(detailPath, strokePaint)
+        }
         strokePaint.color = if (variety == BettaVariety.CROWNTAIL) tipCol else rimCol
         strokePaint.strokeWidth = if (variety == BettaVariety.CROWNTAIL) 1.25f else 0.95f
         canvas.drawPath(veilPath, strokePaint)
@@ -3270,13 +3565,13 @@ class AquariumBiotopeEngine {
     // =========================================================================
 
     private fun drawFloatingCanopyAndBubbleNest(canvas: Canvas) {
-        val padFracs = floatArrayOf(0.18f, 0.24f, 0.29f, 0.58f, 0.65f, 0.73f)
         val padRx = tankW * 0.025f
         val padRy = padRx * 0.28f
 
-        for (i in padFracs.indices) {
-            val fx = tankX + padFracs[i] * tankW
-            val wIdx = (padFracs[i] * (waveN - 1)).roundToInt().coerceIn(0, waveN - 1)
+        for (i in floaterLiveFracs.indices) {
+            val frac = floaterLiveFracs[i]
+            val fx = tankX + frac * tankW
+            val wIdx = (frac * (waveN - 1)).roundToInt().coerceIn(0, waveN - 1)
             val fy = waterY + waveH[wIdx]
 
             strokePaint.color = 0x7284B494
@@ -3298,13 +3593,18 @@ class AquariumBiotopeEngine {
             canvas.drawOval(fx - rx, fy - padRy, fx + rx, fy + padRy, strokePaint)
         }
 
-        // Delicate Betta Surface Bubble Nest tucked under the right Frogbit cluster!
+        // Dynamic Living Betta Surface Bubble Nest tucked right under the drifting right Frogbit canopy!
         strokePaint.color = aqPal.bubbleColor
         strokePaint.strokeWidth = 0.88f
-        val nestX = tankX + tankW * 0.625f
+        val nestBaseX = tankX + (floaterLiveFracs[3] + 0.025f) * tankW
         val nestR = (tankW * 0.0044f).coerceIn(1.5f, 3.1f)
-        for (bn in 0 until 9) {
-            canvas.drawCircle(nestX + bn * nestR * 1.95f, waterY + nestR * (1.3f + (bn % 2) * 0.85f), nestR, strokePaint)
+        val count = bubbleNestCount.coerceIn(6, 16)
+        for (bn in 0 until count) {
+            val colIdx = bn % 8
+            val rowIdx = bn / 8
+            val bx = nestBaseX + colIdx * nestR * 1.90f + rowIdx * nestR * 0.9f
+            val by = waterY + nestR * (1.2f + (colIdx % 2) * 0.75f + rowIdx * 1.45f)
+            canvas.drawCircle(bx, by, nestR * (0.92f + (bn % 3) * 0.12f), strokePaint)
         }
     }
 
@@ -3391,6 +3691,7 @@ class AquariumBiotopeEngine {
         canvas.clipRect(0f, 0f, lastWidth, tankY + 2f)
         canvas.translate(rimX, headY)
         canvas.scale(catSide, 1f)
+        canvas.rotate(catHeadTiltDeg)
 
         val twitch = sin(simTime * 28f) * catEarTwitch * (catUnit * 0.08f)
         shapePath.reset()
@@ -3413,16 +3714,24 @@ class AquariumBiotopeEngine {
 
         val lx = catEyeLookX * catSide * (catUnit * 0.095f)
         val ly = catEyeLookY * (catUnit * 0.070f)
+        val isBlinking = catBlinkDur > 0f
         for (side in -1..1 step 2) {
             val ex = side * catUnit * 0.34f
             val ey = -catUnit * 0.32f
             val erx = catUnit * 0.185f; val ery = catUnit * 0.145f
-            fillPaint.color = aqPal.catEye
-            canvas.drawOval(ex - erx, ey - ery, ex + erx, ey + ery, fillPaint)
-            fillPaint.color = 0xFF090C10.toInt()
-            canvas.drawOval(ex + lx - erx * 0.32f, ey + ly - ery * 0.78f, ex + lx + erx * 0.32f, ey + ly + ery * 0.78f, fillPaint)
-            fillPaint.color = 0xFFFFFFFF.toInt()
-            canvas.drawCircle(ex + lx + erx * 0.18f, ey + ly - ery * 0.28f, erx * 0.16f, fillPaint)
+            if (isBlinking) {
+                // Slow feline amber eye blink!
+                strokePaint.color = aqPal.catEye
+                strokePaint.strokeWidth = (catUnit * 0.042f).coerceIn(1.2f, 2.5f)
+                canvas.drawLine(ex - erx * 0.9f, ey, ex + erx * 0.9f, ey, strokePaint)
+            } else {
+                fillPaint.color = aqPal.catEye
+                canvas.drawOval(ex - erx, ey - ery, ex + erx, ey + ery, fillPaint)
+                fillPaint.color = 0xFF090C10.toInt()
+                canvas.drawOval(ex + lx - erx * 0.32f, ey + ly - ery * 0.78f, ex + lx + erx * 0.32f, ey + ly + ery * 0.78f, fillPaint)
+                fillPaint.color = 0xFFFFFFFF.toInt()
+                canvas.drawCircle(ex + lx + erx * 0.18f, ey + ly - ery * 0.28f, erx * 0.16f, fillPaint)
+            }
         }
 
         strokePaint.color = aqPal.catRim
@@ -3434,36 +3743,103 @@ class AquariumBiotopeEngine {
         canvas.restore()
     }
 
+    /** Slowly swishing feline silhouette tail peeking around the lower side edge of the tank while stalking! */
+    private fun drawCatTailPeek(canvas: Canvas) {
+        if (catRise < 0.28f) return
+        val edgeX = if (catSide > 0f) tankX + tankW else tankX
+        val baseY = tankY + tankH - tankH * 0.08f
+        val tailLen = (tankW * 0.055f) * catRise
+        val swish = sin(simTime * 2.1f) * (tailLen * 0.55f)
+
+        detailPath.reset()
+        detailPath.moveTo(edgeX - catSide * 2f, baseY)
+        detailPath.cubicTo(
+            edgeX + catSide * tailLen * 0.85f, baseY - tailLen * 0.25f,
+            edgeX + catSide * (tailLen * 0.95f + swish * 0.35f), baseY - tailLen * 1.15f,
+            edgeX + catSide * (tailLen * 0.45f + swish), baseY - tailLen * 1.85f
+        )
+        strokePaint.color = aqPal.catBody
+        strokePaint.strokeWidth = (tankW * 0.022f).coerceIn(6f, 16f)
+        canvas.drawPath(detailPath, strokePaint)
+        strokePaint.color = withAlpha(aqPal.catRim, 110)
+        strokePaint.strokeWidth = 1.0f
+        canvas.drawPath(detailPath, strokePaint)
+    }
+
     private fun drawCatPawOverlay(canvas: Canvas) {
         if (catRise < 0.45f) return
         val rimX = if (catSide > 0f) tankX + tankW * 0.76f else tankX + tankW * 0.24f
         val catUnit = (tankW * 0.075f).coerceIn(24f, 72f)
         val reach = catPawDip
-        val pawX = rimX - catSide * (catUnit * (0.76f + reach * 0.38f))
-        val pawY = tankY + catUnit * 0.10f + reach * (waterY - tankY + catUnit * 0.12f)
+        val waterSpan = (sandY - waterY).coerceAtLeast(60f)
 
-        detailPath.reset()
-        detailPath.moveTo(rimX - catSide * catUnit * 0.24f, tankY - catUnit * 0.06f)
-        detailPath.quadTo(rimX - catSide * catUnit * 0.88f, tankY - catUnit * 0.26f + reach * catUnit * 0.25f, pawX, pawY)
-        strokePaint.color = aqPal.catBody
-        strokePaint.strokeWidth = (catUnit * 0.42f).coerceIn(10f, 28f)
-        canvas.drawPath(detailPath, strokePaint)
+        if (catActionIsGlassPat) {
+            // MODE B: Front-Glass Curiosity Paw-Pat (soft paw with 4 tiny toe-beans pressed gently to front glass!)
+            if (reach <= 0.05f) return
+            val patX = rimX - catSide * (catUnit * (0.62f + reach * 0.42f))
+            val targetPatY = waterY + catGlassPatYFrac * waterSpan
+            val patY = tankY + (targetPatY - tankY) * reach
 
-        val prx = catUnit * 0.28f; val pry = catUnit * 0.21f
-        fillPaint.color = aqPal.catBody
-        canvas.drawOval(pawX - prx, pawY - pry + 2f, pawX + prx, pawY + pry + 2f, fillPaint)
-        strokePaint.color = aqPal.catRim
-        strokePaint.strokeWidth = (catUnit * 0.036f).coerceIn(1.0f, 2.2f)
-        canvas.drawOval(pawX - prx, pawY - pry + 2f, pawX + prx, pawY + pry + 2f, strokePaint)
+            detailPath.reset()
+            detailPath.moveTo(rimX - catSide * catUnit * 0.22f, tankY - catUnit * 0.04f)
+            detailPath.quadTo(rimX - catSide * catUnit * 0.72f, (tankY + patY) * 0.5f, patX, patY)
+            strokePaint.color = aqPal.catBody
+            strokePaint.strokeWidth = (catUnit * 0.40f).coerceIn(9f, 26f)
+            canvas.drawPath(detailPath, strokePaint)
 
-        if (reach > 0.65f) {
-            val rAlpha = (((reach - 0.65f) * 2.1f).coerceIn(0f, 0.72f) * 255f).toInt()
-            strokePaint.color = (0x00FFFFFF) or (rAlpha shl 24)
-            strokePaint.strokeWidth = 1.35f
-            val r1 = catUnit * (0.50f + reach * 0.45f)
-            val r2 = catUnit * (0.82f + reach * 0.65f)
-            canvas.drawOval(pawX - r1, waterY - r1 * 0.18f, pawX + r1, waterY + r1 * 0.18f, strokePaint)
-            canvas.drawOval(pawX - r2, waterY - r2 * 0.18f, pawX + r2, waterY + r2 * 0.18f, strokePaint)
+            val pr = catUnit * 0.32f
+            fillPaint.color = aqPal.catBody
+            canvas.drawCircle(patX, patY, pr, fillPaint)
+            strokePaint.color = aqPal.catRim
+            strokePaint.strokeWidth = (catUnit * 0.036f).coerceIn(1.0f, 2.2f)
+            canvas.drawCircle(patX, patY, pr, strokePaint)
+
+            // Cute soft pink/blush toe-beans & main paw pad pressed against the front glass!
+            if (reach > 0.60f) {
+                val beanAlpha = (((reach - 0.60f) * 2.5f).coerceIn(0f, 0.88f) * 255f).toInt()
+                fillPaint.color = (0x00E8A4A8) or (beanAlpha shl 24)
+                canvas.drawOval(patX - pr * 0.42f, patY + pr * 0.02f, patX + pr * 0.42f, patY + pr * 0.56f, fillPaint)
+                for (toe in -1..2) {
+                    val tx = patX + (toe - 0.5f) * pr * 0.42f
+                    val ty = patY - pr * (0.34f - abs(toe - 0.5f) * 0.08f)
+                    canvas.drawCircle(tx, ty, pr * 0.16f, fillPaint)
+                }
+                // Whisper-subtle glass tap shimmer ring!
+                val tapA = (((reach - 0.68f) * 2.2f).coerceIn(0f, 0.55f) * 255f).toInt()
+                if (tapA > 8) {
+                    strokePaint.color = (0x00FFFFFF) or (tapA shl 24)
+                    strokePaint.strokeWidth = 1.2f
+                    canvas.drawCircle(patX, patY, pr * (1.25f + (reach - 0.68f) * 1.4f), strokePaint)
+                }
+            }
+        } else {
+            // MODE A: Top-Rim Surface Water Paw-Dip (creates spring-wave ripples & concentric rings!)
+            val pawX = rimX - catSide * (catUnit * (0.76f + reach * 0.38f))
+            val pawY = tankY + catUnit * 0.10f + reach * (waterY - tankY + catUnit * 0.12f)
+
+            detailPath.reset()
+            detailPath.moveTo(rimX - catSide * catUnit * 0.24f, tankY - catUnit * 0.06f)
+            detailPath.quadTo(rimX - catSide * catUnit * 0.88f, tankY - catUnit * 0.26f + reach * catUnit * 0.25f, pawX, pawY)
+            strokePaint.color = aqPal.catBody
+            strokePaint.strokeWidth = (catUnit * 0.42f).coerceIn(10f, 28f)
+            canvas.drawPath(detailPath, strokePaint)
+
+            val prx = catUnit * 0.28f; val pry = catUnit * 0.21f
+            fillPaint.color = aqPal.catBody
+            canvas.drawOval(pawX - prx, pawY - pry + 2f, pawX + prx, pawY + pry + 2f, fillPaint)
+            strokePaint.color = aqPal.catRim
+            strokePaint.strokeWidth = (catUnit * 0.036f).coerceIn(1.0f, 2.2f)
+            canvas.drawOval(pawX - prx, pawY - pry + 2f, pawX + prx, pawY + pry + 2f, strokePaint)
+
+            if (reach > 0.65f) {
+                val rAlpha = (((reach - 0.65f) * 2.1f).coerceIn(0f, 0.72f) * 255f).toInt()
+                strokePaint.color = (0x00FFFFFF) or (rAlpha shl 24)
+                strokePaint.strokeWidth = 1.35f
+                val r1 = catUnit * (0.50f + reach * 0.45f)
+                val r2 = catUnit * (0.82f + reach * 0.65f)
+                canvas.drawOval(pawX - r1, waterY - r1 * 0.18f, pawX + r1, waterY + r1 * 0.18f, strokePaint)
+                canvas.drawOval(pawX - r2, waterY - r2 * 0.18f, pawX + r2, waterY + r2 * 0.18f, strokePaint)
+            }
         }
     }
 
