@@ -17,7 +17,8 @@ enum class ThemeMode(val id: Int, val label: String) {
 
 enum class SceneBiome(val id: Int, val label: String) {
     OCEAN(0, "ocean"),
-    ZEN_POND(1, "pond");
+    ZEN_POND(1, "pond"),
+    AQUARIUM(2, "aquarium");
 
     companion object {
         fun fromId(id: Int): SceneBiome = entries.firstOrNull { it.id == id } ?: OCEAN

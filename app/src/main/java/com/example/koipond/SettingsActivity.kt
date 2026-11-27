@@ -62,10 +62,12 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnPresetReef: TextView
     private lateinit var btnPresetAbyss: TextView
     private lateinit var btnPresetZen: TextView
+    private lateinit var btnPresetBetta: TextView
     private lateinit var btnPresetOled: TextView
 
     private lateinit var btnBiomeOcean: TextView
     private lateinit var btnBiomePond: TextView
+    private lateinit var btnBiomeAquarium: TextView
 
     private lateinit var btnCycleAuto: TextView
     private lateinit var btnCycleDawn: TextView
@@ -205,10 +207,12 @@ class SettingsActivity : AppCompatActivity() {
         btnPresetReef = findViewById(R.id.btnPresetReef)
         btnPresetAbyss = findViewById(R.id.btnPresetAbyss)
         btnPresetZen = findViewById(R.id.btnPresetZen)
+        btnPresetBetta = findViewById(R.id.btnPresetBetta)
         btnPresetOled = findViewById(R.id.btnPresetOled)
 
         btnBiomeOcean = findViewById(R.id.btnBiomeOcean)
         btnBiomePond = findViewById(R.id.btnBiomePond)
+        btnBiomeAquarium = findViewById(R.id.btnBiomeAquarium)
 
         btnCycleAuto = findViewById(R.id.btnCycleAuto)
         btnCycleDawn = findViewById(R.id.btnCycleDawn)
@@ -305,25 +309,35 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         findViewById<TextView>(R.id.btnShuffleFish).apply {
-            contentDescription = "Shuffle ocean wildlife and summon visitor"
+            contentDescription = "Shuffle ocean wildlife or refresh betta aquarium"
             setOnClickListener {
                 haptic(it)
                 val visitor = asciiPondView.shuffleEcosystem()
                 textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_accent2))
-                textHuntStatus.text = "ocean ... ~ " + visitor + " gliding past window"
+                if (currentConfig.sceneBiome == SceneBiome.AQUARIUM) {
+                    textHuntStatus.text = "aquarium ... ~ refreshed betta morphs!"
+                } else {
+                    textHuntStatus.text = "ocean ... ~ " + visitor + " gliding past window"
+                }
             }
         }
 
         findViewById<TextView>(R.id.btnSummonPredator).apply {
-            contentDescription = "Summon a random predator fish now"
+            contentDescription = "Summon predator fish or curious aquarium cat"
             setOnClickListener {
                 haptic(it)
-                if (!currentConfig.huntMode.isEnabled) {
-                    updateConfig(currentConfig.copy(huntMode = HuntMode.NATURAL))
+                if (currentConfig.sceneBiome == SceneBiome.AQUARIUM) {
+                    val catEvent = asciiPondView.summonPredatorNow()
+                    textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_warn))
+                    textHuntStatus.text = "aquarium ... ! " + catEvent
+                } else {
+                    if (!currentConfig.huntMode.isEnabled) {
+                        updateConfig(currentConfig.copy(huntMode = HuntMode.NATURAL))
+                    }
+                    val predName = asciiPondView.summonPredatorNow()
+                    textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_warn))
+                    textHuntStatus.text = "event ... ! " + predName + " hunting"
                 }
-                val predName = asciiPondView.summonPredatorNow()
-                textHuntStatus.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.ascii_warn))
-                textHuntStatus.text = "event ... ! " + predName + " hunting"
             }
         }
 
@@ -427,6 +441,25 @@ class SettingsActivity : AppCompatActivity() {
                 )
             )
         }
+        btnPresetBetta.contentDescription = "Apply Natural Betta Aquarium mood preset"
+        btnPresetBetta.setOnClickListener {
+            haptic(it)
+            applyMoodPreset(
+                "betta tank",
+                currentConfig.copy(
+                    sceneBiome = SceneBiome.AQUARIUM,
+                    paletteFamily = PaletteFamily.LAGOON,
+                    themeMode = ThemeMode.SOLAR,
+                    timeCycleMode = TimeCycleMode.AUTO_REALTIME,
+                    weatherMode = WeatherMode.CLEAR,
+                    heroFishCount = 6,
+                    waterClarity = 0.88f,
+                    waterlinePercent = 38,
+                    enableBottomFeeders = true,
+                    calmIconMode = false
+                )
+            )
+        }
         btnPresetOled.contentDescription = "Apply AMOLED Minimal battery-saving mood preset"
         btnPresetOled.setOnClickListener {
             haptic(it)
@@ -448,6 +481,7 @@ class SettingsActivity : AppCompatActivity() {
 
         btnBiomeOcean.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.OCEAN)) }
         btnBiomePond.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.ZEN_POND)) }
+        btnBiomeAquarium.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.AQUARIUM)) }
 
         fun selectTimeCycle(mode: TimeCycleMode) {
             updateConfig(currentConfig.copy(timeCycleMode = mode))
@@ -713,8 +747,9 @@ class SettingsActivity : AppCompatActivity() {
             row.contentDescription = spokenName + ", " + (if (enabled) "on" else "off")
         }
 
-        styleRadio(btnBiomeOcean, currentConfig.sceneBiome == SceneBiome.OCEAN, "ocean window")
+        styleRadio(btnBiomeOcean, currentConfig.sceneBiome == SceneBiome.OCEAN, "ocean")
         styleRadio(btnBiomePond, currentConfig.sceneBiome == SceneBiome.ZEN_POND, "zen pond")
+        styleRadio(btnBiomeAquarium, currentConfig.sceneBiome == SceneBiome.AQUARIUM, "betta tank")
 
         styleRadio(btnCycleAuto, currentConfig.timeCycleMode == TimeCycleMode.AUTO_REALTIME, "clock")
         styleRadio(btnCycleDawn, currentConfig.timeCycleMode == TimeCycleMode.DAWN, "dawn")

@@ -147,6 +147,11 @@ class AsciiPondView @JvmOverloads constructor(
     }
 
     fun summonPredatorNow(): String {
+        if (config.sceneBiome == SceneBiome.AQUARIUM) {
+            val msg = simulation.summonAquariumCatNow()
+            invalidate()
+            return msg
+        }
         val chance = if (config.huntMode == HuntMode.HARMLESS) 0f else config.huntMode.catchChance.coerceAtLeast(0.65f)
         simulation.triggerPredatorVisit(System.nanoTime(), chance)
         invalidate()

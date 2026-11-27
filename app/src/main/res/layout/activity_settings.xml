@@ -311,6 +311,17 @@
                         android:textColor="@color/ascii_good" />
 
                     <TextView
+                        android:id="@+id/btnPresetBetta"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="48dp"
+                        android:gravity="center"
+                        android:text="[betta]"
+                        android:textColor="@color/ascii_accent" />
+
+                    <TextView
                         android:id="@+id/btnPresetOled"
                         style="@style/AsciiText.Small"
                         android:layout_width="0dp"
@@ -319,7 +330,7 @@
                         android:minHeight="48dp"
                         android:gravity="center"
                         android:text="[oled]"
-                        android:textColor="@color/ascii_accent" />
+                        android:textColor="@color/ascii_fg" />
                 </LinearLayout>
 
                 <TextView
@@ -365,23 +376,33 @@
 
                         <TextView
                             android:id="@+id/btnBiomeOcean"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
-                            android:text="(*) ocean window" />
+                            android:text="(*) ocean" />
 
                         <TextView
                             android:id="@+id/btnBiomePond"
-                            style="@style/AsciiText.Body"
+                            style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:minHeight="48dp"
                             android:gravity="center_vertical"
                             android:text="( ) zen pond" />
+
+                        <TextView
+                            android:id="@+id/btnBiomeAquarium"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.15"
+                            android:minHeight="48dp"
+                            android:gravity="center_vertical"
+                            android:text="( ) betta tank" />
                     </LinearLayout>
 
                     <TextView
@@ -1116,7 +1137,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.10.0"
+                        android:text="minamo v2.11.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView
@@ -1174,12 +1195,13 @@ font engine ........ bundled monospace ttf"
                         android:layout_height="wrap_content"
                         android:text="tap water ....... drop pellet &amp; ripples
 long-press ...... sink algae wafer
-drag water ...... bioluminescent night wake
+drag water ...... bioluminescent wake / part fish
+tap tank lamp ... pulse overhead aquarium LED
+tap tank rim .... summon or shoo curious cat
 tap whale/orca .. trigger blowhole spout
 tap giant clam .. snap shell &amp; pearl bubbles
 tap lighthouse .. sweep golden beacon
-tap lantern ..... underwater glow pulse
-charging ........ lantern breathes warmly" />
+charging ........ lantern / lamp LED breathes" />
                 </LinearLayout>
 
                 <TextView
@@ -1214,15 +1236,16 @@ charging ........ lantern breathes warmly" />
                         style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="humpback whale .. deep visitor · blowhole spout
+                        android:text="betta trio ...... 3D silk-fin bettas · hide · breathe
+tank cleaners ... glass oto · shy pleco · corydoras
+tank critters ... hopping cherry shrimp · golden snail
+curious cat ..... rare paw-dip visitor (fish escape!)
+humpback whale .. deep visitor · blowhole spout
 orca whale ...... tall fin · theme-matched blaze
 dolphin pod ..... leaping acrobatic breaches
 whale shark ..... gentle spotted ocean giant
 giant manta ..... sweeping wingbeat glider
-predators ....... reef shark · swordfish · barracuda · moray
-reef swimmers ... moorish idol · angel · tang · lionfish · tuna
-seabed crew ..... reef crab · shrimp · sand goby · sea conch
-nocturnal ....... moon jellyfish · giant squid · fireflies" />
+predators ....... reef shark · swordfish · barracuda · moray" />
                 </LinearLayout>
 
                 <TextView

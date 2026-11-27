@@ -516,6 +516,7 @@ class PondSimulation {
     private var lanternPulseTimer = 0f
     private var chargingBubbleCooldown = 0f
     private var lastIsOceanBiome = true
+    private var lastSceneBiome = SceneBiome.OCEAN
     private val bioPlankton = Array(28) { BioPlankton() }
     private var nextPlanktonIdx = 0
 
@@ -536,6 +537,9 @@ class PondSimulation {
     private val bgPaint = Paint()
     private val creatureRenderer = MarineCreatureRenderer()
     private val sceneRenderer = OceanSceneRenderer()
+    private val aquariumEngine = AquariumBiotopeEngine()
+
+    fun summonAquariumCatNow(): String = aquariumEngine.summonCatVisitNow()
 
     // Unified Zero-Allocation Depth-Sorted Draw Queue (Painter's Algorithm across ALL creatures & 3D flora!)
     // Kind: 0=Fish, 1=OceanVisitorMember, 2=BottomFeeder, 3=NightJellyfish, 4=Legendary, 5=Predator, 6=Kelp, 7=CoralOutcrop
@@ -663,6 +667,7 @@ class PondSimulation {
 
     fun randomizeEcosystemOnUnlock(seed: Long = System.nanoTime(), preserveElderCrown: Boolean = false) {
         unlockSeedCounter++
+        aquariumEngine.randomizeMorphs(seed xor unlockSeedCounter)
         val rand = Random(seed xor (unlockSeedCounter * 0x9E3779B97F4A7C15UL.toLong()))
 
         // Build a diverse shuffled pool so every hero slot shows a genuinely varied ocean cast!
@@ -967,6 +972,10 @@ class PondSimulation {
     }
 
     fun onTouch(screenX: Float, screenY: Float) {
+        if (lastSceneBiome == SceneBiome.AQUARIUM) {
+            aquariumEngine.onTouch(screenX, screenY)
+            return
+        }
         val c = (screenX / cellWidthPx).coerceIn(2f, (gridCols - 3).toFloat())
         val r = (screenY / cellHeightPx).coerceIn(2f, (gridRows - 4).toFloat())
 
@@ -1056,6 +1065,10 @@ class PondSimulation {
     }
 
     fun onLongPress(screenX: Float, screenY: Float) {
+        if (lastSceneBiome == SceneBiome.AQUARIUM) {
+            aquariumEngine.onLongPress(screenX, screenY)
+            return
+        }
         val c = (screenX / cellWidthPx).coerceIn(4f, (gridCols - 5).toFloat())
         val r = (screenY / cellHeightPx).coerceIn(2f, (gridRows - 4).toFloat())
         injectSurfaceRipple(c, 5.4f)
@@ -1078,6 +1091,10 @@ class PondSimulation {
      *   - Leaves a fading bioluminescent plankton glow at dusk/night!
      */
     fun onDrag(screenX: Float, screenY: Float, deltaX: Float = 0f) {
+        if (lastSceneBiome == SceneBiome.AQUARIUM) {
+            aquariumEngine.onDrag(screenX, screenY, deltaX)
+            return
+        }
         val c = (screenX / cellWidthPx).coerceIn(2f, (gridCols - 3).toFloat())
         val r = (screenY / cellHeightPx).coerceIn(2f, (gridRows - 4).toFloat())
         if (r >= waterlineRow - 4f) {
@@ -1143,6 +1160,22 @@ class PondSimulation {
             overrideHour = previewHourOverride
         )
         lastResolvedSnapshot = snapshot
+        lastSceneBiome = config.sceneBiome
+        if (config.sceneBiome == SceneBiome.AQUARIUM) {
+            aquariumEngine.updateAndRender(
+                canvas = canvas,
+                dt = clampedDt,
+                config = config,
+                snapshot = snapshot,
+                parallaxX = parallaxX,
+                parallaxY = parallaxY,
+                isBatterySaver = isBatterySaver,
+                isWallpaperMode = isWallpaperMode,
+                isCharging = isCharging
+            )
+            hasHighMotionActivity = aquariumEngine.isHighMotion
+            return
+        }
         val pal = snapshot.colors
 
         val cols = gridCols
