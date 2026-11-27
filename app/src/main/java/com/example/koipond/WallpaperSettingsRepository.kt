@@ -84,14 +84,14 @@ enum class GridDensity(val id: Int, val label: String, val targetCols: Int) {
 }
 
 /**
- * Unified performance & battery profile (replaces overlapping PowerSaveMode + TargetFps toggles):
- * - ECO: 15fps cap, reduced ambient particles, tilt sensor off
- * - BALANCED: adaptive 20fps calm / 30fps active, auto-drops to 15fps under Battery Saver / <15% / thermal warm
- * - SMOOTH: adaptive 30fps calm / 60fps active, still safely throttles under thermal/low-battery
+ * Unified performance & battery profile (VSync-aligned divisors for zero stutter):
+ * - ECO: 20fps cap (1:3 VSync), reduced ambient particles, tilt sensor off
+ * - BALANCED: adaptive 30fps calm / 60fps active (exact 1:2 / 1:1 VSync), auto-drops to 20fps under Battery Saver / <15% / thermal warm
+ * - SMOOTH: steady 60fps VSync-locked, still safely throttles under thermal/low-battery
  */
 enum class PerformanceMode(val id: Int, val label: String, val maxFps: Int) {
-    ECO(1, "eco", 15),
-    BALANCED(0, "balanced", 30),
+    ECO(1, "eco", 20),
+    BALANCED(0, "balanced", 60),
     SMOOTH(2, "smooth", 60);
 
     companion object {

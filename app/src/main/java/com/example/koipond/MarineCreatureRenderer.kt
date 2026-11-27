@@ -1194,15 +1194,19 @@ class MarineCreatureRenderer {
         isBatterySaver: Boolean
     ) {
         val halfL = lengthPx * 0.5f
-        val strokeAngle = sin(animPhase)
+        val strokeAngle = sin(animPhase * 0.85f)
+        val tipLag = sin(animPhase * 0.85f - 0.75f)
+        val featherSweep = cos(animPhase * 0.85f)
 
-        // Sweeping wing-like front flipper (strokes cleanly up & down!)
+        // Sweeping wing-like front flipper (graceful elliptical figure-8 power-stroke + tip lag!)
         finPath.reset()
         finPath.moveTo(halfL * 0.16f, halfH * 0.15f)
-        val tipX = -halfL * 0.16f + strokeAngle * halfL * 0.14f
-        val tipY = halfH * (0.25f + strokeAngle * 1.15f)
-        finPath.quadTo(halfL * 0.06f, tipY * 0.85f, tipX, tipY)
-        finPath.quadTo(-halfL * 0.08f, halfH * 0.35f, -halfL * 0.04f, halfH * 0.22f)
+        val midX = halfL * 0.04f + featherSweep * halfL * 0.09f
+        val midY = halfH * (0.28f + strokeAngle * 0.72f)
+        val tipX = -halfL * 0.18f + featherSweep * halfL * 0.14f
+        val tipY = halfH * (0.24f + tipLag * 1.12f)
+        finPath.quadTo(midX, midY, tipX, tipY)
+        finPath.quadTo(-halfL * 0.10f, halfH * (0.34f + strokeAngle * 0.22f), -halfL * 0.04f, halfH * 0.22f)
         finPath.close()
 
         fillPaint.color = solidFinFill
@@ -1283,7 +1287,11 @@ class MarineCreatureRenderer {
         isBatterySaver: Boolean
     ) {
         val halfL = lengthPx * 0.5f
-        val wingBeat = sin(animPhase)
+        // True traveling-wave underwater flight wingbeat (shoulder leads -> mid-wing flexes -> wingtip curls behind!)
+        val wPhase = animPhase * 0.72f
+        val rootWave = sin(wPhase)
+        val midWave = sin(wPhase - 0.68f)
+        val tipWave = sin(wPhase - 1.38f)
 
         // Long undulating whip tail streaming gracefully behind
         strokePaint.color = (accentColor and 0x00FFFFFF) or (outlineAlpha shl 24)
@@ -1293,23 +1301,41 @@ class MarineCreatureRenderer {
         for (tStep in 1..6) {
             val tf = tStep / 6f
             val tx = -halfL * (0.22f + tf * 0.85f)
-            val ty = sin(animPhase - tf * 4.5f) * halfH * 0.26f * tf
+            val ty = sin(wPhase - 1.2f - tf * 3.8f) * halfH * 0.24f * tf
             finPath.lineTo(tx, ty)
         }
         canvas.drawPath(finPath, strokePaint)
 
-        // Sweeping diamond wings curving smoothly up & down!
-        val upperTipY = -halfH * (0.95f + wingBeat * 0.42f)
-        val lowerTipY = halfH * (0.95f - wingBeat * 0.42f)
-        val wingLeadX = halfL * 0.12f
-        val wingTipX = -halfL * 0.08f
+        // Sweeping sinusoidal manta/eagle-ray wings curving with organic root-to-tip phase lag!
+        val upperMidY = -halfH * (0.68f + rootWave * 0.18f + midWave * 0.14f)
+        val upperTipY = -halfH * (0.98f + tipWave * 0.38f)
+        val lowerMidY = halfH * (0.68f - rootWave * 0.18f - midWave * 0.14f)
+        val lowerTipY = halfH * (0.98f - tipWave * 0.38f)
+        val wingLeadX = halfL * (0.16f + rootWave * 0.03f)
+        val wingTipX = -halfL * (0.08f + tipWave * 0.05f)
 
         bodyPath.reset()
-        bodyPath.moveTo(halfL * 0.58f, 0f)
-        bodyPath.quadTo(wingLeadX, upperTipY * 0.72f, wingTipX, upperTipY)
-        bodyPath.quadTo(-halfL * 0.20f, upperTipY * 0.35f, -halfL * 0.28f, 0f)
-        bodyPath.quadTo(-halfL * 0.20f, lowerTipY * 0.35f, wingTipX, lowerTipY)
-        bodyPath.quadTo(wingLeadX, lowerTipY * 0.72f, halfL * 0.58f, 0f)
+        bodyPath.moveTo(halfL * 0.58f, rootWave * halfH * 0.05f)
+        bodyPath.cubicTo(
+            halfL * 0.34f, upperMidY * 0.55f,
+            wingLeadX, upperMidY,
+            wingTipX, upperTipY
+        )
+        bodyPath.cubicTo(
+            -halfL * 0.16f, upperMidY * 0.52f,
+            -halfL * 0.22f, upperMidY * 0.18f,
+            -halfL * 0.28f, rootWave * halfH * 0.04f
+        )
+        bodyPath.cubicTo(
+            -halfL * 0.22f, lowerMidY * 0.18f,
+            -halfL * 0.16f, lowerMidY * 0.52f,
+            wingTipX, lowerTipY
+        )
+        bodyPath.cubicTo(
+            wingLeadX, lowerMidY,
+            halfL * 0.34f, lowerMidY * 0.55f,
+            halfL * 0.58f, rootWave * halfH * 0.05f
+        )
         bodyPath.close()
 
         fillPaint.color = solidBodyFill

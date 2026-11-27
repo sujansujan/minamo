@@ -1404,7 +1404,7 @@ class PondSimulation {
                 val birdCount = if (isBatterySaver) 2 else seabirds.size
                 for (bIdx in 0 until birdCount) {
                     val bird = seabirds[bIdx]
-                    bird.flapPhase = (bird.flapPhase + clampedDt * 3.8f) % 62.831855f
+                    bird.flapPhase = (bird.flapPhase + clampedDt * 2.8f) % 62.831855f
                     bird.colX += bird.vx * clampedDt
                     if (bird.colX > cols + 8f) bird.colX = -6f
                     if (bird.colX < -8f) bird.colX = (cols + 6).toFloat()

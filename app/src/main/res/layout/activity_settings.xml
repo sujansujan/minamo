@@ -244,7 +244,7 @@
     </LinearLayout>
 
     <!-- =================================================================== -->
-    <!-- SCREEN 2: [2 set] Standardized Character-Built Settings             -->
+    <!-- SCREEN 2: [2 set] Clean, Card-Based Scene-Aware Settings            -->
     <!-- =================================================================== -->
     <ScrollView
         android:id="@+id/screenSettings"
@@ -258,817 +258,1065 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="8dp">
 
-            <!-- BOX 0: QUICK MOODS & ACTIVE SCENE -->
-            <FrameLayout
+            <!-- CARD 1: SCENE & QUICK LIGHTING PRESETS -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp">
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    style="@style/AsciiText.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="SCENE"
+                    android:textColor="@color/ascii_accent2" />
+
+                <TextView
+                    android:id="@+id/textSceneDesc"
+                    style="@style/AsciiText.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="coral reef, whales &amp; open ocean horizon"
+                    android:textColor="@color/ascii_dim" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:background="@drawable/bg_ascii_box"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnBiomeOcean"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:minHeight="44dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="ocean" />
+
+                    <TextView
+                        android:id="@+id/btnBiomePond"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:minHeight="44dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="zen pond" />
+
+                    <TextView
+                        android:id="@+id/btnBiomeAquarium"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.15"
+                        android:minHeight="44dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="betta tank" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@color/ascii_border" />
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:text="quick lighting preset (applies to active scene)"
+                    android:textColor="@color/ascii_dim" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnPresetDaylight"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:minHeight="40dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="daylight" />
+
+                    <TextView
+                        android:id="@+id/btnPresetDusk"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:minHeight="40dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="cozy dusk" />
+
+                    <TextView
+                        android:id="@+id/btnPresetOled"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="40dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="oled black" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- CARD 2: SCENE-SPECIFIC OPTIONS (ADAPTS AUTOMATICALLY TO SELECTED SCENE) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:id="@+id/textSceneSettingsTitle"
+                    style="@style/AsciiText.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:text="OCEAN OPTIONS"
+                    android:textColor="@color/ascii_accent2" />
+
+                <!-- BETTA TANK ONLY OPTIONS -->
+                <LinearLayout
+                    android:id="@+id/groupAquariumOnly"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:paddingStart="10dp"
-                    android:paddingTop="12dp"
-                    android:paddingEnd="10dp"
-                    android:paddingBottom="8dp">
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/AsciiText.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="betta fish" />
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:text="plus rasboras, glass catfish &amp; kuhli loach"
+                        android:textColor="@color/ascii_dim" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/btnPresetReef"
+                            android:id="@+id/btnBettaCount2"
                             style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:minHeight="48dp"
+                            android:layout_marginEnd="6dp"
+                            android:minHeight="42dp"
                             android:gravity="center"
-                            android:text="[reef]"
-                            android:textColor="@color/ascii_accent2" />
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="2 bettas" />
 
                         <TextView
-                            android:id="@+id/btnPresetAbyss"
+                            android:id="@+id/btnBettaCount3"
                             style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:minHeight="48dp"
+                            android:minHeight="42dp"
                             android:gravity="center"
-                            android:text="[abyss]"
-                            android:textColor="@color/ascii_accent3" />
-
-                        <TextView
-                            android:id="@+id/btnPresetZen"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[zen]"
-                            android:textColor="@color/ascii_good" />
-
-                        <TextView
-                            android:id="@+id/btnPresetBetta"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[betta]"
-                            android:textColor="@color/ascii_accent" />
-
-                        <TextView
-                            android:id="@+id/btnPresetOled"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[oled]"
-                            android:textColor="@color/ascii_fg" />
+                            android:background="@drawable/bg_pill_selected"
+                            android:text="3 bettas" />
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowCatVisitorSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="10dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/AsciiText.Body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="curious pet cat" />
+
+                            <TextView
+                                style="@style/AsciiText.Small"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="occasionally peeks over rim &amp; taps glass"
+                                android:textColor="@color/ascii_dim" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/textCatVisitorSwitch"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="56dp"
+                            android:minHeight="36dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_selected"
+                            android:text="ON" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- OCEAN & ZEN POND ONLY OPTIONS -->
+                <LinearLayout
+                    android:id="@+id/groupOutdoorOnly"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:paddingStart="2dp"
-                        android:paddingEnd="2dp">
+                        android:layout_marginBottom="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/AsciiText.Body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="main fish count" />
+
+                            <TextView
+                                style="@style/AsciiText.Small"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="featured swimmers in the water"
+                                android:textColor="@color/ascii_dim" />
+                        </LinearLayout>
 
                         <TextView
-                            android:id="@+id/btnBiomeOcean"
+                            android:id="@+id/btnFishMinus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="40dp"
+                            android:layout_height="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="-" />
+
+                        <TextView
+                            android:id="@+id/textFishValue"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="44dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="6" />
+
+                        <TextView
+                            android:id="@+id/btnFishPlus"
+                            style="@style/AsciiText.Title"
+                            android:layout_width="40dp"
+                            android:layout_height="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="+" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/AsciiText.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:text="sky weather" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnWeatherAuto"
                             style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:minHeight="44dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) ocean" />
+                            android:layout_marginEnd="4dp"
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_selected"
+                            android:text="auto" />
 
                         <TextView
-                            android:id="@+id/btnBiomePond"
+                            android:id="@+id/btnWeatherClear"
                             style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:minHeight="44dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) zen pond" />
+                            android:layout_marginEnd="4dp"
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="clear" />
 
                         <TextView
-                            android:id="@+id/btnBiomeAquarium"
+                            android:id="@+id/btnWeatherRain"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="rain" />
+
+                        <TextView
+                            android:id="@+id/btnWeatherSnow"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="snow" />
+
+                        <TextView
+                            android:id="@+id/btnWeatherAurora"
                             style="@style/AsciiText.Small"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1.15"
-                            android:minHeight="44dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) betta tank" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@color/ascii_bg"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
-                    android:text=" quick moods &amp; scene "
-                    android:textColor="@color/ascii_accent3" />
-            </FrameLayout>
-
-            <!-- BOX 1: SCENE-SPECIFIC SETTINGS (DYNAMIC PER ACTIVE MOOD / BIOME) -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:background="@drawable/bg_ascii_box"
-                    android:orientation="vertical"
-                    android:paddingStart="12dp"
-                    android:paddingTop="14dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="10dp">
-
-                    <!-- Outdoor Ocean & Zen Pond Only Controls -->
-                    <LinearLayout
-                        android:id="@+id/groupOutdoorOnly"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
-
-                        <TextView
-                            style="@style/AsciiText.Small"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="sky weather:"
-                            android:textColor="@color/ascii_dim" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/btnWeatherAuto"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="(*) auto" />
-
-                            <TextView
-                                android:id="@+id/btnWeatherClear"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="( ) clear" />
-
-                            <TextView
-                                android:id="@+id/btnWeatherRain"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="( ) rain" />
-
-                            <TextView
-                                android:id="@+id/btnWeatherSnow"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="( ) snow" />
-
-                            <TextView
-                                android:id="@+id/btnWeatherAurora"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1.15"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="( ) aurora" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/textFishBar"
-                                style="@style/AsciiText.Body"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="fish: [######---] 6" />
-
-                            <TextView
-                                android:id="@+id/btnFishMinus"
-                                style="@style/AsciiText.Title"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:minWidth="48dp"
-                                android:minHeight="48dp"
-                                android:gravity="center"
-                                android:text="[ - ]" />
-
-                            <TextView
-                                android:id="@+id/btnFishPlus"
-                                style="@style/AsciiText.Title"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:minWidth="48dp"
-                                android:minHeight="48dp"
-                                android:gravity="center"
-                                android:text="[ + ]" />
-                        </LinearLayout>
-
-                        <TextView
-                            style="@style/AsciiText.Small"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="predator behavior:"
-                            android:textColor="@color/ascii_dim" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/btnHuntOff"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="0.85"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="( ) off" />
-
-                            <TextView
-                                android:id="@+id/btnHuntHarmless"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1.15"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="( ) harmless" />
-
-                            <TextView
-                                android:id="@+id/btnHuntNatural"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1.05"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="(*) natural" />
-
-                            <TextView
-                                android:id="@+id/btnHuntFierce"
-                                style="@style/AsciiText.Small"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="0.95"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="( ) fierce" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/rowCalmIconsSwitch"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                style="@style/AsciiText.Body"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="calm home-screen icon scrim" />
-
-                            <TextView
-                                android:id="@+id/textCalmIconsSwitch"
-                                style="@style/AsciiText.Title"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="[off]"
-                                android:textColor="@color/ascii_dim" />
-                        </LinearLayout>
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="aurora" />
                     </LinearLayout>
 
-                    <!-- Betta Aquarium Specific Controls -->
-                    <LinearLayout
-                        android:id="@+id/groupAquariumOnly"
+                    <TextView
+                        style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone">
+                        android:text="predator visits" />
+
+                    <TextView
+                        style="@style/AsciiText.Small"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:text="reef sharks, barracuda &amp; moray eels"
+                        android:textColor="@color/ascii_dim" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/btnHuntOff"
                             style="@style/AsciiText.Small"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="betta population (optimal biotope):"
-                            android:textColor="@color/ascii_dim" />
+                            android:layout_weight="0.85"
+                            android:layout_marginEnd="4dp"
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="off" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:id="@+id/btnHuntHarmless"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            android:layout_weight="1.1"
+                            android:layout_marginEnd="4dp"
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="gentle" />
 
-                            <TextView
-                                android:id="@+id/btnBettaCount2"
-                                style="@style/AsciiText.Body"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="( ) 2 bettas" />
-
-                            <TextView
-                                android:id="@+id/btnBettaCount3"
-                                style="@style/AsciiText.Body"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:text="(*) 3 bettas" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/rowCatVisitorSwitch"
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:id="@+id/btnHuntNatural"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:layout_weight="1.1"
+                            android:layout_marginEnd="4dp"
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_selected"
+                            android:text="natural" />
 
-                            <TextView
-                                style="@style/AsciiText.Body"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="occasional curious cat visits" />
-
-                            <TextView
-                                android:id="@+id/textCatVisitorSwitch"
-                                style="@style/AsciiText.Title"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="[ on]"
-                                android:textColor="@color/ascii_accent" />
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/btnHuntFierce"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:minHeight="38dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="fierce" />
                     </LinearLayout>
 
-                    <!-- Scene-tailored controls (labels adapt cleanly to active biome!) -->
                     <LinearLayout
-                        android:id="@+id/rowBottomFeedersCheck"
+                        android:id="@+id/rowCalmIconsSwitch"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
                         android:minHeight="48dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="10dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/AsciiText.Body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="calm icon backdrop" />
+
+                            <TextView
+                                style="@style/AsciiText.Small"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="softens contrast behind home icons"
+                                android:textColor="@color/ascii_dim" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/textCalmIconsSwitch"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minWidth="56dp"
+                            android:minHeight="36dp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:text="OFF" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- SHARED SCENE-ADAPTED CONTROLS -->
+                <LinearLayout
+                    android:id="@+id/rowBottomFeedersCheck"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:minHeight="48dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="10dp"
+                        android:orientation="vertical">
 
                         <TextView
                             android:id="@+id/textBottomFeedersLabel"
                             style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="bottom-feeder critters" />
+                            android:text="bottom critters" />
 
                         <TextView
-                            android:id="@+id/textBottomFeedersCheck"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/textBottomFeedersSub"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="[ on]"
-                            android:textColor="@color/ascii_accent" />
+                            android:text="crabs, cleaner shrimp, goby &amp; conch"
+                            android:textColor="@color/ascii_dim" />
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:id="@+id/textBottomFeedersCheck"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/textWaterlineBar"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="line: [####------] 36%" />
-
-                        <TextView
-                            android:id="@+id/btnWaterlineMinus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ - ]" />
-
-                        <TextView
-                            android:id="@+id/btnWaterlinePlus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ + ]" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/textClarityBar"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="rays: [########--] 85%" />
-
-                        <TextView
-                            android:id="@+id/btnClarityMinus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ - ]" />
-
-                        <TextView
-                            android:id="@+id/btnClarityPlus"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="48dp"
-                            android:gravity="center"
-                            android:text="[ + ]" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/rowBatteryLanternSwitch"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/textBatteryLanternLabel"
-                            style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="battery level stone lantern" />
-
-                        <TextView
-                            android:id="@+id/textBatteryLanternSwitch"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="[ on]"
-                            android:textColor="@color/ascii_accent" />
-                    </LinearLayout>
+                        android:minWidth="56dp"
+                        android:minHeight="36dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="ON" />
                 </LinearLayout>
-
-                <TextView
-                    android:id="@+id/textSceneSettingsTitle"
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@color/ascii_bg"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
-                    android:text=" 1. ocean settings "
-                    android:textColor="@color/ascii_accent2" />
-            </FrameLayout>
-
-            <!-- BOX 2: GENERAL SETTINGS (SHARED ACROSS ALL SCENES & MOODS) -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:background="@drawable/bg_ascii_box"
-                    android:orientation="vertical"
-                    android:paddingStart="12dp"
-                    android:paddingTop="14dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="10dp">
-
-                    <TextView
-                        style="@style/AsciiText.Small"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="time cycle:"
-                        android:textColor="@color/ascii_dim" />
+                    android:layout_marginBottom="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/btnCycleAuto"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.15"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) clock" />
-
-                        <TextView
-                            android:id="@+id/btnCycleDawn"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) dawn" />
-
-                        <TextView
-                            android:id="@+id/btnCycleNoon"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) noon" />
-
-                        <TextView
-                            android:id="@+id/btnCycleDusk"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) dusk" />
-
-                        <TextView
-                            android:id="@+id/btnCycleNight"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.05"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) night" />
-                    </LinearLayout>
-
-                    <TextView
-                        style="@style/AsciiText.Small"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="palette family:"
-                        android:textColor="@color/ascii_dim" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/btnPalLagoon"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.05"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) lagoon" />
-
-                        <TextView
-                            android:id="@+id/btnPalEmber"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) ember" />
-
-                        <TextView
-                            android:id="@+id/btnPalMoss"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="0.95"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) moss" />
-
-                        <TextView
-                            android:id="@+id/btnPalAmoled"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) amoled" />
-                    </LinearLayout>
-
-                    <TextView
-                        style="@style/AsciiText.Small"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="light / dark mode:"
-                        android:textColor="@color/ascii_dim" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/btnThemeSolar"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) solar" />
-
-                        <TextView
-                            android:id="@+id/btnThemeSystem"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) system" />
-
-                        <TextView
-                            android:id="@+id/btnThemeLight"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="0.95"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) light" />
-
-                        <TextView
-                            android:id="@+id/btnThemeDark"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="0.95"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) dark" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/rowGyroSwitch"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
+                            android:id="@+id/textWaterlineLabel"
                             style="@style/AsciiText.Body"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="3d tilt window parallax" />
+                            android:text="horizon height" />
 
                         <TextView
-                            android:id="@+id/textGyroSwitch"
-                            style="@style/AsciiText.Title"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/textWaterlineSub"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="[ on]"
-                            android:textColor="@color/ascii_accent" />
+                            android:text="adjusts sky vs underwater split"
+                            android:textColor="@color/ascii_dim" />
                     </LinearLayout>
 
                     <TextView
+                        android:id="@+id/btnWaterlineMinus"
+                        style="@style/AsciiText.Title"
+                        android:layout_width="40dp"
+                        android:layout_height="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="-" />
+
+                    <TextView
+                        android:id="@+id/textWaterlineValue"
                         style="@style/AsciiText.Small"
-                        android:layout_width="match_parent"
+                        android:layout_width="44dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="performance &amp; battery (auto-pauses when hidden):"
-                        android:textColor="@color/ascii_dim" />
+                        android:gravity="center"
+                        android:text="36%" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/btnPerfEco"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="0.9"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) eco" />
-
-                        <TextView
-                            android:id="@+id/btnPerfBalanced"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.15"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="(*) balanced" />
-
-                        <TextView
-                            android:id="@+id/btnPerfSmooth"
-                            style="@style/AsciiText.Small"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:minHeight="48dp"
-                            android:gravity="center_vertical"
-                            android:text="( ) smooth" />
-                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/btnWaterlinePlus"
+                        style="@style/AsciiText.Title"
+                        android:layout_width="40dp"
+                        android:layout_height="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="+" />
                 </LinearLayout>
 
                 <TextView
-                    style="@style/AsciiText.Small"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/textClarityLabel"
+                    style="@style/AsciiText.Body"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@color/ascii_bg"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
-                    android:text=" 2. general settings "
-                    android:textColor="@color/ascii_accent2" />
-            </FrameLayout>
+                    android:layout_marginBottom="6dp"
+                    android:text="water clarity &amp; rays" />
 
-            <TextView
-                android:id="@+id/btnResetDefaults"
-                style="@style/AsciiText.Body"
-                android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnClarityLow"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="soft" />
+
+                    <TextView
+                        android:id="@+id/btnClarityMid"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="clear" />
+
+                    <TextView
+                        android:id="@+id/btnClarityHigh"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="crystal" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/rowBatteryLanternSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="10dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/textBatteryLanternLabel"
+                            style="@style/AsciiText.Body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="battery stone lantern" />
+
+                        <TextView
+                            android:id="@+id/textBatteryLanternSub"
+                            style="@style/AsciiText.Small"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="glows with battery level &amp; charging"
+                            android:textColor="@color/ascii_dim" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textBatteryLanternSwitch"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="56dp"
+                        android:minHeight="36dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="ON" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- CARD 3: TIME & COLORS (SHARED ACROSS ALL SCENES) -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:gravity="center_vertical"
-                android:text="@string/action_reset_defaults"
-                android:textColor="@color/ascii_dim" />
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    style="@style/AsciiText.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:text="TIME &amp; COLORS"
+                    android:textColor="@color/ascii_accent2" />
+
+                <TextView
+                    style="@style/AsciiText.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="time of day" />
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:text="follow live sun clock or lock one mood"
+                    android:textColor="@color/ascii_dim" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnCycleAuto"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.1"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="clock" />
+
+                    <TextView
+                        android:id="@+id/btnCycleDawn"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="dawn" />
+
+                    <TextView
+                        android:id="@+id/btnCycleNoon"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="noon" />
+
+                    <TextView
+                        android:id="@+id/btnCycleDusk"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="dusk" />
+
+                    <TextView
+                        android:id="@+id/btnCycleNight"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.05"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="night" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/AsciiText.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="color theme" />
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:text="water palette &amp; true-black oled mode"
+                    android:textColor="@color/ascii_dim" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnPalLagoon"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.05"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="lagoon" />
+
+                    <TextView
+                        android:id="@+id/btnPalEmber"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="ember" />
+
+                    <TextView
+                        android:id="@+id/btnPalMoss"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0.95"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="moss" />
+
+                    <TextView
+                        android:id="@+id/btnPalAmoled"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.1"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="amoled" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/AsciiText.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="app &amp; light polarity" />
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:text="match sun, system theme, or force light/dark"
+                    android:textColor="@color/ascii_dim" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnThemeSolar"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="auto sun" />
+
+                    <TextView
+                        android:id="@+id/btnThemeSystem"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="system" />
+
+                    <TextView
+                        android:id="@+id/btnThemeLight"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0.9"
+                        android:layout_marginEnd="4dp"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="light" />
+
+                    <TextView
+                        android:id="@+id/btnThemeDark"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0.9"
+                        android:minHeight="38dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="dark" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- CARD 4: MOTION & BATTERY -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    style="@style/AsciiText.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:text="MOTION &amp; BATTERY"
+                    android:textColor="@color/ascii_accent2" />
+
+                <TextView
+                    style="@style/AsciiText.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="frame rate" />
+
+                <TextView
+                    style="@style/AsciiText.Small"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:text="auto-pauses completely when screen is off"
+                    android:textColor="@color/ascii_dim" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnPerfEco"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:minHeight="40dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="eco 20" />
+
+                    <TextView
+                        android:id="@+id/btnPerfBalanced"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.15"
+                        android:layout_marginEnd="6dp"
+                        android:minHeight="40dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="balanced" />
+
+                    <TextView
+                        android:id="@+id/btnPerfSmooth"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.1"
+                        android:minHeight="40dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:text="smooth 60" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/rowGyroSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="10dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/AsciiText.Body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="3d tilt parallax" />
+
+                        <TextView
+                            style="@style/AsciiText.Small"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="gently shifts depth as you tilt phone"
+                            android:textColor="@color/ascii_dim" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textGyroSwitch"
+                        style="@style/AsciiText.Small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="56dp"
+                        android:minHeight="36dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_selected"
+                        android:text="ON" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- FOOTER ACTIONS -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/btnResetDefaults"
+                    style="@style/AsciiText.Small"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:minHeight="46dp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_pill_unselected"
+                    android:text="reset defaults"
+                    android:textColor="@color/ascii_dim" />
+
+                <TextView
+                    android:id="@+id/btnSettingsApplyWallpaper"
+                    style="@style/AsciiText.Title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.35"
+                    android:minHeight="46dp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_pill_selected"
+                    android:text="set wallpaper"
+                    android:textColor="@color/ascii_bg" />
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
@@ -1110,7 +1358,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.14.0"
+                        android:text="minamo v2.15.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView

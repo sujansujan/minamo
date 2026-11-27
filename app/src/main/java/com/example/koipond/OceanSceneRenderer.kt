@@ -228,16 +228,19 @@ class OceanSceneRenderer {
     ) {
         val hs = spanPx * 0.5f
         if (cx + hs < -8f || cx - hs > canvas.width + 8f) return
-        val lift = sin(flapPhase) * (hs * 0.48f)
-        val bodyBob = -lift * 0.18f
+        // Smooth articulated 2-joint gull wingbeat: shoulder leads, outer primary feathers lag & curl gently!
+        val glideMod = 0.55f + 0.45f * sin(flapPhase * 0.22f)
+        val shoulderLift = sin(flapPhase) * (hs * 0.30f) * glideMod
+        val tipLift = sin(flapPhase - 0.85f) * (hs * 0.46f) * glideMod
+        val bodyBob = -shoulderLift * 0.24f
 
         strokePaint.color = (birdColor and 0x00FFFFFF) or ((if (calmScrim) 135 else 205) shl 24)
         strokePaint.strokeWidth = (spanPx * 0.055f).coerceIn(1.2f, 2.2f)
 
         shapePath.reset()
-        shapePath.moveTo(cx - hs, cy - lift * 0.85f)
-        shapePath.quadTo(cx - hs * 0.48f, cy - hs * 0.34f - lift * 0.35f, cx, cy + bodyBob)
-        shapePath.quadTo(cx + hs * 0.48f, cy - hs * 0.34f - lift * 0.35f, cx + hs, cy - lift * 0.85f)
+        shapePath.moveTo(cx - hs, cy - tipLift)
+        shapePath.quadTo(cx - hs * 0.50f, cy - hs * 0.28f - shoulderLift, cx, cy + bodyBob)
+        shapePath.quadTo(cx + hs * 0.50f, cy - hs * 0.28f - shoulderLift, cx + hs, cy - tipLift)
         canvas.drawPath(shapePath, strokePaint)
     }
 
@@ -456,31 +459,36 @@ class OceanSceneRenderer {
             return
         }
 
-        // Daytime sculpted dragonfly with 4 fluttering gossamer wings!
+        // Daytime sculpted dragonfly with silky figure-8 shimmering gossamer wings (zero strobe aliasing!)
         val dir = if (facingRight) 1f else -1f
-        val flutter = sin(phase * 4.5f) * (sizePx * 0.26f)
+        val wingBeat = sin(phase * 1.9f) * (sizePx * 0.18f)
+        val rearBeat = sin(phase * 1.9f - 0.9f) * (sizePx * 0.16f)
         strokePaint.color = (color and 0x00FFFFFF) or (210 shl 24)
         strokePaint.strokeWidth = 1.4f
 
         // Slender dragonfly body
         canvas.drawLine(cx - dir * sizePx * 0.55f, cy + 1f, cx + dir * sizePx * 0.38f, cy - 1f, strokePaint)
 
-        // Translucent fluttering upper wings
-        strokePaint.strokeWidth = 1.1f
+        // Translucent silky-smooth forewing & hindwing pair
+        strokePaint.strokeWidth = 1.05f
         shapePath.reset()
         shapePath.moveTo(cx + dir * sizePx * 0.08f, cy)
-        shapePath.quadTo(cx - dir * sizePx * 0.12f, cy - sizePx * 0.58f + flutter, cx - dir * sizePx * 0.36f, cy - sizePx * 0.28f + flutter)
+        shapePath.quadTo(cx - dir * sizePx * 0.12f, cy - sizePx * 0.54f + wingBeat, cx - dir * sizePx * 0.36f, cy - sizePx * 0.28f + wingBeat)
         shapePath.close()
         if (!isTrueBlackOled) {
-            fillPaint.color = (color and 0x00FFFFFF) or (55 shl 24)
+            fillPaint.color = (color and 0x00FFFFFF) or (50 shl 24)
             canvas.drawPath(shapePath, fillPaint)
         }
         canvas.drawPath(shapePath, strokePaint)
 
         detailPath.reset()
         detailPath.moveTo(cx + dir * sizePx * 0.08f, cy)
-        detailPath.quadTo(cx + dir * sizePx * 0.32f, cy - sizePx * 0.45f - flutter, cx + dir * sizePx * 0.02f, cy - sizePx * 0.18f - flutter)
+        detailPath.quadTo(cx + dir * sizePx * 0.30f, cy - sizePx * 0.44f - rearBeat, cx + dir * sizePx * 0.02f, cy - sizePx * 0.18f - rearBeat)
         detailPath.close()
+        if (!isTrueBlackOled) {
+            fillPaint.color = (color and 0x00FFFFFF) or (40 shl 24)
+            canvas.drawPath(detailPath, fillPaint)
+        }
         canvas.drawPath(detailPath, strokePaint)
     }
 

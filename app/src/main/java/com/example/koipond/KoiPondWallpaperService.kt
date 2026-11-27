@@ -81,6 +81,7 @@ class KoiPondWallpaperService : WallpaperService() {
         @Volatile
         private var isDestroyed = false
         private var lastFrameTimestampNs = 0L
+        private var smoothedDt = 1f / 30f
         private var lastInteractionMs = 0L
         private var lastUnlockShuffleMs = 0L
         private var lastQuickTileSeq = 0
@@ -190,11 +191,13 @@ class KoiPondWallpaperService : WallpaperService() {
         private fun drawOneFrame(frameTimeNanos: Long) {
             if (!shouldRenderNow()) return
 
-            val dt = if (lastFrameTimestampNs == 0L) {
+            val rawDt = if (lastFrameTimestampNs == 0L) {
                 1f / 30f
             } else {
-                ((frameTimeNanos - lastFrameTimestampNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.05f)
+                ((frameTimeNanos - lastFrameTimestampNs) / 1_000_000_000.0f).coerceIn(0.004f, 0.05f)
             }
+            smoothedDt += (rawDt - smoothedDt) * 0.40f
+            val dt = smoothedDt
             lastFrameTimestampNs = frameTimeNanos
 
             val cfg = currentConfig
@@ -245,17 +248,18 @@ class KoiPondWallpaperService : WallpaperService() {
                 val nowMs = SystemClock.elapsedRealtime()
                 val recentlyInteracted = (nowMs - lastInteractionMs) < 4_000L
                 val isActiveScene = simulation.hasHighMotionActivity || recentlyInteracted
+                // Exact VSync-divisor frame rates (60 / 30 / 20fps) eliminate 3:3:4 judder on 60/90/120Hz panels!
                 val effectiveFps = when {
-                    effectiveEco -> 15
-                    cfg.performanceMode == PerformanceMode.SMOOTH -> if (isActiveScene) 60 else 30
-                    else -> if (isActiveScene) 30 else 20
+                    effectiveEco -> 20
+                    cfg.performanceMode == PerformanceMode.SMOOTH -> 60
+                    else -> if (isActiveScene) 60 else 30
                 }
                 val targetIntervalMs = 1000L / effectiveFps
                 val workDurationMs = (SystemClock.elapsedRealtimeNanos() - frameTimeNanos) / 1_000_000L
                 val sleepDelayMs = if (effectiveFps >= 60) {
                     0L
                 } else {
-                    (targetIntervalMs - workDurationMs - 4L).coerceAtLeast(4L)
+                    (targetIntervalMs - workDurationMs - 9L).coerceAtLeast(0L)
                 }
                 scheduleNextFrame(sleepDelayMs)
             }

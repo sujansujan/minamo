@@ -58,64 +58,70 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var textBiomeStatus: TextView
     private lateinit var textHuntStatus: TextView
     private lateinit var textAboutTelemetry: TextView
+    private lateinit var btnSummonPredator: TextView
 
-    private lateinit var btnPresetReef: TextView
-    private lateinit var btnPresetAbyss: TextView
-    private lateinit var btnPresetZen: TextView
-    private lateinit var btnPresetBetta: TextView
-    private lateinit var btnPresetOled: TextView
-
+    // Card 1: Scene & Quick Lighting Presets
+    private lateinit var textSceneDesc: TextView
     private lateinit var btnBiomeOcean: TextView
     private lateinit var btnBiomePond: TextView
     private lateinit var btnBiomeAquarium: TextView
-    private lateinit var btnSummonPredator: TextView
+    private lateinit var btnPresetDaylight: TextView
+    private lateinit var btnPresetDusk: TextView
+    private lateinit var btnPresetOled: TextView
+
+    // Card 2: Scene-Specific Options
     private lateinit var textSceneSettingsTitle: TextView
-    private lateinit var groupOutdoorOnly: LinearLayout
     private lateinit var groupAquariumOnly: LinearLayout
+    private lateinit var groupOutdoorOnly: LinearLayout
     private lateinit var btnBettaCount2: TextView
     private lateinit var btnBettaCount3: TextView
     private lateinit var textCatVisitorSwitch: TextView
-    private lateinit var textBottomFeedersLabel: TextView
-    private lateinit var textBatteryLanternLabel: TextView
 
-    private lateinit var btnCycleAuto: TextView
-    private lateinit var btnCycleDawn: TextView
-    private lateinit var btnCycleNoon: TextView
-    private lateinit var btnCycleDusk: TextView
-    private lateinit var btnCycleNight: TextView
-
+    private lateinit var textFishValue: TextView
     private lateinit var btnWeatherAuto: TextView
     private lateinit var btnWeatherClear: TextView
     private lateinit var btnWeatherRain: TextView
     private lateinit var btnWeatherSnow: TextView
     private lateinit var btnWeatherAurora: TextView
+    private lateinit var btnHuntOff: TextView
+    private lateinit var btnHuntHarmless: TextView
+    private lateinit var btnHuntNatural: TextView
+    private lateinit var btnHuntFierce: TextView
+    private lateinit var textCalmIconsSwitch: TextView
 
+    private lateinit var textBottomFeedersLabel: TextView
+    private lateinit var textBottomFeedersSub: TextView
+    private lateinit var textBottomFeedersCheck: TextView
+    private lateinit var textWaterlineLabel: TextView
+    private lateinit var textWaterlineSub: TextView
+    private lateinit var textWaterlineValue: TextView
+    private lateinit var textClarityLabel: TextView
+    private lateinit var btnClarityLow: TextView
+    private lateinit var btnClarityMid: TextView
+    private lateinit var btnClarityHigh: TextView
+    private lateinit var textBatteryLanternLabel: TextView
+    private lateinit var textBatteryLanternSub: TextView
+    private lateinit var textBatteryLanternSwitch: TextView
+
+    // Card 3: Time & Colors
+    private lateinit var btnCycleAuto: TextView
+    private lateinit var btnCycleDawn: TextView
+    private lateinit var btnCycleNoon: TextView
+    private lateinit var btnCycleDusk: TextView
+    private lateinit var btnCycleNight: TextView
     private lateinit var btnPalLagoon: TextView
     private lateinit var btnPalEmber: TextView
     private lateinit var btnPalMoss: TextView
     private lateinit var btnPalAmoled: TextView
-
     private lateinit var btnThemeSolar: TextView
     private lateinit var btnThemeSystem: TextView
     private lateinit var btnThemeLight: TextView
     private lateinit var btnThemeDark: TextView
 
-    private lateinit var textFishBar: TextView
-    private lateinit var textWaterlineBar: TextView
-    private lateinit var textClarityBar: TextView
-
-    private lateinit var btnHuntOff: TextView
-    private lateinit var btnHuntHarmless: TextView
-    private lateinit var btnHuntNatural: TextView
-    private lateinit var btnHuntFierce: TextView
-    private lateinit var textBottomFeedersCheck: TextView
-    private lateinit var textBatteryLanternSwitch: TextView
-
+    // Card 4: Motion & Battery
     private lateinit var btnPerfEco: TextView
     private lateinit var btnPerfBalanced: TextView
     private lateinit var btnPerfSmooth: TextView
-
-    private lateinit var textCalmIconsSwitch: TextView
     private lateinit var textGyroSwitch: TextView
 
     private var activeTab = 1
@@ -160,7 +166,7 @@ class SettingsActivity : AppCompatActivity() {
         })
         switchTab(activeTab)
         setFullscreenPreview(isFullscreenPreview)
-        refreshAsciiUi()
+        refreshUi()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -172,7 +178,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         asciiPondView.startAnimation()
-        refreshAsciiUi()
+        refreshUi()
     }
 
     override fun onPause() {
@@ -209,65 +215,66 @@ class SettingsActivity : AppCompatActivity() {
         textBiomeStatus = findViewById(R.id.textBiomeStatus)
         textHuntStatus = findViewById(R.id.textHuntStatus)
         textAboutTelemetry = findViewById(R.id.textAboutTelemetry)
+        btnSummonPredator = findViewById(R.id.btnSummonPredator)
 
-        btnPresetReef = findViewById(R.id.btnPresetReef)
-        btnPresetAbyss = findViewById(R.id.btnPresetAbyss)
-        btnPresetZen = findViewById(R.id.btnPresetZen)
-        btnPresetBetta = findViewById(R.id.btnPresetBetta)
-        btnPresetOled = findViewById(R.id.btnPresetOled)
-
+        textSceneDesc = findViewById(R.id.textSceneDesc)
         btnBiomeOcean = findViewById(R.id.btnBiomeOcean)
         btnBiomePond = findViewById(R.id.btnBiomePond)
         btnBiomeAquarium = findViewById(R.id.btnBiomeAquarium)
-        btnSummonPredator = findViewById(R.id.btnSummonPredator)
+        btnPresetDaylight = findViewById(R.id.btnPresetDaylight)
+        btnPresetDusk = findViewById(R.id.btnPresetDusk)
+        btnPresetOled = findViewById(R.id.btnPresetOled)
+
         textSceneSettingsTitle = findViewById(R.id.textSceneSettingsTitle)
-        groupOutdoorOnly = findViewById(R.id.groupOutdoorOnly)
         groupAquariumOnly = findViewById(R.id.groupAquariumOnly)
+        groupOutdoorOnly = findViewById(R.id.groupOutdoorOnly)
         btnBettaCount2 = findViewById(R.id.btnBettaCount2)
         btnBettaCount3 = findViewById(R.id.btnBettaCount3)
         textCatVisitorSwitch = findViewById(R.id.textCatVisitorSwitch)
+
+        textFishValue = findViewById(R.id.textFishValue)
+        btnWeatherAuto = findViewById(R.id.btnWeatherAuto)
+        btnWeatherClear = findViewById(R.id.btnWeatherClear)
+        btnWeatherRain = findViewById(R.id.btnWeatherRain)
+        btnWeatherSnow = findViewById(R.id.btnWeatherSnow)
+        btnWeatherAurora = findViewById(R.id.btnWeatherAurora)
+        btnHuntOff = findViewById(R.id.btnHuntOff)
+        btnHuntHarmless = findViewById(R.id.btnHuntHarmless)
+        btnHuntNatural = findViewById(R.id.btnHuntNatural)
+        btnHuntFierce = findViewById(R.id.btnHuntFierce)
+        textCalmIconsSwitch = findViewById(R.id.textCalmIconsSwitch)
+
         textBottomFeedersLabel = findViewById(R.id.textBottomFeedersLabel)
+        textBottomFeedersSub = findViewById(R.id.textBottomFeedersSub)
+        textBottomFeedersCheck = findViewById(R.id.textBottomFeedersCheck)
+        textWaterlineLabel = findViewById(R.id.textWaterlineLabel)
+        textWaterlineSub = findViewById(R.id.textWaterlineSub)
+        textWaterlineValue = findViewById(R.id.textWaterlineValue)
+        textClarityLabel = findViewById(R.id.textClarityLabel)
+        btnClarityLow = findViewById(R.id.btnClarityLow)
+        btnClarityMid = findViewById(R.id.btnClarityMid)
+        btnClarityHigh = findViewById(R.id.btnClarityHigh)
         textBatteryLanternLabel = findViewById(R.id.textBatteryLanternLabel)
+        textBatteryLanternSub = findViewById(R.id.textBatteryLanternSub)
+        textBatteryLanternSwitch = findViewById(R.id.textBatteryLanternSwitch)
 
         btnCycleAuto = findViewById(R.id.btnCycleAuto)
         btnCycleDawn = findViewById(R.id.btnCycleDawn)
         btnCycleNoon = findViewById(R.id.btnCycleNoon)
         btnCycleDusk = findViewById(R.id.btnCycleDusk)
         btnCycleNight = findViewById(R.id.btnCycleNight)
-
-        btnWeatherAuto = findViewById(R.id.btnWeatherAuto)
-        btnWeatherClear = findViewById(R.id.btnWeatherClear)
-        btnWeatherRain = findViewById(R.id.btnWeatherRain)
-        btnWeatherSnow = findViewById(R.id.btnWeatherSnow)
-        btnWeatherAurora = findViewById(R.id.btnWeatherAurora)
-
         btnPalLagoon = findViewById(R.id.btnPalLagoon)
         btnPalEmber = findViewById(R.id.btnPalEmber)
         btnPalMoss = findViewById(R.id.btnPalMoss)
         btnPalAmoled = findViewById(R.id.btnPalAmoled)
-
         btnThemeSolar = findViewById(R.id.btnThemeSolar)
         btnThemeSystem = findViewById(R.id.btnThemeSystem)
         btnThemeLight = findViewById(R.id.btnThemeLight)
         btnThemeDark = findViewById(R.id.btnThemeDark)
 
-        textFishBar = findViewById(R.id.textFishBar)
-        textWaterlineBar = findViewById(R.id.textWaterlineBar)
-        textClarityBar = findViewById(R.id.textClarityBar)
-
-        btnHuntOff = findViewById(R.id.btnHuntOff)
-        btnHuntHarmless = findViewById(R.id.btnHuntHarmless)
-        btnHuntNatural = findViewById(R.id.btnHuntNatural)
-        btnHuntFierce = findViewById(R.id.btnHuntFierce)
-
-        textBottomFeedersCheck = findViewById(R.id.textBottomFeedersCheck)
-        textBatteryLanternSwitch = findViewById(R.id.textBatteryLanternSwitch)
-
         btnPerfEco = findViewById(R.id.btnPerfEco)
         btnPerfBalanced = findViewById(R.id.btnPerfBalanced)
         btnPerfSmooth = findViewById(R.id.btnPerfSmooth)
-
-        textCalmIconsSwitch = findViewById(R.id.textCalmIconsSwitch)
         textGyroSwitch = findViewById(R.id.textGyroSwitch)
     }
 
@@ -278,8 +285,10 @@ class SettingsActivity : AppCompatActivity() {
         navAbout.setOnClickListener { haptic(it); switchTab(3) }
 
         asciiPondView.onSpeciesRandomized = { speciesStr, timeLabel ->
-            textBiomeStatus.text = "biome ... " + speciesStr
-            textBiomeStatus.contentDescription = "Active ocean biome: " + speciesStr
+            if (currentConfig.sceneBiome != SceneBiome.AQUARIUM) {
+                textBiomeStatus.text = "biome ... " + speciesStr
+                textBiomeStatus.contentDescription = "Active ocean biome: " + speciesStr
+            }
             textHeaderClockTag.text = "[" + timeLabel + "]"
         }
 
@@ -334,7 +343,7 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        findViewById<TextView>(R.id.btnSummonPredator).apply {
+        btnSummonPredator.apply {
             contentDescription = "Summon predator fish or curious aquarium cat"
             setOnClickListener {
                 haptic(it)
@@ -358,13 +367,14 @@ class SettingsActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.btnSetWallpaper).apply {
             contentDescription = "Set live wallpaper"
-            setOnClickListener {
-                haptic(it)
-                launchWallpaperPicker()
-            }
+            setOnClickListener { haptic(it); launchWallpaperPicker() }
+        }
+        findViewById<TextView>(R.id.btnSettingsApplyWallpaper).apply {
+            contentDescription = "Apply live wallpaper"
+            setOnClickListener { haptic(it); launchWallpaperPicker() }
         }
 
-        // 24-Hour Solar Preview Scrubber: drag across the ASCII bar to preview any hour live!
+        // 24-Hour Solar Preview Scrubber
         textSolarBar.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
@@ -382,108 +392,66 @@ class SettingsActivity : AppCompatActivity() {
                 else -> false
             }
         }
-        btnSolarLive.contentDescription = "Return preview to live clock time"
         btnSolarLive.setOnClickListener {
             haptic(it)
             asciiPondView.previewHourOverride = null
             updateSolarScrubberUi()
             asciiPondView.invalidate()
         }
-
-        btnFullscreenPreview.contentDescription = "Toggle fullscreen live preview"
         btnFullscreenPreview.setOnClickListener {
             haptic(it)
             setFullscreenPreview(!isFullscreenPreview)
         }
 
-        fun applyMoodPreset(label: String, preset: WallpaperConfig) {
+        // Card 1: Scene selection (single unambiguous world switcher!)
+        btnBiomeOcean.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.OCEAN)) }
+        btnBiomePond.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.ZEN_POND)) }
+        btnBiomeAquarium.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.AQUARIUM)) }
+
+        // Card 1: Lighting Presets (cleanly apply to whichever scene is active!)
+        fun applyLightingPreset(label: String, preset: WallpaperConfig) {
             previousConfigForUndo = currentConfig
             updateConfig(preset)
             repository.applyAppNightMode(preset.themeMode, preset.timeCycleMode)
-            showUndoBanner("ok: applied " + label + " mood.")
+            showUndoBanner("ok: applied " + label + " lighting.")
         }
-        btnPresetReef.contentDescription = "Apply Tropical Reef mood preset"
-        btnPresetReef.setOnClickListener {
+        btnPresetDaylight.setOnClickListener {
             haptic(it)
-            applyMoodPreset(
-                "tropical reef",
+            val naturalPal = if (currentConfig.sceneBiome == SceneBiome.ZEN_POND) PaletteFamily.MOSS else PaletteFamily.LAGOON
+            applyLightingPreset(
+                "daylight",
                 currentConfig.copy(
-                    sceneBiome = SceneBiome.OCEAN,
-                    paletteFamily = PaletteFamily.LAGOON,
+                    paletteFamily = naturalPal,
                     themeMode = ThemeMode.SOLAR,
                     timeCycleMode = TimeCycleMode.AUTO_REALTIME,
-                    weatherMode = WeatherMode.AUTO,
-                    heroFishCount = 7,
-                    waterClarity = 0.90f,
-                    waterlinePercent = 36,
-                    calmIconMode = false
-                )
-            )
-        }
-        btnPresetAbyss.contentDescription = "Apply Deep Abyss aurora mood preset"
-        btnPresetAbyss.setOnClickListener {
-            haptic(it)
-            applyMoodPreset(
-                "deep abyss",
-                currentConfig.copy(
-                    sceneBiome = SceneBiome.OCEAN,
-                    paletteFamily = PaletteFamily.LAGOON,
-                    themeMode = ThemeMode.DARK,
-                    timeCycleMode = TimeCycleMode.NIGHT,
-                    weatherMode = WeatherMode.AURORA,
-                    heroFishCount = 6,
-                    waterClarity = 0.72f,
-                    waterlinePercent = 30,
-                    calmIconMode = false
-                )
-            )
-        }
-        btnPresetZen.contentDescription = "Apply Zen Koi pond mood preset"
-        btnPresetZen.setOnClickListener {
-            haptic(it)
-            applyMoodPreset(
-                "zen koi",
-                currentConfig.copy(
-                    sceneBiome = SceneBiome.ZEN_POND,
-                    paletteFamily = PaletteFamily.MOSS,
-                    themeMode = ThemeMode.SOLAR,
-                    timeCycleMode = TimeCycleMode.AUTO_REALTIME,
-                    weatherMode = WeatherMode.CLEAR,
-                    heroFishCount = 5,
+                    weatherMode = if (currentConfig.sceneBiome == SceneBiome.OCEAN) WeatherMode.AUTO else WeatherMode.CLEAR,
                     waterClarity = 0.85f,
-                    waterlinePercent = 38,
                     calmIconMode = false
                 )
             )
         }
-        btnPresetBetta.contentDescription = "Apply Natural Betta Aquarium mood preset"
-        btnPresetBetta.setOnClickListener {
+        btnPresetDusk.setOnClickListener {
             haptic(it)
-            applyMoodPreset(
-                "betta tank",
+            applyLightingPreset(
+                "cozy dusk",
                 currentConfig.copy(
-                    sceneBiome = SceneBiome.AQUARIUM,
-                    paletteFamily = PaletteFamily.LAGOON,
-                    themeMode = ThemeMode.SOLAR,
-                    timeCycleMode = TimeCycleMode.AUTO_REALTIME,
-                    weatherMode = WeatherMode.CLEAR,
-                    heroFishCount = 6,
-                    waterClarity = 0.88f,
-                    waterlinePercent = 38,
-                    enableBottomFeeders = true,
+                    paletteFamily = PaletteFamily.EMBER,
+                    themeMode = ThemeMode.DARK,
+                    timeCycleMode = TimeCycleMode.DUSK,
+                    weatherMode = if (currentConfig.sceneBiome == SceneBiome.OCEAN) WeatherMode.AURORA else WeatherMode.CLEAR,
+                    waterClarity = 0.78f,
                     calmIconMode = false
                 )
             )
         }
-        btnPresetOled.contentDescription = "Apply AMOLED Minimal battery-saving mood preset"
         btnPresetOled.setOnClickListener {
             haptic(it)
-            applyMoodPreset(
-                "amoled minimal",
+            applyLightingPreset(
+                "oled black",
                 currentConfig.copy(
                     paletteFamily = PaletteFamily.AMOLED,
                     themeMode = ThemeMode.DARK,
-                    timeCycleMode = TimeCycleMode.AUTO_REALTIME,
+                    timeCycleMode = TimeCycleMode.NIGHT,
                     weatherMode = WeatherMode.CLEAR,
                     waterClarity = 0.72f,
                     calmIconMode = true
@@ -491,10 +459,61 @@ class SettingsActivity : AppCompatActivity() {
             )
         }
 
-        btnBiomeOcean.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.OCEAN)) }
-        btnBiomePond.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.ZEN_POND)) }
-        btnBiomeAquarium.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(sceneBiome = SceneBiome.AQUARIUM)) }
+        // Card 2: Scene-Specific Controls
+        btnBettaCount2.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(heroFishCount = 3)) }
+        btnBettaCount3.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(heroFishCount = 6)) }
+        findViewById<LinearLayout>(R.id.rowCatVisitorSwitch).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(enableCatVisitor = !currentConfig.enableCatVisitor))
+        }
 
+        findViewById<TextView>(R.id.btnFishMinus).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(heroFishCount = (currentConfig.heroFishCount - 1).coerceIn(2, 9)))
+        }
+        findViewById<TextView>(R.id.btnFishPlus).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(heroFishCount = (currentConfig.heroFishCount + 1).coerceIn(2, 9)))
+        }
+
+        btnWeatherAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.AUTO)) }
+        btnWeatherClear.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.CLEAR)) }
+        btnWeatherRain.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.RAIN)) }
+        btnWeatherSnow.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.SNOW)) }
+        btnWeatherAurora.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.AURORA)) }
+
+        btnHuntOff.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.OFF)) }
+        btnHuntHarmless.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.HARMLESS)) }
+        btnHuntNatural.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.NATURAL)) }
+        btnHuntFierce.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.FIERCE)) }
+
+        findViewById<LinearLayout>(R.id.rowCalmIconsSwitch).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(calmIconMode = !currentConfig.calmIconMode))
+        }
+        findViewById<LinearLayout>(R.id.rowBottomFeedersCheck).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(enableBottomFeeders = !currentConfig.enableBottomFeeders))
+        }
+        findViewById<TextView>(R.id.btnWaterlineMinus).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(waterlinePercent = (currentConfig.waterlinePercent - 4).coerceIn(25, 65)))
+        }
+        findViewById<TextView>(R.id.btnWaterlinePlus).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(waterlinePercent = (currentConfig.waterlinePercent + 4).coerceIn(25, 65)))
+        }
+
+        btnClarityLow.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(waterClarity = 0.50f)) }
+        btnClarityMid.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(waterClarity = 0.78f)) }
+        btnClarityHigh.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(waterClarity = 0.95f)) }
+
+        findViewById<LinearLayout>(R.id.rowBatteryLanternSwitch).setOnClickListener {
+            haptic(it)
+            updateConfig(currentConfig.copy(enableBatteryLantern = !currentConfig.enableBatteryLantern))
+        }
+
+        // Card 3: Time & Colors
         fun selectTimeCycle(mode: TimeCycleMode) {
             updateConfig(currentConfig.copy(timeCycleMode = mode))
             if (currentConfig.themeMode == ThemeMode.SOLAR) {
@@ -507,34 +526,10 @@ class SettingsActivity : AppCompatActivity() {
         btnCycleDusk.setOnClickListener { haptic(it); selectTimeCycle(TimeCycleMode.DUSK) }
         btnCycleNight.setOnClickListener { haptic(it); selectTimeCycle(TimeCycleMode.NIGHT) }
 
-        btnWeatherAuto.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.AUTO)) }
-        btnWeatherClear.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.CLEAR)) }
-        btnWeatherRain.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.RAIN)) }
-        btnWeatherSnow.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.SNOW)) }
-        btnWeatherAurora.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(weatherMode = WeatherMode.AURORA)) }
-
         btnPalLagoon.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.LAGOON)) }
         btnPalEmber.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.EMBER)) }
         btnPalMoss.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.MOSS)) }
         btnPalAmoled.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(paletteFamily = PaletteFamily.AMOLED)) }
-
-        btnHuntOff.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.OFF)) }
-        btnHuntHarmless.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.HARMLESS)) }
-        btnHuntNatural.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.NATURAL)) }
-        btnHuntFierce.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(huntMode = HuntMode.FIERCE)) }
-
-        findViewById<LinearLayout>(R.id.rowBottomFeedersCheck).setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(enableBottomFeeders = !currentConfig.enableBottomFeeders))
-        }
-        findViewById<LinearLayout>(R.id.rowBatteryLanternSwitch).setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(enableBatteryLantern = !currentConfig.enableBatteryLantern))
-        }
-
-        btnPerfEco.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.ECO)) }
-        btnPerfBalanced.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.BALANCED)) }
-        btnPerfSmooth.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.SMOOTH)) }
 
         fun selectThemeMode(mode: ThemeMode) {
             updateConfig(currentConfig.copy(themeMode = mode))
@@ -545,79 +540,24 @@ class SettingsActivity : AppCompatActivity() {
         btnThemeLight.setOnClickListener { haptic(it); selectThemeMode(ThemeMode.LIGHT) }
         btnThemeDark.setOnClickListener { haptic(it); selectThemeMode(ThemeMode.DARK) }
 
-        findViewById<TextView>(R.id.btnFishMinus).apply {
-            contentDescription = "Decrease fish count"
-            setOnClickListener {
-                haptic(it)
-                updateConfig(currentConfig.copy(heroFishCount = (currentConfig.heroFishCount - 1).coerceIn(2, 9)))
-            }
-        }
-        findViewById<TextView>(R.id.btnFishPlus).apply {
-            contentDescription = "Increase fish count"
-            setOnClickListener {
-                haptic(it)
-                updateConfig(currentConfig.copy(heroFishCount = (currentConfig.heroFishCount + 1).coerceIn(2, 9)))
-            }
-        }
-
-        findViewById<TextView>(R.id.btnWaterlineMinus).apply {
-            contentDescription = "Move waterline higher"
-            setOnClickListener {
-                haptic(it)
-                updateConfig(currentConfig.copy(waterlinePercent = (currentConfig.waterlinePercent - 4).coerceIn(25, 65)))
-            }
-        }
-        findViewById<TextView>(R.id.btnWaterlinePlus).apply {
-            contentDescription = "Move waterline lower"
-            setOnClickListener {
-                haptic(it)
-                updateConfig(currentConfig.copy(waterlinePercent = (currentConfig.waterlinePercent + 4).coerceIn(25, 65)))
-            }
-        }
-
-        findViewById<TextView>(R.id.btnClarityMinus).apply {
-            contentDescription = "Decrease water clarity"
-            setOnClickListener {
-                haptic(it)
-                updateConfig(currentConfig.copy(waterClarity = (currentConfig.waterClarity - 0.10f).coerceIn(0.35f, 1.0f)))
-            }
-        }
-        findViewById<TextView>(R.id.btnClarityPlus).apply {
-            contentDescription = "Increase water clarity"
-            setOnClickListener {
-                haptic(it)
-                updateConfig(currentConfig.copy(waterClarity = (currentConfig.waterClarity + 0.10f).coerceIn(0.35f, 1.0f)))
-            }
-        }
-
-        btnBettaCount2.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(heroFishCount = 3)) }
-        btnBettaCount3.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(heroFishCount = 6)) }
-        findViewById<LinearLayout>(R.id.rowCatVisitorSwitch).setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(enableCatVisitor = !currentConfig.enableCatVisitor))
-        }
-        findViewById<LinearLayout>(R.id.rowCalmIconsSwitch).setOnClickListener {
-            haptic(it)
-            updateConfig(currentConfig.copy(calmIconMode = !currentConfig.calmIconMode))
-        }
+        // Card 4: Motion & Battery
+        btnPerfEco.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.ECO)) }
+        btnPerfBalanced.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.BALANCED)) }
+        btnPerfSmooth.setOnClickListener { haptic(it); updateConfig(currentConfig.copy(performanceMode = PerformanceMode.SMOOTH)) }
         findViewById<LinearLayout>(R.id.rowGyroSwitch).setOnClickListener {
             haptic(it)
             updateConfig(currentConfig.copy(enableGyro = !currentConfig.enableGyro))
         }
 
-        findViewById<TextView>(R.id.btnResetDefaults).apply {
-            contentDescription = "Reset settings to defaults"
-            setOnClickListener {
-                haptic(it)
-                previousConfigForUndo = currentConfig
-                val defaults = WallpaperConfig()
-                updateConfig(defaults)
-                repository.applyAppNightMode(defaults.themeMode, defaults.timeCycleMode)
-                showUndoBanner("ok: reset to defaults.")
-            }
+        // Footer Reset + Undo
+        findViewById<TextView>(R.id.btnResetDefaults).setOnClickListener {
+            haptic(it)
+            previousConfigForUndo = currentConfig
+            val defaults = WallpaperConfig()
+            updateConfig(defaults)
+            repository.applyAppNightMode(defaults.themeMode, defaults.timeCycleMode)
+            showUndoBanner("ok: reset all settings to defaults.")
         }
-
-        btnUndoReset.contentDescription = "Undo reset"
         btnUndoReset.setOnClickListener {
             haptic(it)
             previousConfigForUndo?.let { prev ->
@@ -656,7 +596,6 @@ class SettingsActivity : AppCompatActivity() {
             pondBoxContainer.setBackgroundResource(R.drawable.bg_ascii_box)
         }
         btnFullscreenPreview.text = if (isFullscreenPreview) "[exit]" else "[full]"
-        btnFullscreenPreview.contentDescription = if (isFullscreenPreview) "Exit fullscreen live preview" else "Expand fullscreen live preview"
     }
 
     private fun switchTab(tab: Int) {
@@ -670,7 +609,7 @@ class SettingsActivity : AppCompatActivity() {
 
         textHeaderPath.text = when (tab) {
             1 -> "~/minamo/pond"
-            2 -> "~/minamo/set"
+            2 -> "~/minamo/settings"
             else -> "~/minamo/about"
         }
 
@@ -688,8 +627,7 @@ class SettingsActivity : AppCompatActivity() {
             tv.setTextColor(if (selected) cBg else cFg)
             tv.contentDescription = spoken
         }
-
-        styleNav(navPond, tab == 1, "Pond preview tab")
+        styleNav(navPond, tab == 1, "Preview tab")
         styleNav(navSet, tab == 2, "Settings tab")
         styleNav(navAbout, tab == 3, "About tab")
     }
@@ -707,7 +645,7 @@ class SettingsActivity : AppCompatActivity() {
             "school escapes ..... " + escapes.toString() + nl +
             "elder crown fish ... " + crowns.toString() + nl +
             "last pond event .... " + lastEv + nl +
-            "engine ............. solar lab + spine wave + eco vsync"
+            "engine ............. vsync-locked smooth wing & spine physics"
     }
 
     private fun updateSolarScrubberUi() {
@@ -740,143 +678,141 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun refreshAsciiUi() {
+    private fun refreshUi() {
         asciiPondView.config = currentConfig
         updateSolarScrubberUi()
         val isAquarium = currentConfig.sceneBiome == SceneBiome.AQUARIUM
+
         textBiomeStatus.text = if (isAquarium) {
             "aquarium ... bettas · rasboras · glass cat · kuhli · cleaners"
         } else {
             "biome ... " + asciiPondView.simulation.activeSpeciesSummary
         }
         btnSummonPredator.text = if (isAquarium) "[cat]" else getString(R.string.action_summon_predator)
-        textSceneSettingsTitle.text = when (currentConfig.sceneBiome) {
-            SceneBiome.OCEAN -> " 1. ocean settings "
-            SceneBiome.ZEN_POND -> " 1. zen pond settings "
-            SceneBiome.AQUARIUM -> " 1. betta tank settings "
+        textSceneDesc.text = when (currentConfig.sceneBiome) {
+            SceneBiome.OCEAN -> "coral reef, whales, rays & open ocean horizon"
+            SceneBiome.ZEN_POND -> "koi pond, blooming lotus pads & shoreline reeds"
+            SceneBiome.AQUARIUM -> "planted betta tank, rasboras, glass catfish & curious cat"
         }
-        groupOutdoorOnly.visibility = if (isAquarium) View.GONE else View.VISIBLE
+        textSceneSettingsTitle.text = when (currentConfig.sceneBiome) {
+            SceneBiome.OCEAN -> "OCEAN OPTIONS"
+            SceneBiome.ZEN_POND -> "ZEN POND OPTIONS"
+            SceneBiome.AQUARIUM -> "BETTA TANK OPTIONS"
+        }
         groupAquariumOnly.visibility = if (isAquarium) View.VISIBLE else View.GONE
-        textBottomFeedersLabel.text = if (isAquarium) "tank cleaners & critters" else "bottom-feeder critters"
-        textBatteryLanternLabel.text = if (isAquarium) "charging lamp LED" else "battery level stone lantern"
+        groupOutdoorOnly.visibility = if (isAquarium) View.GONE else View.VISIBLE
+
+        // Adapt shared labels cleanly to active scene
+        textBottomFeedersLabel.text = if (isAquarium) "tank cleaners & critters" else "bottom critters"
+        textBottomFeedersSub.text = if (isAquarium) {
+            "otos, pleco, corys, cherry shrimps & snail"
+        } else {
+            "crabs, cleaner shrimp, sand goby & conch"
+        }
+        textWaterlineLabel.text = if (isAquarium) "tank rim position" else "horizon height"
+        textWaterlineSub.text = if (isAquarium) {
+            "leaves room above for your lock-screen clock"
+        } else {
+            "adjusts sky vs underwater split"
+        }
+        textClarityLabel.text = if (isAquarium) "overhead LED light rays" else "water clarity & sun rays"
+        btnClarityLow.text = if (isAquarium) "soft" else "hazy"
+        btnClarityMid.text = if (isAquarium) "bright" else "clear"
+        btnClarityHigh.text = if (isAquarium) "vivid" else "crystal"
+        textBatteryLanternLabel.text = if (isAquarium) "charging lamp LED" else "battery stone lantern"
+        textBatteryLanternSub.text = if (isAquarium) {
+            "gentle green pulse on lamp bar while charging"
+        } else {
+            "underwater lantern glows with battery level"
+        }
         updateTelemetryBox()
 
-        val cAccent = ContextCompat.getColor(this, R.color.ascii_accent)
+        val cBg = ContextCompat.getColor(this, R.color.ascii_bg)
         val cFg = ContextCompat.getColor(this, R.color.ascii_fg)
         val cDim = ContextCompat.getColor(this, R.color.ascii_dim)
 
-        fun styleRadio(tv: TextView, checked: Boolean, label: String) {
-            tv.text = if (checked) "(*) " + label else "( ) " + label
-            tv.setTextColor(if (checked) cAccent else cFg)
-            tv.contentDescription = label + ", " + (if (checked) "selected" else "not selected")
+        fun stylePill(tv: TextView, selected: Boolean, spoken: String) {
+            tv.setBackgroundResource(if (selected) R.drawable.bg_pill_selected else R.drawable.bg_pill_unselected)
+            tv.setTextColor(if (selected) cBg else cFg)
+            tv.contentDescription = spoken + ", " + (if (selected) "selected" else "not selected")
         }
 
-        fun styleSwitch(tv: TextView, row: View, enabled: Boolean, spokenName: String) {
-            tv.text = if (enabled) "[ on]" else "[off]"
-            tv.setTextColor(if (enabled) cAccent else cDim)
-            row.contentDescription = spokenName + ", " + (if (enabled) "on" else "off")
+        fun styleToggle(tv: TextView, row: View, enabled: Boolean, spoken: String) {
+            tv.text = if (enabled) "ON" else "OFF"
+            tv.setBackgroundResource(if (enabled) R.drawable.bg_pill_selected else R.drawable.bg_pill_unselected)
+            tv.setTextColor(if (enabled) cBg else cDim)
+            row.contentDescription = spoken + ", " + (if (enabled) "on" else "off")
         }
 
-        styleRadio(btnBiomeOcean, currentConfig.sceneBiome == SceneBiome.OCEAN, "ocean")
-        styleRadio(btnBiomePond, currentConfig.sceneBiome == SceneBiome.ZEN_POND, "zen pond")
-        styleRadio(btnBiomeAquarium, currentConfig.sceneBiome == SceneBiome.AQUARIUM, "betta tank")
+        // Card 1: Scene + Highlight active lighting preset if matched
+        stylePill(btnBiomeOcean, currentConfig.sceneBiome == SceneBiome.OCEAN, "Ocean scene")
+        stylePill(btnBiomePond, currentConfig.sceneBiome == SceneBiome.ZEN_POND, "Zen Pond scene")
+        stylePill(btnBiomeAquarium, currentConfig.sceneBiome == SceneBiome.AQUARIUM, "Betta Tank scene")
 
-        styleRadio(btnCycleAuto, currentConfig.timeCycleMode == TimeCycleMode.AUTO_REALTIME, "clock")
-        styleRadio(btnCycleDawn, currentConfig.timeCycleMode == TimeCycleMode.DAWN, "dawn")
-        styleRadio(btnCycleNoon, currentConfig.timeCycleMode == TimeCycleMode.NOON, "noon")
-        styleRadio(btnCycleDusk, currentConfig.timeCycleMode == TimeCycleMode.DUSK, "dusk")
-        styleRadio(btnCycleNight, currentConfig.timeCycleMode == TimeCycleMode.NIGHT, "night")
+        val isOledPreset = currentConfig.paletteFamily == PaletteFamily.AMOLED
+        val isDuskPreset = !isOledPreset && currentConfig.paletteFamily == PaletteFamily.EMBER && currentConfig.timeCycleMode == TimeCycleMode.DUSK
+        val isDaylightPreset = !isOledPreset && !isDuskPreset && currentConfig.timeCycleMode == TimeCycleMode.AUTO_REALTIME && currentConfig.themeMode == ThemeMode.SOLAR
+        stylePill(btnPresetDaylight, isDaylightPreset, "Daylight preset")
+        stylePill(btnPresetDusk, isDuskPreset, "Cozy Dusk preset")
+        stylePill(btnPresetOled, isOledPreset, "OLED Black preset")
 
-        styleRadio(btnWeatherAuto, currentConfig.weatherMode == WeatherMode.AUTO, "auto")
-        styleRadio(btnWeatherClear, currentConfig.weatherMode == WeatherMode.CLEAR, "clear")
-        styleRadio(btnWeatherRain, currentConfig.weatherMode == WeatherMode.RAIN, "rain")
-        styleRadio(btnWeatherSnow, currentConfig.weatherMode == WeatherMode.SNOW, "snow")
-        styleRadio(btnWeatherAurora, currentConfig.weatherMode == WeatherMode.AURORA, "aurora")
-
-        styleRadio(btnPalLagoon, currentConfig.paletteFamily == PaletteFamily.LAGOON, "lagoon")
-        styleRadio(btnPalEmber, currentConfig.paletteFamily == PaletteFamily.EMBER, "ember")
-        styleRadio(btnPalMoss, currentConfig.paletteFamily == PaletteFamily.MOSS, "moss")
-        styleRadio(btnPalAmoled, currentConfig.paletteFamily == PaletteFamily.AMOLED, "amoled")
-
-        styleRadio(btnThemeSolar, currentConfig.themeMode == ThemeMode.SOLAR, "solar")
-        styleRadio(btnThemeSystem, currentConfig.themeMode == ThemeMode.SYSTEM, "system")
-        styleRadio(btnThemeLight, currentConfig.themeMode == ThemeMode.LIGHT, "light")
-        styleRadio(btnThemeDark, currentConfig.themeMode == ThemeMode.DARK, "dark")
-
-        styleRadio(btnHuntOff, currentConfig.huntMode == HuntMode.OFF, "off")
-        styleRadio(btnHuntHarmless, currentConfig.huntMode == HuntMode.HARMLESS, "harmless")
-        styleRadio(btnHuntNatural, currentConfig.huntMode == HuntMode.NATURAL, "natural")
-        styleRadio(btnHuntFierce, currentConfig.huntMode == HuntMode.FIERCE, "fierce")
-
-        styleSwitch(
-            textBottomFeedersCheck,
-            findViewById(R.id.rowBottomFeedersCheck),
-            currentConfig.enableBottomFeeders,
-            "Bottom-feeder critters"
-        )
-        styleSwitch(
-            textBatteryLanternSwitch,
-            findViewById(R.id.rowBatteryLanternSwitch),
-            currentConfig.enableBatteryLantern,
-            "Battery level stone lantern"
-        )
-        styleSwitch(
-            textGyroSwitch,
-            findViewById(R.id.rowGyroSwitch),
-            currentConfig.enableGyro,
-            "3D tilt window parallax"
-        )
-
-        styleRadio(btnPerfEco, currentConfig.performanceMode == PerformanceMode.ECO, "eco")
-        styleRadio(btnPerfBalanced, currentConfig.performanceMode == PerformanceMode.BALANCED, "balanced")
-        styleRadio(btnPerfSmooth, currentConfig.performanceMode == PerformanceMode.SMOOTH, "smooth")
-
-        val fishCells = currentConfig.heroFishCount.coerceIn(2, 9)
-        val fishBarStr = "[" + "#".repeat(fishCells) + "-".repeat(9 - fishCells) + "] " + fishCells.toString()
-        textFishBar.text = "fish: " + fishBarStr
-        textFishBar.contentDescription = "Main fish count: " + fishCells.toString() + " out of 9"
-
-        val wlPct = currentConfig.waterlinePercent.coerceIn(25, 65)
-        val wlFilled = (((wlPct - 25) / 40f) * 10f).roundToInt().coerceIn(1, 10)
-        val wlBarStr = "[" + "#".repeat(wlFilled) + "-".repeat(10 - wlFilled) + "] " + wlPct.toString() + "%"
-        textWaterlineBar.text = (if (isAquarium) "tank: " else "line: ") + wlBarStr
-        textWaterlineBar.contentDescription = if (isAquarium) {
-            "Tank rim height position: " + wlPct.toString() + " percent from top"
-        } else {
-            "Waterline split position: " + wlPct.toString() + " percent from top"
-        }
-
-        val clarityPct = (currentConfig.waterClarity * 100f).roundToInt()
-        val clarityFilled = ((currentConfig.waterClarity * 10f).roundToInt()).coerceIn(1, 10)
-        val clarityBarStr = "[" + "#".repeat(clarityFilled) + "-".repeat(10 - clarityFilled) + "] " + clarityPct.toString() + "%"
-        textClarityBar.text = (if (isAquarium) "led:  " else "rays: ") + clarityBarStr
-        textClarityBar.contentDescription = if (isAquarium) {
-            "Overhead LED light rays intensity: " + clarityPct.toString() + " percent"
-        } else {
-            "Water clarity and sun rays: " + clarityPct.toString() + " percent"
-        }
-
+        // Card 2: Scene Options
         val isThreeBettas = currentConfig.heroFishCount > 4
-        styleRadio(btnBettaCount2, !isThreeBettas, "2 bettas")
-        styleRadio(btnBettaCount3, isThreeBettas, "3 bettas")
-        styleSwitch(
-            textCatVisitorSwitch,
-            findViewById(R.id.rowCatVisitorSwitch),
-            currentConfig.enableCatVisitor,
-            "Occasional curious cat visits"
-        )
-        styleSwitch(
-            textCalmIconsSwitch,
-            findViewById(R.id.rowCalmIconsSwitch),
-            currentConfig.calmIconMode,
-            "Calm home-screen icon scrim"
-        )
+        stylePill(btnBettaCount2, !isThreeBettas, "2 bettas")
+        stylePill(btnBettaCount3, isThreeBettas, "3 bettas")
+        styleToggle(textCatVisitorSwitch, findViewById(R.id.rowCatVisitorSwitch), currentConfig.enableCatVisitor, "Curious pet cat")
+
+        val fishCount = currentConfig.heroFishCount.coerceIn(2, 9)
+        textFishValue.text = fishCount.toString()
+        stylePill(btnWeatherAuto, currentConfig.weatherMode == WeatherMode.AUTO, "Auto weather")
+        stylePill(btnWeatherClear, currentConfig.weatherMode == WeatherMode.CLEAR, "Clear sky")
+        stylePill(btnWeatherRain, currentConfig.weatherMode == WeatherMode.RAIN, "Rain weather")
+        stylePill(btnWeatherSnow, currentConfig.weatherMode == WeatherMode.SNOW, "Snow weather")
+        stylePill(btnWeatherAurora, currentConfig.weatherMode == WeatherMode.AURORA, "Aurora sky")
+
+        stylePill(btnHuntOff, currentConfig.huntMode == HuntMode.OFF, "Predators off")
+        stylePill(btnHuntHarmless, currentConfig.huntMode == HuntMode.HARMLESS, "Gentle predators")
+        stylePill(btnHuntNatural, currentConfig.huntMode == HuntMode.NATURAL, "Natural predators")
+        stylePill(btnHuntFierce, currentConfig.huntMode == HuntMode.FIERCE, "Fierce predators")
+        styleToggle(textCalmIconsSwitch, findViewById(R.id.rowCalmIconsSwitch), currentConfig.calmIconMode, "Calm icon backdrop")
+
+        styleToggle(textBottomFeedersCheck, findViewById(R.id.rowBottomFeedersCheck), currentConfig.enableBottomFeeders, "Bottom critters")
+        textWaterlineValue.text = currentConfig.waterlinePercent.coerceIn(25, 65).toString() + "%"
+
+        val clarity = currentConfig.waterClarity
+        stylePill(btnClarityLow, clarity < 0.64f, "Soft light rays")
+        stylePill(btnClarityMid, clarity in 0.64f..0.88f, "Clear light rays")
+        stylePill(btnClarityHigh, clarity > 0.88f, "Vivid light rays")
+        styleToggle(textBatteryLanternSwitch, findViewById(R.id.rowBatteryLanternSwitch), currentConfig.enableBatteryLantern, "Battery indicator")
+
+        // Card 3: Time & Colors
+        stylePill(btnCycleAuto, currentConfig.timeCycleMode == TimeCycleMode.AUTO_REALTIME, "Live clock time")
+        stylePill(btnCycleDawn, currentConfig.timeCycleMode == TimeCycleMode.DAWN, "Dawn time")
+        stylePill(btnCycleNoon, currentConfig.timeCycleMode == TimeCycleMode.NOON, "Noon time")
+        stylePill(btnCycleDusk, currentConfig.timeCycleMode == TimeCycleMode.DUSK, "Dusk time")
+        stylePill(btnCycleNight, currentConfig.timeCycleMode == TimeCycleMode.NIGHT, "Night time")
+
+        stylePill(btnPalLagoon, currentConfig.paletteFamily == PaletteFamily.LAGOON, "Lagoon theme")
+        stylePill(btnPalEmber, currentConfig.paletteFamily == PaletteFamily.EMBER, "Ember theme")
+        stylePill(btnPalMoss, currentConfig.paletteFamily == PaletteFamily.MOSS, "Moss theme")
+        stylePill(btnPalAmoled, currentConfig.paletteFamily == PaletteFamily.AMOLED, "AMOLED black theme")
+
+        stylePill(btnThemeSolar, currentConfig.themeMode == ThemeMode.SOLAR, "Auto sun polarity")
+        stylePill(btnThemeSystem, currentConfig.themeMode == ThemeMode.SYSTEM, "System theme polarity")
+        stylePill(btnThemeLight, currentConfig.themeMode == ThemeMode.LIGHT, "Light theme polarity")
+        stylePill(btnThemeDark, currentConfig.themeMode == ThemeMode.DARK, "Dark theme polarity")
+
+        // Card 4: Motion & Battery
+        stylePill(btnPerfEco, currentConfig.performanceMode == PerformanceMode.ECO, "Eco 20fps")
+        stylePill(btnPerfBalanced, currentConfig.performanceMode == PerformanceMode.BALANCED, "Balanced frame rate")
+        stylePill(btnPerfSmooth, currentConfig.performanceMode == PerformanceMode.SMOOTH, "Smooth 60fps")
+        styleToggle(textGyroSwitch, findViewById(R.id.rowGyroSwitch), currentConfig.enableGyro, "3D tilt parallax")
     }
 
     private fun updateConfig(newConfig: WallpaperConfig) {
         currentConfig = newConfig
         repository.saveConfig(newConfig)
-        refreshAsciiUi()
+        refreshUi()
         asciiPondView.invalidate()
     }
 

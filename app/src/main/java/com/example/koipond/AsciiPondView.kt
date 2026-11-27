@@ -2,7 +2,6 @@ package com.example.koipond
 
 import android.content.Context
 import android.graphics.Canvas
-import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.Choreographer
 import android.view.GestureDetector
@@ -32,8 +31,10 @@ class AsciiPondView @JvmOverloads constructor(
 
     private val tiltSensor = TiltParallaxSensor(context)
 
-    private var lastFrameNs = 0L
-    private var lastDrawNs = 0L
+    private var lastVsyncNs = 0L
+    private var lastDrawVsyncNs = 0L
+    private var pendingDt = 1f / 60f
+    private var smoothedDt = 1f / 60f
     private var lastDragX = 0f
     private var lastDragEventMs = 0L
     private var isRunning = false
@@ -44,10 +45,19 @@ class AsciiPondView @JvmOverloads constructor(
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (!isRunning) return
-            val targetFps = config.performanceMode.maxFps
+            // Preview runs at VSync-aligned 60fps in BALANCED/SMOOTH and 20fps (exact 1:3) in ECO for zero stutter!
+            val targetFps = if (config.performanceMode == PerformanceMode.ECO) 20 else 60
             val minIntervalNs = 1_000_000_000L / targetFps
-            if (frameTimeNanos - lastDrawNs >= minIntervalNs - 2_000_000L) {
-                lastDrawNs = frameTimeNanos
+            if (lastDrawVsyncNs == 0L || frameTimeNanos - lastDrawVsyncNs >= minIntervalNs - 2_500_000L) {
+                val rawDt = if (lastDrawVsyncNs == 0L) {
+                    1f / targetFps.toFloat()
+                } else {
+                    ((frameTimeNanos - lastDrawVsyncNs) / 1_000_000_000.0f).coerceIn(0.004f, 0.05f)
+                }
+                smoothedDt += (rawDt - smoothedDt) * 0.35f
+                pendingDt = smoothedDt
+                lastDrawVsyncNs = frameTimeNanos
+                lastVsyncNs = frameTimeNanos
                 invalidate()
             }
             Choreographer.getInstance().postFrameCallback(this)
@@ -84,13 +94,8 @@ class AsciiPondView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val nowNs = SystemClock.elapsedRealtimeNanos()
-        val dt = if (lastFrameNs == 0L) {
-            1f / 30f
-        } else {
-            ((nowNs - lastFrameNs) / 1_000_000_000.0f).coerceIn(0.001f, 0.05f)
-        }
-        lastFrameNs = nowNs
+        val dt = pendingDt.coerceIn(0.004f, 0.05f)
+        pendingDt = 0.001f // Avoid double-stepping if UI triggers an extra redraw between VSync ticks!
 
         val ecoActive = config.performanceMode == PerformanceMode.ECO
         val px = if (config.enableGyro && !ecoActive) tiltSensor.tiltX * 0.7f else 0f
@@ -161,8 +166,10 @@ class AsciiPondView @JvmOverloads constructor(
     fun startAnimation() {
         if (!isRunning) {
             isRunning = true
-            lastFrameNs = SystemClock.elapsedRealtimeNanos()
-            lastDrawNs = 0L
+            lastVsyncNs = 0L
+            lastDrawVsyncNs = 0L
+            smoothedDt = 1f / 60f
+            pendingDt = 1f / 60f
             syncSensorRegistration()
             Choreographer.getInstance().postFrameCallback(frameCallback)
         }

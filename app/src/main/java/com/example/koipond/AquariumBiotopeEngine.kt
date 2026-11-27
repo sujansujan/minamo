@@ -75,6 +75,7 @@ class AquariumBiotopeEngine {
         var targetZ = 0.45f
         var flare = 0f
         var zDepth = 0.45f
+        var smoothFacing = 1f
     }
 
     private class OtoCleaner(
@@ -1422,8 +1423,12 @@ class AquariumBiotopeEngine {
 
             b.speed = sqrtSafe(b.vx * b.vx + b.vy * b.vy + (b.vz * zScalePx) * (b.vz * zScalePx))
             val spdNorm = b.speed / tankW.coerceAtLeast(1f)
-            b.swimPhase += dt * (2.5f + spdNorm * 44f)
-            b.pecPhase += dt * (if (b.variety == BettaVariety.DUMBO_VEIL) (3.6f + spdNorm * 24f) else (4.8f + spdNorm * 32f))
+            // Smooth continuous facing blend so dorsal/pectoral wing basis NEVER snaps when turning!
+            val targetFacing = if (b.vx >= 0f) 1f else -1f
+            b.smoothFacing += (targetFacing - b.smoothFacing) * (1f - exp(-5.2f * dt))
+            // Smooth capped oscillation speeds prevent aliasing/stuttering on fast turns or 30fps!
+            b.swimPhase = (b.swimPhase + dt * (2.3f + (spdNorm * 18f).coerceAtMost(7.2f))) % 628.3185f
+            b.pecPhase = (b.pecPhase + dt * (if (b.variety == BettaVariety.DUMBO_VEIL) (2.5f + (spdNorm * 6.5f).coerceAtMost(2.6f)) else (3.4f + (spdNorm * 9.0f).coerceAtMost(3.5f)))) % 628.3185f
 
             for (i in 1 until SPINE_N) {
                 val px = b.nx[i - 1]; val py = b.ny[i - 1]; val pz = b.nz[i - 1]
@@ -1560,13 +1565,13 @@ class AquariumBiotopeEngine {
             r.x = (r.x + r.vx * dt).coerceIn(tankX + tankW * 0.07f, tankX + tankW * 0.93f)
             r.y = (r.y + r.vy * dt).coerceIn(waterY + tankH * 0.055f, sandY - tankH * 0.14f)
             r.z = (r.z + r.vz * dt).coerceIn(0.14f, 0.78f)
-            r.phase += dt * (8.5f + (spd / tankW.coerceAtLeast(1f)) * 55f)
+            r.phase = (r.phase + dt * (6.2f + (spd / tankW.coerceAtLeast(1f)).coerceAtMost(0.22f) * 28f)) % 628.3185f
         }
 
         // B. Ethereal Glass Catfish (hovering serenely in the shady lily-pipe current with continuous ribbon-fin ripple!)
         for (i in glassCats.indices) {
             val g = glassCats[i]
-            g.phase += dt * 7.8f
+            g.phase = (g.phase + dt * 4.6f) % 628.3185f
             if (g.spookOffset > 0f) g.spookOffset = (g.spookOffset - dt * 0.55f).coerceAtLeast(0f)
             val driftX = sin(simTime * 0.42f + i * 2.1f) * 0.024f - g.spookOffset * 0.06f
             val driftY = cos(simTime * 0.65f + i * 1.6f) * 0.022f + g.spookOffset * 0.08f
@@ -2898,14 +2903,18 @@ class AquariumBiotopeEngine {
             var tx = projX[pIdx] - projX[nIdx]
             var ty = projY[pIdx] - projY[nIdx]
             val len = hypot(tx, ty)
-            if (len < 0.01f) { tx = 1f; ty = 0f } else { tx /= len; ty /= len }
+            if (len < 0.01f) { tx = b.smoothFacing.coerceIn(-1f, 1f); ty = 0f } else { tx /= len; ty /= len }
             tangX[i] = tx; tangY[i] = ty
 
-            var ux = -ty; var uy = tx
-            if (uy > 0f) { ux = ty; uy = -tx }
+            // Continuous non-flipping dorsal-up normal (blends smoothly through vertical turns without snapping!)
+            val sideSign = if (tx >= 0f) 1f else -1f
+            val blendedSign = if (abs(tx) < 0.35f) b.smoothFacing else sideSign
+            var ux = ty * blendedSign
+            var uy = -abs(tx)
+            // Keep dorsal pointing skyward even during steep dives/climbs
             val fore = (len / (bettaSegLen() * 0.72f)).coerceIn(0f, 1f)
             ux *= fore
-            uy = uy * fore - (1f - fore)
+            uy = uy * fore - (1f - fore * 0.65f)
             val uLen = hypot(ux, uy).coerceAtLeast(0.001f)
             upX[i] = ux / uLen; upY[i] = uy / uLen
         }
@@ -2939,9 +2948,9 @@ class AquariumBiotopeEngine {
         for (i in 2..7) {
             val frac = (i - 2) / 5f
             val h = unitLen * (0.24f + sin(frac * PI.toFloat() * 0.88f) * 0.38f) * dorsalScale * billow * projS[i]
-            val rip = sin(b.swimPhase * 0.9f - i * 0.7f) * (unitLen * 0.055f) * projS[i]
-            outX[i] = projX[i] + upX[i] * h - tangX[i] * (unitLen * 0.13f * frac * projS[i]) + rip * tangY[i]
-            outY[i] = projY[i] + upY[i] * h - tangY[i] * (unitLen * 0.13f * frac * projS[i])
+            val rip = sin(b.swimPhase * 0.85f - i * 0.68f) * (unitLen * 0.050f) * projS[i]
+            outX[i] = projX[i] + upX[i] * (h + rip * 0.35f) - tangX[i] * (unitLen * 0.13f * frac * projS[i] - rip * 0.45f)
+            outY[i] = projY[i] + upY[i] * (h + rip * 0.35f) - tangY[i] * (unitLen * 0.13f * frac * projS[i] - rip * 0.45f)
         }
         drawVarietyEdgeFin(canvas, 2, 7, isUpper = true, b.variety, unitLen, finMidCol, finTipCol, rimLineCol)
 
@@ -2949,9 +2958,9 @@ class AquariumBiotopeEngine {
         for (i in 2..7) {
             val frac = (i - 2) / 5f
             val h = unitLen * (0.26f + sin(frac * PI.toFloat() * 0.85f) * 0.40f) * analScale * billow * projS[i]
-            val rip = cos(b.swimPhase * 0.85f - i * 0.65f) * (unitLen * 0.060f) * projS[i]
-            outX[i] = projX[i] - upX[i] * h - tangX[i] * (unitLen * 0.14f * frac * projS[i]) + rip * tangY[i]
-            outY[i] = projY[i] - upY[i] * h - tangY[i] * (unitLen * 0.14f * frac * projS[i])
+            val rip = cos(b.swimPhase * 0.82f - i * 0.64f) * (unitLen * 0.054f) * projS[i]
+            outX[i] = projX[i] - upX[i] * (h + rip * 0.35f) - tangX[i] * (unitLen * 0.14f * frac * projS[i] - rip * 0.45f)
+            outY[i] = projY[i] - upY[i] * (h + rip * 0.35f) - tangY[i] * (unitLen * 0.14f * frac * projS[i] - rip * 0.45f)
         }
         drawVarietyEdgeFin(canvas, 2, 7, isUpper = false, b.variety, unitLen, finMidCol, finTipCol, rimLineCol)
 
@@ -3008,24 +3017,31 @@ class AquariumBiotopeEngine {
         canvas.drawPath(detailPath, strokePaint)
 
         if (b.variety == BettaVariety.DUMBO_VEIL) {
-            // Iconic hyper-enlarged ruffled Dumbo "Elephant Ear" translucent pectoral wings!
-            val earLen = unitLen * 0.36f * projS[2]
-            val earW = unitLen * 0.24f * projS[2]
-            val flap = sin(b.pecPhase) * earLen * 0.38f
+            // Iconic hyper-enlarged ruffled Dumbo "Elephant Ear" butterfly-wing pectorals
+            // Built cleanly in orthonormal (tang, up) basis with smooth 2-stage traveling silk wave (zero stutter!)
+            val earLen = unitLen * 0.38f * projS[2]
+            val earW = unitLen * 0.25f * projS[2]
+            val rootWave = sin(b.pecPhase) * earW * 0.42f
+            val tipWave = sin(b.pecPhase - 0.88f) * earW * 0.56f
+            val sweepBack = cos(b.pecPhase) * earLen * 0.12f
+            val bx = projX[2]; val by = projY[2]
+            val fx = tangX[2]; val fy = tangY[2]
+            val ux = upX[2]; val uy = upY[2]
+
             veilPath.reset()
-            veilPath.moveTo(projX[2], projY[2] + unitLen * 0.02f * projS[2])
+            veilPath.moveTo(bx - ux * (unitLen * 0.02f * projS[2]), by - uy * (unitLen * 0.02f * projS[2]))
             veilPath.cubicTo(
-                projX[2] - tangX[2] * earLen * 0.4f + upX[2] * earW * 0.5f,
-                projY[2] - tangY[2] * earLen * 0.4f - earW * 0.6f + flap,
-                projX[2] - tangX[2] * earLen * 1.1f,
-                projY[2] - tangY[2] * earLen * 1.1f + earW * 0.2f + flap,
-                projX[2] - tangX[2] * earLen * 0.85f,
-                projY[2] - tangY[2] * earLen * 0.85f + earW * 1.05f + flap * 0.6f
+                bx - fx * (earLen * 0.35f + sweepBack * 0.4f) + ux * (earW * 0.55f + rootWave),
+                by - fy * (earLen * 0.35f + sweepBack * 0.4f) + uy * (earW * 0.55f + rootWave),
+                bx - fx * (earLen * 1.05f + sweepBack) + ux * (earW * 0.15f + tipWave),
+                by - fy * (earLen * 1.05f + sweepBack) + uy * (earW * 0.15f + tipWave),
+                bx - fx * (earLen * 0.82f + sweepBack * 0.7f) - ux * (earW * 0.85f - tipWave * 0.65f),
+                by - fy * (earLen * 0.82f + sweepBack * 0.7f) - uy * (earW * 0.85f - tipWave * 0.65f)
             )
             veilPath.quadTo(
-                projX[2] - tangX[2] * earLen * 0.2f,
-                projY[2] + earW * 0.72f,
-                projX[2], projY[2] + unitLen * 0.02f * projS[2]
+                bx - fx * (earLen * 0.22f) - ux * (earW * 0.58f - rootWave * 0.3f),
+                by - fy * (earLen * 0.22f) - uy * (earW * 0.58f - rootWave * 0.3f),
+                bx - ux * (unitLen * 0.02f * projS[2]), by - uy * (unitLen * 0.02f * projS[2])
             )
             veilPath.close()
             fillPaint.color = withAlpha(spotCol, 175) // Luminous ivory-white ruffled Dumbo ear!
