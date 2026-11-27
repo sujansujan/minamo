@@ -1137,7 +1137,7 @@
                         style="@style/AsciiText.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="minamo v2.11.0"
+                        android:text="minamo v2.12.0"
                         android:textColor="@color/ascii_accent2" />
 
                     <TextView
@@ -1236,9 +1236,9 @@ charging ........ lantern / lamp LED breathes" />
                         style="@style/AsciiText.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="betta trio ...... 3D silk-fin bettas · hide · breathe
-tank cleaners ... glass oto · shy pleco · corydoras
-tank critters ... hopping cherry shrimp · golden snail
+                        android:text="betta varieties . halfmoon · crowntail · dumbo · plakat
+tank cleaners ... front/back glass oto &amp; pleco · panda cory
+tank critters ... segmented cherry shrimp · glass snail
 curious cat ..... rare paw-dip visitor (fish escape!)
 humpback whale .. deep visitor · blowhole spout
 orca whale ...... tall fin · theme-matched blaze
